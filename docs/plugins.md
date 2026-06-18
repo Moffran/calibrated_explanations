@@ -15,10 +15,10 @@ Plugins are optional extensions. Core calibrated explanations work without them.
 - Governance details live in contributor docs, not in user quickstarts.
 
 Contributor-facing ADR links:
-- `docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-015-explanation-plugin.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
+- `development/adrs/ADR-006-plugin-registry-trust-model.md` (maintainer-only docs set)
+- `development/adrs/ADR-013-interval-calibrator-plugin-strategy.md` (maintainer-only docs set)
+- `development/adrs/ADR-037-visualization-extension-and-rendering-governance.md` (maintainer-only docs set)
+- `development/adrs/ADR-015-explanation-plugin.md` (maintainer-only docs set)
+- `development/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 
 Entry-point tier: Tier 1.

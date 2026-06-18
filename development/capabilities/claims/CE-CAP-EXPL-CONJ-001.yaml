@@ -1,0 +1,52 @@
+claim_id: CE-CAP-EXPL-CONJ-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations supports conjunctive multi-feature explanation rules via
+  add_conjunctions(), which extends any explanation collection or individual explanation
+  to include rules combining up to max_rule_size features, returning an updated
+  object of the same type. The method is available on CalibratedExplanations,
+  AlternativeExplanations, FactualExplanation, and AlternativeExplanation.
+
+public_api:
+  - calibrated_explanations.explanations.explanations.CalibratedExplanations.add_conjunctions
+  - calibrated_explanations.explanations.explanations.AlternativeExplanations.add_conjunctions
+  - calibrated_explanations.explanations.explanation.FactualExplanation.add_conjunctions
+  - calibrated_explanations.explanations.explanation.AlternativeExplanation.add_conjunctions
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-EXPL-CONJ-001
+
+verification:
+  proves:
+    - api_contract
+    - output_type
+  verification_type: automated
+
+assumptions:
+  - The explainer must be fitted and calibrated, and explain_factual or
+    explore_alternatives must have been called before add_conjunctions.
+  - Conjunctions are computed over the top n_top_features features by feature weight.
+    If fewer features are available than n_top_features, the available count is used.
+  - max_rule_size=1 produces no new conjunctions (single-feature rules only);
+    max_rule_size=2 adds pairwise conjunctions; larger values add higher-order rules.
+  - This claim does not assert that conjunctions produce strictly better explanations;
+    it asserts the API is callable and returns an object of the correct type.
+  - Runtime cost scales with n_top_features and max_rule_size; large values may
+    significantly increase explanation latency.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

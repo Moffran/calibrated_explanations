@@ -1,0 +1,45 @@
+claim_id: CE-CAP-PRED-PROB-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations supports probabilistic regression queries: given a scalar
+  threshold, WrapCalibratedExplainer.predict_proba(X, threshold=y_threshold) returns
+  the empirical probability that the regression target exceeds the threshold,
+  P(Y > threshold | X), as an array bounded in [0, 1] with shape matching the input.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.predict_proba
+
+task_types:
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-PRED-PROB-API-001
+
+verification:
+  proves:
+    - api_contract
+    - probability_bounds
+    - output_shape
+  verification_type: automated
+
+assumptions:
+  - The explainer must be fitted and calibrated for a regression task before calling
+    predict_proba with threshold=.
+  - The threshold parameter must be a scalar float; the API raises ValidationError if
+    threshold is omitted for a regression task.
+  - The probability returned is empirical (conformal predictive system based on CPS).
+    Coverage guarantees hold under exchangeability of calibration and test instances.
+  - This claim does not assert frequency-calibration of P(Y > threshold | X); it
+    asserts only that the returned array is in [0, 1] and has the correct shape.
+  - The API test verifies shape and bounds only; it does not verify conformal coverage.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

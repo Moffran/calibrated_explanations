@@ -1,9 +1,9 @@
 {
-  "active_rows_count": 11,
+  "active_rows_count": 15,
   "blocking_rows_count": 0,
   "blocking_symbols": [],
-  "generated_at": "2026-06-15T13:36:44.365157+00:00",
-  "permitted_rows_count": 11,
+  "generated_at": "2026-06-18T15:52:08.894909+00:00",
+  "permitted_rows_count": 15,
   "permitted_symbols": [
     "`guarded=True` boolean kwarg on `explain_factual` / `explore_alternatives`",
     "`significance=` kwarg on `explain_factual` / `explore_alternatives` (guarded path)",
@@ -15,7 +15,11 @@
     "`calibrated_explanations.core.reject` module import path",
     "`calibrated_explanations.core.explain.explain(...)` function",
     "`ExplainerHandle.learner` property",
-    "`ParallelConfig(strategy='auto')` with `enabled=True`"
+    "`ParallelConfig(strategy='auto')` with `enabled=True`",
+    "`CalibratedExplanations.legacy_payload(exp)`",
+    "`VennAbers` schema_version 1 pickle primitive",
+    "`IntervalRegressor` schema_version 1 pickle primitive",
+    "`plugin_meta['plot_kinds']` category vocabulary (`instance`, `collection`, `global`)"
   ],
   "schema_version": 1,
   "status": "pass"

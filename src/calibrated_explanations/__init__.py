@@ -53,6 +53,7 @@ __all__ = [
     "NormalizationStrategy",
     "RejectPolicySpec",
     "WrapCalibratedExplainer",
+    "configure_logging",
     "transform_to_numeric",
 ]
 
@@ -116,5 +117,11 @@ def __getattr__(name: str) -> Any:
 
         globals()[name] = NormalizationStrategy
         return NormalizationStrategy
+
+    if name == "configure_logging":
+        from .logging import configure_logging
+
+        globals()[name] = configure_logging
+        return configure_logging
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

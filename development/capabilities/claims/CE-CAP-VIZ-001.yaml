@@ -1,0 +1,46 @@
+claim_id: CE-CAP-VIZ-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations provides visualization output for explanations via
+  WrapCalibratedExplainer.plot and CalibratedExplanations.plot, supporting
+  multiple output styles ('regular', 'triangular') and optional file saving,
+  without raising exceptions for standard single-instance and batch inputs
+  when a non-interactive rendering backend is available.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.plot
+  - calibrated_explanations.explanations.explanations.CalibratedExplanations.plot
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-VIZ-SMOKE-001
+
+verification:
+  proves:
+    - empirical_smoke
+  verification_type: automated
+
+assumptions:
+  - Visual correctness (plot content, layout, color fidelity) is NOT verified by this
+    claim. Automated tests assert only that the plot API does not raise exceptions.
+  - Visualization requires a rendering backend (matplotlib or equivalent). Headless
+    environments must configure a non-interactive backend (e.g., Agg) before calling plot().
+  - Plot output differences across rendering backends are outside the scope of this claim.
+  - The smoke test uses matplotlib.use('Agg') before import to ensure headless
+    compatibility; this does not test that visual output is correct or rendered.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

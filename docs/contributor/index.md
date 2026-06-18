@@ -12,13 +12,13 @@ Repository authority:
 2. Use {doc}`extending/guides/index` for implementation workflows.
 3. Run checks from {doc}`../foundations/governance/pr_guide` and
    {doc}`../foundations/governance/test_policy`.
-4. Use {doc}`../standards/STD-004-documentation-audience-standard` for docs
+4. Use `development/standards/STD-004-documentation-audience-standard.md` (maintainer-only docs set) for docs
    structure and semantics-layer requirements.
 
 Contributor-facing semantics references:
 - {doc}`../foundations/concepts/calibrated_interval_semantics`
-- `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
+- `development/adrs/ADR-021-calibrated-interval-semantics.md` (maintainer-only docs set)
+- `development/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 
 ```{toctree}
 :maxdepth: 1
@@ -27,6 +27,7 @@ Contributor-facing semantics references:
 plugin-contract
 notebook_policy
 performance_harness
+reject_policy_usage
 extending/plugin-advanced-contract
 extending/guides/index
 extending/advanced

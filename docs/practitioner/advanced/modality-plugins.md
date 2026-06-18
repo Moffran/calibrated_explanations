@@ -96,4 +96,4 @@ Install companion packages when needed:
 - {doc}`../../contributor/plugin-contract`
 - {doc}`../../contributor/extending/plugin-advanced-contract`
 - {doc}`use_plugins`
-- [ADR-033 - modality extension plugin contract and packaging](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-033-modality-extension-plugin-contract-and-packaging.md)
+- [ADR-033 - modality extension plugin contract and packaging](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-033-modality-extension-plugin-contract-and-packaging.md)

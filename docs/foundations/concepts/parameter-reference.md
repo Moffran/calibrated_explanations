@@ -6,7 +6,7 @@ involving thresholds, confidence values, or significance levels.
 
 Cross-references: [terminology.md](terminology.md),
 [probabilistic_regression.md](probabilistic_regression.md),
-[ADR-038: Call-time Configuration Taxonomy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-038-call-time-configuration-taxonomy.md).
+[ADR-038: Call-time Configuration Taxonomy](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-038-call-time-configuration-taxonomy.md).
 
 ---
 

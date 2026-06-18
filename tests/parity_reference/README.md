@@ -18,7 +18,7 @@ implementation detail that upstream is free to change between releases
 without a deprecation cycle, since it isn't part of sklearn's public
 behavioral contract.
 
-**Confirmed 2026-06-16 (see `docs/improvement/v0.11.4_plan.md` Task 7):**
+**Confirmed 2026-06-16 (see `development/current-work/v0.11.4_plan.md` Task 7):**
 scikit-learn changed `DecisionTreeRegressor` split selection between 1.7.2
 and 1.8.0. Bisection results:
 
@@ -50,7 +50,7 @@ If you intentionally want the parity contract to track a newer
 1. Regenerate the affected fixtures: `python tests/parity_reference/run_parity_reference.py --dataset regression --update` (and `probabilistic_regression`, and both `--condition-source` values).
 2. Re-run the full harness (all 8 invocations) to confirm parity holds at the new version.
 3. Bump the upper bound in `tests/parity_reference/constraints.txt` and document the new verified range, mirroring the table above.
-4. Note the change in `CHANGELOG.md` and update `docs/improvement/v0.11.4_plan.md` Task 7 (or its closure record) accordingly.
+4. Note the change in `CHANGELOG.md` and update `development/current-work/v0.11.4_plan.md` Task 7 (or its closure record) accordingly.
 
 Do not bump the pin without doing step 1-2 first — the failure mode is
 silent (wrong explanations, not a crash), so an unverified bump defeats the

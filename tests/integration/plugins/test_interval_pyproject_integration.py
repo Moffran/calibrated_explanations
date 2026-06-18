@@ -24,7 +24,7 @@ class MockIntervalCalibrator:
     """Mock calibrator implementing ClassificationIntervalCalibrator protocol."""
 
     def predict_proba(self, x, *, output_interval=False, classes=None, bins=None):
-        return [[0.5, 0.5]]
+        return np.full((len(x), 2), 0.5, dtype=float)
 
     def is_multiclass(self) -> bool:
         return False
@@ -42,6 +42,7 @@ class PyprojectRecordingIntervalPlugin(IntervalCalibratorPlugin):
         "provider": "tests",
         "capabilities": ["interval:classification"],
         "modes": ("classification",),
+        "data_modalities": ("tabular",),
         "dependencies": (),
         "trusted": True,
         "trust": {"trusted": True},

@@ -64,7 +64,7 @@ class BoundaryConfig:
 
     # Intentional cross-sibling imports (allowed exceptions)
     # Format: (from_package, to_package) → [allowed_module_paths]
-    # See docs/improvement/ADR-001-EXCEPTIONS-AND-CONTRACTS.md for rationale
+    # See development/adrs/ADR-001-core-decomposition-boundaries.md for rationale
     allowed_cross_sibling: Dict[Tuple[str, str], List[str]] = field(default_factory=lambda: {
         # --- Pattern 2: Orchestrator Pattern (ADR-001) ---
         # Explanations orchestrates calibration and core

@@ -14,6 +14,7 @@ import contextlib
 from typing import Any, Mapping
 
 from .explanations import Explanation, FeatureRule
+from .explanations.models import CalibrationDescriptor, ModelDescriptor
 from .schema import (
     validate_payload as _schema_validate_payload,
 )
@@ -25,6 +26,13 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
 
     The result follows schema v1 fields; additional metadata/provenance are passed through.
     """
+    # Build metadata output: merge calibration_metadata and model_metadata into the dict
+    _meta_out: dict[str, Any] = dict(exp.metadata) if isinstance(exp.metadata, Mapping) else {}
+    if exp.calibration_metadata is not None:
+        _meta_out["calibration_metadata"] = {"method": exp.calibration_metadata.method}
+    if exp.model_metadata is not None:
+        _meta_out["model_metadata"] = {"type": exp.model_metadata.type}
+
     payload: dict[str, Any] = {
         "task": exp.task,
         "index": exp.index,
@@ -49,7 +57,7 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
             for r in exp.rules
         ],
         "provenance": (dict(exp.provenance) if exp.provenance else None),
-        "metadata": (dict(exp.metadata) if exp.metadata else None),
+        "metadata": (_meta_out if _meta_out else None),
     }
     if include_version:
         payload["schema_version"] = "1.0.0"
@@ -179,6 +187,22 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
         )
         for i, r in enumerate(obj.get("rules", []))
     ]
+    raw_meta = obj.get("metadata")
+    cal_descriptor = None
+    mod_descriptor = None
+    if isinstance(raw_meta, Mapping):
+        raw_cal = raw_meta.get("calibration_metadata")
+        if isinstance(raw_cal, dict):
+            try:
+                cal_descriptor = CalibrationDescriptor(**raw_cal)
+            except TypeError:
+                cal_descriptor = None
+        raw_mod = raw_meta.get("model_metadata")
+        if isinstance(raw_mod, dict):
+            try:
+                mod_descriptor = ModelDescriptor(**raw_mod)
+            except TypeError:
+                mod_descriptor = None
     return Explanation(
         task=str(obj.get("task", "unknown")),
         index=int(obj.get("index", 0)),
@@ -186,7 +210,9 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
         prediction=dict(obj.get("prediction", {})),
         rules=rules,
         provenance=obj.get("provenance"),
-        metadata=obj.get("metadata"),
+        metadata=raw_meta,
+        calibration_metadata=cal_descriptor,
+        model_metadata=mod_descriptor,
     )
 
 

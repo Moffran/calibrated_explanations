@@ -23,8 +23,8 @@ You are helping users prepare their data for use with calibrated-explanations.
 
 ## Required references
 
-- `docs/improvement/adrs/ADR-002-validation-and-exception-design.md`
-- `docs/improvement/adrs/ADR-009-input-preprocessing-and-mapping-policy.md`
+- `development/adrs/ADR-002-validation-and-exception-design.md`
+- `development/adrs/ADR-009-input-preprocessing-and-mapping-policy.md`
 - `src/calibrated_explanations/core/validation.py`
 - `src/calibrated_explanations/preprocessing/builtin_encoder.py`
 

@@ -53,7 +53,7 @@ Every agent platform reads a two-layer set of files:
 - Coding standards (type hints, Numpy docstrings, lazy imports)
 - Testing standards and fallback visibility policy
 - ADR/Standards reference map (all 26 active ADRs + 5 STDs with when-to-consult guidance)
-- Test-quality improvement method (8-agent team from `docs/improvement/test-quality-method/`)
+- Test-quality improvement method (8-agent team from `development/standards/test-quality-method/`)
 - Key files & directories, development workflow, TDD patterns
 
 ### Layer 2 — Platform-specific
@@ -202,14 +202,14 @@ works from the public call down to the plugin registry dispatch.
 ### Run a test-quality improvement cycle
 
 ```text
-Read docs/improvement/test-quality-method/README.md, then act as the test-creator
+Read development/standards/test-quality-method/README.md, then act as the test-creator
 agent and produce a prioritized coverage-gap analysis.
 ```
 
 ### Check release readiness
 
 ```text
-Read docs/improvement/RELEASE_PLAN_v1.md and list all items still open for the
+Read development/current-work/RELEASE_PLAN_v1.md and list all items still open for the
 current milestone.
 ```
 

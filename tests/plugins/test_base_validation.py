@@ -19,6 +19,7 @@ def make_valid_meta() -> dict[str, object]:
         "version": "1.0",
         "provider": "tests",
         "capabilities": ["explain"],
+        "data_modalities": ["tabular"],
     }
 
 

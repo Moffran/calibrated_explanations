@@ -44,4 +44,4 @@ jobs:
       - name: Build docs
         run: |
           cd docs
-          sphinx-build -b ${{ inputs.build-target }} . _build/${{ inputs.build-target }}
+          sphinx-build -W --keep-going -b ${{ inputs.build-target }} . _build/${{ inputs.build-target }}

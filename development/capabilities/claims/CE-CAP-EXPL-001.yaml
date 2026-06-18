@@ -1,0 +1,42 @@
+claim_id: CE-CAP-EXPL-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations produces calibrated factual explanations for individual
+  instances via WrapCalibratedExplainer.explain_factual, returning feature
+  contributions with calibrated probability uncertainty for the predicted class.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.explain_factual
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-EXPL-API-001
+
+verification:
+  proves:
+    - api_contract
+    - output_structure
+  verification_type: automated
+
+assumptions:
+  - The explainer must be fitted (explainer.fitted is True) before calling explain_factual.
+  - The explainer must be calibrated (explainer.calibrated is True) before calling explain_factual.
+  - The calibration set must be representative of the test distribution (exchangeability
+    assumption). The statistical validity of calibrated outputs depends on this assumption
+    being satisfied; the test verifies the API contract only, not finite-sample guarantees.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

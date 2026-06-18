@@ -263,11 +263,11 @@ def _resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
     return Path(file)
 
 
-def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) -> None:
-    """Best-effort checksum verification for plugins."""
+def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) -> bool:
+    """Return whether a supplied plugin checksum was verified."""
     checksum = meta.get("checksum")
     if not checksum:
-        return
+        return False
 
     checksum_value = checksum.get("sha256") if isinstance(checksum, Mapping) else checksum
 
@@ -290,7 +290,7 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
             UserWarning,
             stacklevel=3,
         )
-        return
+        return False
 
     try:
         data = module_file.read_bytes()
@@ -301,7 +301,7 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
             UserWarning,
             stacklevel=3,
         )
-        return
+        return False
 
     digest = hashlib.sha256(data).hexdigest()
     if digest != checksum_value:
@@ -314,6 +314,7 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
                 "plugin": str(meta.get("name", "<unknown>")),
             },
         )
+    return True
 
 
 _EXPLANATION_PROTOCOL_VERSION = 1
@@ -1062,7 +1063,7 @@ def register_explanation_plugin(
         trusted = _should_trust(meta, identifier=identifier, source=source)
         _update_trust_keys(meta, trusted)
         try:
-            _verify_plugin_checksum(plugin, meta)
+            checksum_verified = _verify_plugin_checksum(plugin, meta)
         except ValidationError as exc:
             emit_plugin_governance_event(
                 decision="checksum_failure",
@@ -1076,11 +1077,12 @@ def register_explanation_plugin(
             )
             raise
         if "checksum" in meta:
-            trusted = True
-            _update_trust_keys(meta, trusted)
+            meta["checksum_verified"] = checksum_verified
         if isinstance(raw_meta, dict):
             raw_meta["trusted"] = meta["trusted"]
             raw_meta["trust"] = meta["trust"]
+            if "checksum_verified" in meta:
+                raw_meta["checksum_verified"] = meta["checksum_verified"]
 
         descriptor = ExplanationPluginDescriptor(
             identifier=identifier,
@@ -1270,7 +1272,7 @@ def register_interval_plugin(
         trusted = _should_trust(meta, identifier=identifier, source=source)
         _update_trust_keys(meta, trusted)
         try:
-            _verify_plugin_checksum(plugin, meta)
+            checksum_verified = _verify_plugin_checksum(plugin, meta)
         except ValidationError as exc:
             emit_plugin_governance_event(
                 decision="checksum_failure",
@@ -1283,9 +1285,13 @@ def register_interval_plugin(
                 reason=str(exc),
             )
             raise
+        if "checksum" in meta:
+            meta["checksum_verified"] = checksum_verified
         if isinstance(raw_meta, dict):
             raw_meta["trusted"] = meta["trusted"]
             raw_meta["trust"] = meta["trust"]
+            if "checksum_verified" in meta:
+                raw_meta["checksum_verified"] = meta["checksum_verified"]
 
         descriptor = IntervalPluginDescriptor(
             identifier=identifier,
@@ -1382,7 +1388,7 @@ def register_plot_builder(
     trusted = _should_trust(meta, identifier=identifier, source=source)
     _update_trust_keys(meta, trusted)
     try:
-        _verify_plugin_checksum(builder, meta)
+        checksum_verified = _verify_plugin_checksum(builder, meta)
     except ValidationError as exc:
         emit_plugin_governance_event(
             decision="checksum_failure",
@@ -1395,9 +1401,13 @@ def register_plot_builder(
             reason=str(exc),
         )
         raise
+    if "checksum" in meta:
+        meta["checksum_verified"] = checksum_verified
     if isinstance(raw_meta, dict):
         raw_meta["trusted"] = meta["trusted"]
         raw_meta["trust"] = meta["trust"]
+        if "checksum_verified" in meta:
+            raw_meta["checksum_verified"] = meta["checksum_verified"]
 
     descriptor = PlotBuilderDescriptor(
         identifier=identifier,
@@ -1475,7 +1485,7 @@ def register_plot_renderer(
     trusted = _should_trust(meta, identifier=identifier, source=source)
     _update_trust_keys(meta, trusted)
     try:
-        _verify_plugin_checksum(renderer, meta)
+        checksum_verified = _verify_plugin_checksum(renderer, meta)
     except ValidationError as exc:
         emit_plugin_governance_event(
             decision="checksum_failure",
@@ -1488,9 +1498,13 @@ def register_plot_renderer(
             reason=str(exc),
         )
         raise
+    if "checksum" in meta:
+        meta["checksum_verified"] = checksum_verified
     if isinstance(raw_meta, dict):
         raw_meta["trusted"] = meta["trusted"]
         raw_meta["trust"] = meta["trust"]
+        if "checksum_verified" in meta:
+            raw_meta["checksum_verified"] = meta["checksum_verified"]
 
     descriptor = PlotRendererDescriptor(
         identifier=identifier,
@@ -1827,18 +1841,6 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             )
             continue
 
-        if isinstance(raw_meta, Mapping) and "data_modalities" not in raw_meta:
-            warnings.warn(
-                f"Plugin '{identifier}' does not declare required 'data_modalities'; skipping.",
-                UserWarning,
-                stacklevel=2,
-            )
-            _LOGGER.warning(
-                "Entry-point plugin %r missing required 'data_modalities'; skipping.",
-                identifier,
-            )
-            continue
-
         meta: Dict[str, Any] = dict(raw_meta)
         try:
             validate_plugin_meta(meta)
@@ -1902,7 +1904,7 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             continue
 
         try:
-            _verify_plugin_checksum(plugin, meta)
+            checksum_verified = _verify_plugin_checksum(plugin, meta)
         except ValidationError as exc:
             report.checksum_failures.append(
                 PluginDiscoveryRecord(
@@ -1929,6 +1931,8 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 reason=str(exc),
             )
             continue
+        if "checksum" in meta:
+            meta["checksum_verified"] = checksum_verified
         if "modes" in meta:
             # ADR-033: plugins that declare explanation modes are routed into the descriptor
             # catalog so they are discoverable via find_explanation_descriptor /
@@ -2277,7 +2281,7 @@ def _register_legacy_plugin(
     trusted = _should_trust(meta, identifier=identifier, source=source)
     _update_trust_keys(meta, trusted)
     try:
-        _verify_plugin_checksum(plugin, meta)
+        checksum_verified = _verify_plugin_checksum(plugin, meta)
     except ValidationError as exc:
         emit_plugin_governance_event(
             decision="checksum_failure",
@@ -2290,11 +2294,15 @@ def _register_legacy_plugin(
             reason=str(exc),
         )
         raise
+    if "checksum" in meta:
+        meta["checksum_verified"] = checksum_verified
     if isinstance(raw_meta, dict):
         raw_meta.setdefault("version", meta.get("version", package_version))
         raw_meta.setdefault("provider", meta.get("provider"))
         raw_meta["trusted"] = meta["trusted"]
         raw_meta["trust"] = meta["trust"]
+        if "checksum_verified" in meta:
+            raw_meta["checksum_verified"] = meta["checksum_verified"]
     elif hasattr(raw_meta, "__setitem__"):
         try:
             raw_meta["trusted"] = meta["trusted"]

@@ -32,6 +32,7 @@ def register_fast_explanation_plugin() -> None:
             ],
             "modes": ("fast",),
             "tasks": ("classification", "regression"),
+            "data_modalities": ("tabular",),
             "dependencies": ("core.interval.fast", "legacy"),
             "interval_dependency": "core.interval.fast",
             "plot_dependency": "legacy",

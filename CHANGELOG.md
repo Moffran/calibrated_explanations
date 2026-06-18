@@ -5,7 +5,72 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.3...main)
 
+### Breaking changes
+
+- **ADR-033 §6.2: `data_modalities` is now required in `plugin_meta`.**
+  `validate_plugin_meta` previously applied a silent `("tabular",)` default when
+  `data_modalities` was absent. That default-fallback is removed in v0.11.4. Plugins
+  missing the key now raise `ValidationError` at registration time. Add
+  `"data_modalities": ["tabular"]` (or the appropriate modality) to your `plugin_meta`
+  dict. Entry-point discovery warns and skips invalid plugin metadata fail-closed. See
+  `docs/upgrade/v0.11.4-upgrade-checklist.md` for the full migration note.
+
+### Bug fixes
+
+- **ADR-031: Migrated native calibrator primitives to JSON-safe schema v2.**
+  `VennAbers` and `IntervalRegressor` now serialize field-level JSON-safe
+  primitives instead of `pickle_b64` payloads, while v1 pickle primitives remain
+  loadable with `DeprecationWarning` through the v1.0.0 cleanup window. Wrapper
+  state manifests now write schema version 2 and continue to load v1 artifacts.
+  Malformed v2 primitives now fail fast with `ConfigurationError` before reaching
+  NumPy/crepes internals.
+
+- **ADR-013: Added interval calibrator runtime output validation.** Trusted
+  VennAbers-style interval calibrators are now sampled at creation time and
+  checked for floating probability output, expected row shape, simplex bounds,
+  and interval monotonicity; ADR-013 now records that frozen
+  `IntervalCalibratorContext` supersedes a separate `LegacyIntervalContext`
+  adapter.
+
+- **ADR-015/ADR-026: Hardened plugin prediction invariants.** Prediction bridge
+  monitoring now raises `ValidationError` on interval invariant breaches,
+  classification bridge predictions enforce `predict in [low, high]` when paired
+  bounds are present, and explanation batch validation now checks rule-level
+  factual and alternative prediction intervals.
+
+- **ADR-038: Unknown wrapper keyword arguments are now visible.**
+  `WrapCalibratedExplainer` emits a `UserWarning` for unrecognized public
+  keyword arguments while continuing to forward them for compatibility.
+
+- **ADR-006: Fixed plugin checksum metadata trust elevation.** Supplying a
+  `checksum` field in third-party plugin metadata no longer promotes the plugin
+  to trusted. Checksum verification is now recorded separately as integrity
+  metadata, while trust remains controlled only by the registry trust policy,
+  environment/config allowlists, or explicit keyed trust APIs.
+
+- **ADR-008: Fixed multiclass `class_index` latent serialization bug.** `MultiClassCalibratedExplanations.to_json()` and `to_json_stream()` previously lost `class_index` (and `class_label`) because those keys were added to the legacy payload dict after `legacy_to_domain()` had already constructed the `Explanation` object, so `from_legacy_dict` never extracted them and the domain object carried no class annotation. After the `_exp_to_domain` migration, class annotations are now explicitly merged into `domain.metadata` before serialization — `to_json → from_json` round-trips for multiclass collections preserve `class_index` in each explanation's metadata.
+
 ### CI / infrastructure
+
+- **ADR-012: Added strict release docs workflow support.** The reusable docs
+  workflow now runs `sphinx-build -W --keep-going`; nightly docs remain advisory,
+  and a release-branch `ci-release-docs.yml` workflow runs the blocking HTML docs
+  gate for `release/**`.
+
+- **ADR-028/STD-005: Added public logging configuration helper.**
+  `calibrated_explanations.configure_logging()` configures the package root
+  logger and installs the shared context filter; cache and legacy agent loggers
+  now live under ADR-028 `core.*` domains.
+
+- **ADR-037: Plot plugin metadata now uses semantic `plot_kinds`.** Built-in plot
+  plugins declare the six PlotSpec semantic kind names. Legacy category names
+  (`instance`, `collection`, `global`) remain accepted with `DeprecationWarning`
+  until v1.0.0; `triangular` remains an internal PlotSpec routing kind.
+
+- **ADR-005/ADR-030: Closed v0.11.4 test-quality gaps.** Added the missing
+  golden explanation fixture schema test, removed redundant private-member
+  legacy serialization tests, and hardened the visualization contract smoke test
+  with `viz` marker coverage plus concrete Agg/no-figure-leak assertions.
 
 - Fixed nightly `parity-reference` CI failures for `regression`/`probabilistic_regression`
   datasets. Root cause: commit `9693c3d8` (2026-06-12) removed the `scikit-learn==1.6.1`/`1.5.2`
@@ -15,7 +80,7 @@
   fixtures were unaffected). Added `tests/parity_reference/constraints.txt`, a
   `scikit-learn<1.8` overlay scoped to the `parity-reference` nightly job only — the
   project-wide `scikit-learn>=1.3` floor in `constraints.txt`/`requirements.txt` is unchanged.
-  See `tests/parity_reference/README.md` and `docs/improvement/v0.11.4_plan.md` Task 7 for the
+  See `tests/parity_reference/README.md` and `development/current-work/v0.11.4_plan.md` Task 7 for the
   full investigation and rationale.
 
 ## [v0.11.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.3) - 2026-06-16
@@ -169,7 +234,7 @@
 
 ### Documentation / Governance
 
-- **Full-SHA pinning (CI supply-chain hardening):** Pinned every external GitHub Action in `.github/workflows/**` to a full commit SHA, added enforcement in `scripts/quality/validate_ci_policy.py`, expanded `tests/scripts/test_validate_ci_policy.py` for SHA acceptance/rejection and local-action exemption, updated the CI workflow PR checklist, and documented the full-SHA rule in ADR-035 and `docs/improvement/CI-upgrade.md`.
+- **Full-SHA pinning (CI supply-chain hardening):** Pinned every external GitHub Action in `.github/workflows/**` to a full commit SHA, added enforcement in `scripts/quality/validate_ci_policy.py`, expanded `tests/scripts/test_validate_ci_policy.py` for SHA acceptance/rejection and local-action exemption, updated the CI workflow PR checklist, and documented the full-SHA rule in ADR-035 and `development/current-work/CI-upgrade.md`.
 
 - **ADR-035 conformance gap remediation (v0.11.2 Task 8):** Closed GAP 1/2/4. Added `_REUSABLE_FIRST_ALLOWLIST` in `scripts/quality/validate_ci_policy.py` for pre-reusable inline workflows (`ci-main.yml`, `ci-nightly.yml`, `deprecation-check.yml`, `maintenance.yml`, `update_baseline.yml`) while preserving strict local-repro parity checks (`scripts/local_checks.py` + `Makefile`). Added CODEOWNERS coverage for `/scripts/local_checks.py` with placeholder-team caveat notes. Updated ADR-035 §2 with an explicit rollout status note clarifying advisory-to-required enforcement transition. Added validation tests in `tests/scripts/test_validate_ci_policy.py` for allow-list behavior, strict-change non-suppression, review-by rationale tagging, and CODEOWNERS path coverage.
 
@@ -177,7 +242,7 @@
 
 - **Task 21 v0.11.2 removal phase (v0.11.2 Task 5A):** Removed eight deprecated core/wrapper LIME/SHAP entry points: `CalibratedExplainer.preload_lime`, `preload_shap`, `explain_lime`, `explain_shap`, `is_lime_enabled`, `is_shap_enabled`, and `WrapCalibratedExplainer.explain_lime`/`explain_shap`. Updated fail-closed tests to assert `AttributeError` and moved these rows from **Active deprecations** to **Removed deprecations (history)** in `docs/migration/deprecations.md`. Kept `CalibratedExplanations.as_lime`/`as_shap` active with v0.11.3 ETA per timeline.
 
-- **CI hygiene post-5A removal (v0.11.2 Task 5):** Post-5A CI hygiene audit confirmed zero references to removed LIME/SHAP symbols in `.github/workflows/`. Verified `deprecation-check.yml` behavioral correctness after symbol removals (removed-method tests assert `AttributeError`; active v0.11.3 deprecations still elevate correctly under `CE_DEPRECATIONS=error`). Added v0.11.2 removal notes to `docs/improvement/remediation_api_changes.md` for `preload_lime`, `preload_shap`, `is_lime_enabled`, `is_shap_enabled`. Recorded binding interpretation of RELEASE_PLAN_v1.md "complete migration by v0.11.2" for list-path APIs.
+- **CI hygiene post-5A removal (v0.11.2 Task 5):** Post-5A CI hygiene audit confirmed zero references to removed LIME/SHAP symbols in `.github/workflows/`. Verified `deprecation-check.yml` behavioral correctness after symbol removals (removed-method tests assert `AttributeError`; active v0.11.3 deprecations still elevate correctly under `CE_DEPRECATIONS=error`). Added v0.11.2 removal notes to `development/finished-work/remediation_api_changes.md` for `preload_lime`, `preload_shap`, `is_lime_enabled`, `is_shap_enabled`. Recorded binding interpretation of RELEASE_PLAN_v1.md "complete migration by v0.11.2" for list-path APIs.
 
 - **Governance status artifact (v0.11.2 Task 4):** Added `scripts/quality/build_governance_status_artifact.py` — a CI-derived artifact producer that aggregates four quality report `ok` fields into a single `reports/governance/governance_status.json` payload. Added `docs/improvement/schemas/governance_status_schema_v1.json` (ADR-028 aligned, `additionalProperties: false`). Wired into `local_checks.py` (PR and main steps). Added 15-test suite `tests/scripts/test_build_governance_status_artifact.py`. CI wiring guide documented in `docs/improvement/governance_status_artifact.md`.
 
@@ -271,11 +336,11 @@
 
 - **STD-001 task-8 closure hardening:** Added `scripts/quality/check_std001_nomenclature.py` plus `tests/scripts/test_check_std001_nomenclature.py`, generated `reports/nomenclature_violation_inventory.json`, and wired the check into both local stacked checks and PR CI lint gating. The checker now blocks non-legacy double-underscore regressions (including mangled private-symbol patterns), inventories approved compatibility/transitional bridges, records explicit shim-surface decisions for `serialization.py` and `viz/builders.py`, and enforces thin delegator shape for retained shim surfaces. Added targeted parity/bridge tests in `tests/unit/test_std001_task8_closure.py`.
 - **ADR-034 closure (v0.11.1 Tasks 15 & 20):** Completed ConfigManager Phase A authority and `governance.config` lifecycle-event schema. Fixed snapshot semantics by injecting fresh ConfigManager instances in cache, parallel, and feature-filter tests; added pytest probe exemption and extended schema validation gates. All 10 affected tests stabilized with full ADR-034 audit compliance.
-- **ADR-035 proposed:** Added `docs/improvement/adrs/ADR-035-ci-workflow-governance.md` to codify CI workflow governance and merge-blocking policy, with explicit advisory rollout and exception handling.
-- **ADR-011 reject wrapper deprecations aligned:** Deprecated `initialize_reject_learner` and `predict_reject` from both `CalibratedExplainer` and `WrapCalibratedExplainer`, and routed all four through the central `deprecate()` helper, and documented removal ETA (`v0.13.0/v1.0.0`) in `docs/migration/deprecations.md` and `docs/improvement/RELEASE_PLAN_v1.md`.
+- **ADR-035 proposed:** Added `development/adrs/ADR-035-ci-workflow-governance.md` to codify CI workflow governance and merge-blocking policy, with explicit advisory rollout and exception handling.
+- **ADR-011 reject wrapper deprecations aligned:** Deprecated `initialize_reject_learner` and `predict_reject` from both `CalibratedExplainer` and `WrapCalibratedExplainer`, and routed all four through the central `deprecate()` helper, and documented removal ETA (`v0.13.0/v1.0.0`) in `docs/migration/deprecations.md` and `development/current-work/RELEASE_PLAN_v1.md`.
 - **CI policy validator introduced:** Added `.github/workflows/ci-policy.yml`, local composite action `.github/actions/ci-policy/action.yml`, and `scripts/quality/validate_ci_policy.py` with targeted tests to enforce reusable workflows, constraints usage, permission posture, and CI PR metadata.
 - **CI governance scaffolding:** Added `.github/CODEOWNERS` CI ownership entries and CI-specific PR template `.github/PULL_REQUEST_TEMPLATE/ci_workflow_template.md`; wired local reproduction hooks via `scripts/local_checks.py` and `Makefile` target `check-ci-policy`.
-- **ADR-020 promoted to Accepted:** `ADR-020-legacy-user-api-stability.md` status promoted from Draft to Accepted. `docs/improvement/legacy_user_api_contract.md` updated with a `## Removed in v0.11.0` section listing all symbols removed in v0.11.0 (`explain_counterfactual`, `get_explanation`, `register_plot_plugin`, `perf` facade, `alpha`/`alphas`/`n_jobs` aliases, top-level `viz`/`plotting` exports) with replacement guidance.
+- **ADR-020 promoted to Accepted:** `ADR-020-legacy-user-api-stability.md` status promoted from Draft to Accepted. `development/current-work/legacy_user_api_contract.md` updated with a `## Removed in v0.11.0` section listing all symbols removed in v0.11.0 (`explain_counterfactual`, `get_explanation`, `register_plot_plugin`, `perf` facade, `alpha`/`alphas`/`n_jobs` aliases, top-level `viz`/`plotting` exports) with replacement guidance.
 - **ADR-028 promoted to Accepted:** `ADR-028-logging-and-governance-observability.md` status promoted from Draft to Accepted. Remaining open gaps (enforcement tooling, Standard-005 observability example alignment) are assigned to v0.11.1 Task 7.
 - **Standard-005 added to release plan:** `RELEASE_PLAN_v1.md` roadmap summary and Standards appendix updated to include Standard-005 (Logging and Observability Standard). Two open gap entries targeting v0.11.1 Task 7 recorded.
 - **ADR-029–034 appendix entries added:** `RELEASE_PLAN_v1.md` ADR status appendix extended with entries for ADR-029 (Reject Integration Strategy), ADR-030 (Test Quality Priorities), ADR-031 (Calibrator Serialization — no gaps), ADR-032 (Guarded Explanation Semantics), ADR-033 (Modality Extension Plugin Contract), and ADR-034 (Centralized Configuration Management) with unified severity gap tables.
@@ -331,7 +396,7 @@
 - **Narrative quality improvements:** Ensured narratives support conjunctions, updated narrative formatting with possibility to align rules for easier oversight, adjusted default content in explain_template.yaml.
 - **Test quality cleanup:** Removed a duplicate conjunction parity test and normalized test helper naming to avoid private helper anti-patterns.
  - **ADR-001 import-graph linting:** Resolved false-positive import-graph violations by refining the ADR-001 checker to correctly resolve package paths and broaden sanctioned allowlists. Re-generated `reports/import_graph.json` and ensured `scripts/quality/check_import_graph.py --report` reports no violations.
-- **CI workflow improvement:** Remodelled the entire CI workflow into a more streamlined setup. The update is documented `docs/improvement/CI-upgrade.md`.
+- **CI workflow improvement:** Remodelled the entire CI workflow into a more streamlined setup. The update is documented `development/current-work/CI-upgrade.md`.
 - **Parity reference updates:** Updated the parity references with larger datasets and conjunctives.
 
 ## [v0.10.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.3) - 2026-02-04
@@ -458,7 +523,7 @@
 ### Changed
 
 - **Public API Enforcement & Regression Fixes:** Refactored 28 test files to eliminate private member usage, replacing internal helpers with public APIs like `predict_calibrated`. Resolved 35 integration regressions, including `crepes` 0.9.0 compatibility, numerical stability in golden tests (relaxed tolerance to 1e-8), and suppression of `scipy.optimize` and `pyparsing` deprecation warnings. Expanded the private member allow-list to cover legitimate internal unit tests and false positives from module imports and patches.
-- **Anti-Pattern Remediation & Plugin Stabilization:** Completed comprehensive remediation of internal logic testing (Pattern 1) and dead code (Pattern 3), alongside stabilization of the plugin architecture. Refactored private member accesses to public APIs, established a versioned allow-list for acceptable test internals, and removed dead code. Implemented CI enforcement for anti-pattern violations using the allow-list to prevent future regressions. Detailed API changes are documented in [docs/improvement/remediation_api_changes.md](docs/improvement/remediation_api_changes.md).
+- **Anti-Pattern Remediation & Plugin Stabilization:** Completed comprehensive remediation of internal logic testing (Pattern 1) and dead code (Pattern 3), alongside stabilization of the plugin architecture. Refactored private member accesses to public APIs, established a versioned allow-list for acceptable test internals, and removed dead code. Implemented CI enforcement for anti-pattern violations using the allow-list to prevent future regressions. Detailed API changes are documented in [development/finished-work/remediation_api_changes.md](development/finished-work/remediation_api_changes.md).
 
 ### Fixed
 
@@ -653,7 +718,7 @@
   reference calibrated prediction with uncertainty interval, feature weights in factual
   rules have calibrated intervals, and all `[low, high]` pairs must satisfy the inclusive
   bounds invariant. This audit ensures consistency across all explanation generation paths
-  and provides explicit guidance for plugin developers.【F:docs/improvement/adrs/ADR-008-explanation-domain-model-and-compat.md†L45-L75】【F:docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md†L80-L110】【F:docs/improvement/adrs/ADR-015-explanation-plugin.md†L151-L210】【F:docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md†L120-L150】【F:docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md†L84-L165】
+  and provides explicit guidance for plugin developers.【F:development/adrs/ADR-008-explanation-domain-model-and-compat.md†L45-L75】【F:development/adrs/ADR-013-interval-calibrator-plugin-strategy.md†L80-L110】【F:development/adrs/ADR-015-explanation-plugin.md†L151-L210】【F:development/adrs/ADR-021-calibrated-interval-semantics.md†L120-L150】【F:development/adrs/ADR-026-explanation-plugin-semantics.md†L84-L165】
 
 - **Plugin-based explain architecture.** All explain logic (sequential,
   feature-parallel, instance-parallel) now lives in dedicated plugins under
@@ -676,7 +741,7 @@
 ### Release plan alignment
 
 - **Explanation schema v1 and ADR-005/008 compliance:** Updated explanation JSON schema v1 to include
-  `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:docs/improvement/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:docs/improvement/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
+  `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:development/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:development/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
 - **Explain executor decomposition (ADR-004 compliance):** Moved all explain execution
   strategies into a plugin system (`src/calibrated_explanations/core/explain/`)
   with three implementations: `SequentialExplainExecutor` (single-threaded fallback),

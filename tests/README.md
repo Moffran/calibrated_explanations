@@ -8,7 +8,7 @@
 > **Test cleanup and quality assurance** (coverage-gap closure, redundant-test
 > removal, anti-pattern auditing, dead-code detection): use the
 > `test-quality-improvement` agent team defined in
-> `docs/improvement/test-quality-method/`. See the **Test-Quality Improvement
+> `development/standards/test-quality-method/`. See the **Test-Quality Improvement
 > Method** section at the end of this file for an overview and quick-start.
 
 # Centralized Test Guidance
@@ -908,7 +908,7 @@ python scripts/quality/check_coverage_gates.py
 ```
 
 Outputs land in `reports/over_testing/`. Then engage the appropriate agent
-from `docs/improvement/test-quality-method/`.
+from `development/standards/test-quality-method/`.
 
 ### Three usage modes
 
@@ -916,4 +916,4 @@ from `docs/improvement/test-quality-method/`.
 - **Option B – Code-Focused**: code-quality gates → refactor + dead-code cleanup
 - **Option C – Full Cycle**: both A and B (recommended for large changes)
 
-Full method documentation: `docs/improvement/test-quality-method/README.md`.
+Full method documentation: `development/standards/test-quality-method/README.md`.

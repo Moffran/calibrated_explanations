@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
@@ -25,6 +27,7 @@ class ExplanationPluginStub:
         "capabilities": ("explain", "task:classification"),
         "modes": ("factual",),
         "tasks": ("classification",),
+        "data_modalities": ("tabular",),
         "trust": {"trusted": False},
         "dependencies": (),
     }
@@ -44,6 +47,7 @@ class IntervalPluginStub:
         "provider": "tests",
         "capabilities": ("interval",),
         "modes": ("classification",),
+        "data_modalities": ("tabular",),
         "dependencies": (),
         "fast_compatible": True,
         "requires_bins": False,
@@ -206,6 +210,55 @@ def test_should_sync_descriptor_trust_state_when_using_keyed_trust_api(caplog) -
     assert descriptor_after is not None
     assert descriptor_after.trusted is False
     assert any(getattr(record, "event_name", None) == "trust.mutation" for record in caplog.records)
+
+
+def test_should_not_elevate_trust_when_checksum_field_is_present(caplog) -> None:
+    """Plugin-supplied checksum metadata verifies integrity, not trust."""
+
+    class ChecksummedExplanationPlugin:
+        def __init__(self) -> None:
+            checksum = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+            self.plugin_meta = {
+                "schema_version": 1,
+                "name": "tests.trust.atomic.checksum",
+                "version": "0.1",
+                "provider": "tests",
+                "capabilities": ("explain", "task:classification"),
+                "modes": ("factual",),
+                "tasks": ("classification",),
+                "data_modalities": ("tabular",),
+                "trust": {"trusted": False},
+                "checksum": {"sha256": checksum},
+                "dependencies": (),
+            }
+
+        def supports(self, _model):
+            return True
+
+        def explain(self, *_args, **_kwargs):
+            return {}
+
+    plugin = ChecksummedExplanationPlugin()
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.registry"):
+        descriptor = registry.register_explanation_plugin(
+            "tests.trust.atomic.checksum",
+            plugin,
+            source="manual",
+        )
+
+    assert descriptor.trusted is False
+    assert descriptor.metadata["trusted"] is False
+    assert descriptor.metadata["trust"]["trusted"] is False
+    assert descriptor.metadata["checksum_verified"] is True
+    assert plugin.plugin_meta["checksum_verified"] is True
+    assert registry.find_explanation_plugin_trusted("tests.trust.atomic.checksum") is None
+    assert any(
+        getattr(record, "event_name", None) == "trust.mutation"
+        and getattr(record, "identifier", None) == "tests.trust.atomic.checksum"
+        and getattr(record, "trusted", None) is False
+        for record in caplog.records
+    )
 
 
 def test_should_machine_check_invariants_for_all_plugin_kinds() -> None:

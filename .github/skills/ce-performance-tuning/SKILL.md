@@ -23,8 +23,8 @@ You are optimizing calibrated-explanations performance for a user's workload.
 
 ## Required references
 
-- `docs/improvement/adrs/ADR-003-caching-key-and-eviction.md`
-- `docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md`
+- `development/adrs/ADR-003-caching-key-and-eviction.md`
+- `development/adrs/ADR-004-parallel-backend-abstraction.md`
 - `src/calibrated_explanations/cache/` (caching implementation)
 - `src/calibrated_explanations/perf/` (performance utilities)
 - `src/calibrated_explanations/parallel/` (parallel execution)

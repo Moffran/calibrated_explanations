@@ -1,0 +1,47 @@
+claim_id: CE-CAP-NARR-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations generates human-readable natural language narratives for
+  factual and alternative explanations via CalibratedExplanations.to_narrative(),
+  returning non-None output (string, DataFrame, HTML, or dict) suitable for consumption
+  by downstream text pipelines.
+
+public_api:
+  - calibrated_explanations.explanations.explanations.CalibratedExplanations.to_narrative
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-NARR-API-001
+
+verification:
+  proves:
+    - api_contract
+    - output_non_none
+  verification_type: automated
+
+assumptions:
+  - The explainer must be fitted and calibrated, and explain_factual or
+    explore_alternatives must have been called to produce explanations.
+  - Narrative quality (fluency, domain correctness, regulatory suitability) is NOT
+    verified by this claim. This claim asserts only that to_narrative() returns a
+    non-None result.
+  - Template-based narratives depend on Jinja2 being available in the runtime environment.
+    If Jinja2 is absent, to_narrative() falls back to a default template or raises ImportError.
+  - The output format is determined by the output_format parameter ('dataframe', 'text',
+    'html', 'dict', 'markdown'). Default is 'dataframe' which requires pandas.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

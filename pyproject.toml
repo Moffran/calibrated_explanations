@@ -133,6 +133,7 @@ filterwarnings = [
     "ignore:_coerce_string_tuple is deprecated.*:DeprecationWarning",
     "ignore:_assign_weight_scalar is deprecated.*:DeprecationWarning",
     "ignore:_feature_task is deprecated.*:DeprecationWarning",
+    "ignore:_legacy_payload is deprecated.*:DeprecationWarning",
     "ignore:The py23 module has been deprecated:DeprecationWarning:fontTools.misc.py23",
 ]
 

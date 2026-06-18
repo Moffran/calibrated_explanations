@@ -4,7 +4,7 @@ Scaffold a new CE plugin following the ADR-first, TDD workflow.
 
 ## Before you start
 
-Read the relevant ADRs in `docs/improvement/adrs/`:
+Read the relevant ADRs in `development/adrs/`:
 - **ADR-006** – Plugin trust model and registry rules.
 - **ADR-013** – Interval calibrator plugin strategy (if calibrator plugin).
 - **ADR-014** – Visualization plugin architecture (if plot plugin).

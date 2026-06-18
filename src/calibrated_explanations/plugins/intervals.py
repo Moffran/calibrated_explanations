@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping, MutableMapping, Protocol, Sequence, runtime_checkable
 
+import numpy as np
+
+from ..utils.exceptions import ValidationError
 from .base import freeze_plugin_config, thaw_plugin_config
 
 
@@ -123,9 +126,93 @@ class IntervalCalibratorPlugin(Protocol):
         """Return a calibrator instance for the requested execution path."""
 
 
+def validate_interval_calibrator_output(
+    result: Any,
+    context: IntervalCalibratorContext,
+    *,
+    identifier: str | None = None,
+    output_interval: bool = False,
+) -> None:
+    """Validate ADR-013 interval calibrator output shape, dtype, and bounds."""
+    label = identifier or "<unknown>"
+    expected_rows = _expected_calibration_rows(context)
+    if not output_interval and isinstance(result, (list, tuple)) and len(result) == 2:
+        result = result[0]
+    array = np.asanyarray(result)
+
+    if not np.issubdtype(array.dtype, np.floating):
+        raise ValidationError(
+            f"Interval calibrator '{label}' returned non-floating output dtype",
+            details={"identifier": label, "dtype": str(array.dtype)},
+        )
+    if expected_rows is not None and array.shape[:1] != (expected_rows,):
+        raise ValidationError(
+            f"Interval calibrator '{label}' returned output with unexpected row count",
+            details={
+                "identifier": label,
+                "expected_rows": expected_rows,
+                "actual_shape": tuple(array.shape),
+            },
+        )
+
+    if output_interval:
+        if array.ndim != 3 or array.shape[-1] != 3:
+            raise ValidationError(
+                f"Interval calibrator '{label}' interval output must have shape (n, classes, 3)",
+                details={"identifier": label, "actual_shape": tuple(array.shape)},
+            )
+        predict = array[..., 0]
+        low = array[..., 1]
+        high = array[..., 2]
+        if not np.all(low <= high):
+            raise ValidationError(
+                f"Interval calibrator '{label}' interval output violates low <= high",
+                details={"identifier": label},
+            )
+        epsilon = 1e-9
+        if not np.all((low - epsilon <= predict) & (predict <= high + epsilon)):
+            raise ValidationError(
+                f"Interval calibrator '{label}' interval output violates low <= predict <= high",
+                details={"identifier": label},
+            )
+        return
+
+    if array.ndim != 2:
+        raise ValidationError(
+            f"Interval calibrator '{label}' probability output must have shape (n, classes)",
+            details={"identifier": label, "actual_shape": tuple(array.shape)},
+        )
+    if not np.all((array >= -1e-9) & (array <= 1.0 + 1e-9)):
+        raise ValidationError(
+            f"Interval calibrator '{label}' probability output is outside [0, 1]",
+            details={"identifier": label},
+        )
+    row_sums = array.sum(axis=1)
+    if not np.allclose(row_sums, 1.0, atol=1e-6):
+        raise ValidationError(
+            f"Interval calibrator '{label}' probability output rows must sum to 1",
+            details={"identifier": label, "row_sums": row_sums.tolist()},
+        )
+
+
+def _expected_calibration_rows(context: IntervalCalibratorContext) -> int | None:
+    """Return the expected calibration sample count for validation."""
+    if not context.calibration_splits:
+        return None
+    try:
+        features = context.calibration_splits[0][0]
+    except (IndexError, TypeError):
+        return None
+    try:
+        return int(len(features))
+    except TypeError:
+        return None
+
+
 __all__ = [
     "ClassificationIntervalCalibrator",
     "IntervalCalibratorContext",
     "IntervalCalibratorPlugin",
     "RegressionIntervalCalibrator",
+    "validate_interval_calibrator_output",
 ]

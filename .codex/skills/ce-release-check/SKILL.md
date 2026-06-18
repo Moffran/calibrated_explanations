@@ -24,7 +24,7 @@ This skill implements the "proceed according to plan" workflow defined in
 `execution-plan.instructions.md`.
 
 **Mandatory sequence:**
-1. Read `docs/improvement/RELEASE_PLAN_v1.md`.
+1. Read `development/current-work/RELEASE_PLAN_v1.md`.
 2. Identify the current released version and the target next milestone.
 3. List outstanding gates and work items for that milestone.
 4. Verify that the proposed next step is allowed by all relevant ADRs.
@@ -35,8 +35,8 @@ This skill implements the "proceed according to plan" workflow defined in
 ## Files to read
 
 ```
-docs/improvement/RELEASE_PLAN_v1.md   ← primary source: current version, milestones, gates
-docs/improvement/adrs/                ← governance constraints (ADR takes precedence)
+development/current-work/RELEASE_PLAN_v1.md   ← primary source: current version, milestones, gates
+development/adrs/                ← governance constraints (ADR takes precedence)
 CHANGELOG.md                          ← completed items; do not duplicate
 ```
 

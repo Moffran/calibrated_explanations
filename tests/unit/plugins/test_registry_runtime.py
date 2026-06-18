@@ -52,6 +52,7 @@ def make_metadata(name: str, trusted: bool) -> dict[str, object]:
         "capabilities": capabilities,
         "modes": ("factual",),
         "tasks": ("regression",),
+        "data_modalities": ("tabular",),
         "trust": {"trusted": trusted},
         "dependencies": (),
     }
@@ -135,6 +136,7 @@ def test_should_synchronise_all_descriptor_kinds_when_legacy_trust_changes():
                 "capabilities": ("explain", "task:classification"),
                 "modes": ("factual",),
                 "tasks": ("classification",),
+                "data_modalities": ("tabular",),
                 "trust": {"trusted": False},
                 "dependencies": (),
             }
@@ -160,6 +162,7 @@ def test_should_synchronise_all_descriptor_kinds_when_legacy_trust_changes():
             "provider": "tests",
             "capabilities": ("interval",),
             "modes": ("classification",),
+            "data_modalities": ("tabular",),
             "fast_compatible": True,
             "requires_bins": False,
             "confidence_source": "posterior",
@@ -292,6 +295,7 @@ def test_should_untrust_legacy_plugin_when_metadata_is_setitem_mapping():
                     "capabilities": ("explain", "task:classification"),
                     "modes": ("factual",),
                     "tasks": ("classification",),
+                    "data_modalities": ("tabular",),
                     "trust": {"trusted": True},
                     "dependencies": (),
                 }
@@ -313,3 +317,69 @@ def test_should_untrust_legacy_plugin_when_metadata_is_setitem_mapping():
     registry.untrust_plugin(plugin)
 
     assert plugin.plugin_meta["trusted"] is False
+
+
+def test_plot_style_descriptor_getstate_returns_dict():
+    descriptor = registry.PlotStyleDescriptor(
+        identifier="tests.registry.runtime.style.pickle",
+        metadata={"style": "tests", "builder_id": "b", "renderer_id": "r"},
+    )
+    state = descriptor.__getstate__()
+    assert isinstance(state, dict)
+    assert state["identifier"] == "tests.registry.runtime.style.pickle"
+
+
+def test_reset_plugin_catalog_raises_on_unknown_kind():
+    with pytest.raises(ValidationError, match="Unsupported plugin catalog kind"):
+        registry.reset_plugin_catalog(kind="unknown")  # type: ignore[arg-type]
+
+
+def test_find_explanation_plugin_for_raises_when_guarded_plugin_lacks_capability():
+    class NonGuardedPlugin:
+        plugin_meta = {
+            "schema_version": 1,
+            "name": "tests.registry.runtime.nonguarded",
+            "version": "0.1",
+            "provider": "tests",
+            "capabilities": ("explain",),
+            "modes": ("factual",),
+            "tasks": ("classification",),
+            "data_modalities": ("tabular",),
+            "trust": {"trusted": True},
+            "dependencies": (),
+        }
+
+        def supports(self, _model):
+            return True
+
+        def explain(self, *_args, **_kwargs):
+            return {}
+
+        def calibrate(self, *_args, **_kwargs):
+            return {}
+
+    plugin = NonGuardedPlugin()
+    registry.register_explanation_plugin("tests.registry.runtime.nonguarded", plugin)
+    registry.mark_explanation_trusted("tests.registry.runtime.nonguarded")
+
+    with pytest.raises(ValidationError, match="does not support guarded execution"):
+        registry.find_explanation_plugin_for(
+            "tabular",
+            mode="factual",
+            task="classification",
+            model=object(),
+            identifier="tests.registry.runtime.nonguarded",
+            guarded=True,
+        )
+
+
+def test_find_explanation_plugin_for_raises_when_plugin_not_found_for_identifier():
+    with pytest.raises(ValidationError, match="is unavailable"):
+        registry.find_explanation_plugin_for(
+            "tabular",
+            mode="factual",
+            task="classification",
+            model=object(),
+            identifier="tests.registry.runtime.nonexistent.trusted",
+            trusted_only=True,
+        )

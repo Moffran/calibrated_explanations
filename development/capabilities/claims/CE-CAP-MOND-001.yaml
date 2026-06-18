@@ -1,0 +1,46 @@
+claim_id: CE-CAP-MOND-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations supports Mondrian (class-conditional) calibration: passing
+  a MondrianCategorizer callable to WrapCalibratedExplainer.calibrate produces separate
+  internal calibrators per category, enabling conditional validity guarantees within
+  each Mondrian group.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.calibrate
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+
+requirements:
+  - CE-REQ-MOND-API-001
+
+verification:
+  proves:
+    - api_contract
+    - calibration_completes
+  verification_type: automated
+
+assumptions:
+  - Mondrian conformal prediction provides conditional validity guarantees: coverage
+    holds within each Mondrian category, not globally. Each category must contain
+    sufficient calibration samples; small per-category sets degrade coverage.
+  - The mc parameter must be a callable returning category keys for each calibration
+    instance, or an instance of MondrianCategorizer (from crepes.extras).
+  - This claim does not assert optimal category selection; it asserts that calibrating
+    with a Mondrian categorizer completes without exception and produces a calibrated
+    explainer.
+  - Coverage guarantee per category requires exchangeability within each category;
+    cross-category inference is not covered by conditional validity guarantees.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

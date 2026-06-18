@@ -34,7 +34,7 @@ try:
 except ImportError:  # pragma: no cover - optional; validation degrades gracefully
     jsonschema = None
 
-_SCHEMA_PATH = Path("docs/improvement/schemas/governance_status_schema_v1.json")
+_SCHEMA_PATH = Path("development/schemas/governance_status_schema_v1.json")
 _DEFAULT_OUTPUT = Path("reports/governance/governance_status.json")
 
 # Mapping from schema_checks key to the quality report file that provides the status.

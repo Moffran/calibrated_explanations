@@ -83,10 +83,10 @@ Do not merge these into one guarantee statement.
 
 ## Related standards and ADRs
 
-- {doc}`../../standards/STD-004-documentation-audience-standard`
-- {doc}`../../standards/STD-002-code-documentation-standard`
-- `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-012-documentation-and-gallery-build-policy.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
+- `development/standards/STD-004-documentation-audience-standard.md` (maintainer-only docs set)
+- `development/standards/STD-002-code-documentation-standard.md` (maintainer-only docs set)
+- `development/adrs/ADR-021-calibrated-interval-semantics.md` (maintainer-only docs set)
+- `development/adrs/ADR-012-documentation-and-gallery-build-policy.md` (maintainer-only docs set)
+- `development/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 
 Entry-point tier: Tier 3.

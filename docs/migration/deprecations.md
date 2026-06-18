@@ -175,11 +175,11 @@ trusted_plugins = (trusted_plugin,)
 
 - Deprecation messages are emitted once-per-session by default and can be elevated to errors by setting `CE_DEPRECATIONS=error` in CI.
 - Default policy: a deprecation introduced in `vX.Y.Z` remains for at least two minor releases before removal.
-- Finalization override: for the v1.0.0 cleanup window, all active deprecations must be removed by v0.11.3. No deprecation remains active in v1.0.0.
+- Finalization override: for the v1.0.0 cleanup window, all active deprecations must be removed before v1.0.0. No deprecation remains active in v1.0.0.
 
 ## Status table
 
-**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** by the end of v0.11.3.
+**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** before v1.0.0.
 
 ### Task 21 inventory (v0.11.1): core-surface LIME/SHAP deprecations
 
@@ -202,7 +202,11 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | `calibrated_explanations.core.reject` module import path | `from calibrated_explanations.core.reject.policy import RejectPolicy, is_policy_enabled` | v0.11.x | v1.0.0 | Module shim; functionality moved to `core.reject.policy`. |
 | `calibrated_explanations.core.explain.explain(...)` function | `CalibratedExplainer.explain_factual(...)` | v0.11.x | v1.0.0 | Legacy explain function shim. |
 | `ExplainerHandle.learner` property | `handle.predict()` | v0.11.3 | v1.0.0 | Returns raw underlying model; bypasses all `PredictBridge` invariants (shape checks, calibration state, trust-model enforcement). Plugin predictions must go through `handle.predict()`. ADR-015 gap 2. |
-| `ParallelConfig(strategy='auto')` with `enabled=True` | Pass an explicit strategy: `'sequential'`, `'threads'`, `'processes'`, or `'joblib'` | v0.11.3 | v1.0.0 | Silent heuristic backend selection violates ADR-004 §Decision ("callers must explicitly pass an executor"). `enabled=False` (the default) is unaffected. ADR-004. |
+| `ParallelConfig(strategy='auto')` with `enabled=True` | Pass an explicit strategy: `'sequential'`, `'threads'`, `'processes'`, or `'joblib'` | v0.11.4 | v1.0.0 | Silent heuristic backend selection violates ADR-004 §Decision ("callers must explicitly pass an executor"). `enabled=False` (the default) is unaffected. ADR-004. |
+| `CalibratedExplanations.legacy_payload(exp)` | `to_json()` for serialization; `_exp_to_domain(exp)` for domain model construction | v0.11.4 | v1.0.0 | Category A remediation wrapper around the internal `_legacy_payload` helper. The serialization chain now goes through `_exp_to_domain` directly (ADR-008 Gap 1); `legacy_payload` has no remaining call sites in the production path. |
+| `VennAbers` schema_version 1 pickle primitive | Re-save state with `WrapCalibratedExplainer.save_state()` | v0.11.4 | v1.0.0 | ADR-031 JSON-safe primitive migration; schema v2 uses field-level JSON data. |
+| `IntervalRegressor` schema_version 1 pickle primitive | Re-save state with `WrapCalibratedExplainer.save_state()` | v0.11.4 | v1.0.0 | ADR-031 JSON-safe primitive migration; schema v2 uses field-level JSON data. |
+| `plugin_meta['plot_kinds']` category vocabulary (`instance`, `collection`, `global`) | Semantic plot kind names (`factual_probabilistic`, `factual_regression`, `alternative_probabilistic`, `alternative_regression`, `global_probabilistic`, `global_regression`) | v0.11.4 | v1.0.0 | ADR-037 semantic metadata vocabulary. `triangular` remains an internal PlotSpec routing kind, not plugin metadata. |
 
 ### Removed deprecations (history)
 
@@ -259,7 +263,7 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `CalibratedExplainer.explore_guarded_alternatives(...)` | `explainer.explore_alternatives(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same. |
 | `WrapCalibratedExplainer.explain_guarded_factual(...)` | `wrapper.explain_factual(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same — wrapper delegates to `explain_factual(guarded_options=...)`. |
 | `WrapCalibratedExplainer.explore_guarded_alternatives(...)` | `wrapper.explore_alternatives(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same. |
-| Entry-point plugin missing `data_modalities` key | Declare `data_modalities` explicitly in plugin metadata | v0.11.x | v0.11.3 | Enforcement closed: missing key now emits `UserWarning` and skips the plugin (fail-closed). `DeprecationWarning`+default fallback path removed from `plugins/registry.py`. ADR-033-governed. |
+| Entry-point plugin missing `data_modalities` key | Declare `data_modalities` explicitly in plugin metadata | v0.11.x | v0.11.4 | Enforcement closed: missing key now raises `ValidationError` during plugin metadata validation. Entry-point discovery still warns and skips invalid metadata fail-closed; the old missing-key default path is removed. See the ADR-033 deviation record for the skipped `DeprecationWarning` phase. |
 
 ## Breaking changes
 
@@ -311,7 +315,7 @@ A warning is issued when `condition_source` is not provided, guiding users to th
 ## For maintainers
 
 - When introducing a deprecation, use `deprecate(message, key="unique:key", stacklevel=3)` and prefer a stable `key` value.
-- Add a line to this document and update the release plan (`docs/improvement/RELEASE_PLAN_v1.md`) under ADR-011 when new items are introduced.
+- Add a line to this document and update the release plan (`development/current-work/RELEASE_PLAN_v1.md`) under ADR-011 when new items are introduced.
 - In the v0.11.x finalization window, each new/remaining deprecation entry must include explicit removal ownership in v0.11.2 or v0.11.3.
 - Add a unit test in `tests/unit/` validating the desired behaviour of `deprecate()` if you change its semantics.
 

@@ -19,6 +19,7 @@ class ExamplePlugin:
         "name": "tests.example_plugin",
         "version": "1.0-test",
         "provider": "tests",
+        "data_modalities": ("tabular",),
         "trusted": False,
         "trust": False,
     }

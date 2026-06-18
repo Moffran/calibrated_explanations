@@ -1,6 +1,6 @@
 # ADR-030: Test Quality Priorities — Reference Extract
 
-> **Source:** `docs/improvement/adrs/ADR-030-test-quality-priorities-and-enforcement.md`
+> **Source:** `development/adrs/ADR-030-test-quality-priorities-and-enforcement.md`
 > Loaded by `ce-test-audit` and `ce-code-review` skills.
 
 ---

@@ -28,7 +28,7 @@ Source of truth (v0.11.3+):
 - `_plot_global` always calls `plt.show()` unless `show=False` is provided.
 
 ## Fallback & visibility policy
-- Legacy plot code follows the repo-wide fallback visibility policy: any runtime fallback or simplification MUST emit an `INFO` log and a `warnings.warn(..., UserWarning)` (see `.github/copilot-instructions.md` and `docs/improvement/RELEASE_PLAN_v1.md`). Tests that rely on fallbacks should assert the warning via `pytest.warns(UserWarning)`.
+- Legacy plot code follows the repo-wide fallback visibility policy: any runtime fallback or simplification MUST emit an `INFO` log and a `warnings.warn(..., UserWarning)` (see `.github/copilot-instructions.md` and `development/current-work/RELEASE_PLAN_v1.md`). Tests that rely on fallbacks should assert the warning via `pytest.warns(UserWarning)`.
 
 ## Testing guidance
 - Existing legacy plotting regression tests live in `tests/legacy/test_plotting.py` (migrated to use `viz._matplotlib_compat`). Prefer extending these for fixes to preserve image parity.

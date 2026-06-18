@@ -4,7 +4,7 @@ Module for testing the WrapCalibratedExplainer class for regression tasks.
 
 IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
 protected integration tests relied on by release gating and regression
-protection tooling. See docs/improvement/test-quality-method/README.md.
+protection tooling. See development/standards/test-quality-method/README.md.
 
 This module contains test functions that verify the functionality of the WrapCalibratedExplainer class
 using a RandomForestRegressor. The tests cover various aspects including fitting, calibration, prediction,
@@ -477,7 +477,7 @@ def test_should_roundtrip_state_with_native_regression_primitive_when_saved(
 
     primitive = json.loads((state_dir / "calibrator_primitive.json").read_text(encoding="utf-8"))
     assert primitive["calibrator_type"] == "interval_regressor"
-    assert primitive["schema_version"] == 1
+    assert primitive["schema_version"] == 2
 
     restored = WrapCalibratedExplainer.load_state(state_dir)
     reloaded = restored.predict_proba(x_test[:14], threshold=threshold, uq_interval=True)
@@ -503,7 +503,7 @@ def test_should_roundtrip_state_with_pickle_fallback_when_fast_interval_calibrat
 
     primitive = json.loads((state_dir / "calibrator_primitive.json").read_text(encoding="utf-8"))
     assert primitive["calibrator_type"] == "python_pickle"
-    assert primitive["schema_version"] == 1
+    assert primitive["schema_version"] == 2
     assert "payload" in primitive and "pickle_b64" in primitive["payload"]
 
     restored = WrapCalibratedExplainer.load_state(state_dir)

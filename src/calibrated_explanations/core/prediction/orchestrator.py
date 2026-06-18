@@ -16,6 +16,7 @@ PluginManager. This orchestrator delegates all chain-building to PluginManager.
 from __future__ import annotations
 
 import contextlib
+import inspect
 import logging
 import sys
 import warnings
@@ -31,6 +32,7 @@ from ...plugins import (
     ClassificationIntervalCalibrator,
     IntervalCalibratorContext,
     RegressionIntervalCalibrator,
+    validate_interval_calibrator_output,
 )
 from ...utils import assert_threshold
 from ...utils.exceptions import (
@@ -125,6 +127,43 @@ class PredictionOrchestrator:
         interval calibrator plugin resolution chains for default and fast modes.
         """
         self.explainer.plugin_manager.initialize_chains()
+
+    def restore_calibrator_with_learner(
+        self,
+        calibrator: Any,
+        learner: Any,
+        *,
+        difficulty_estimator: Any = None,
+    ) -> None:
+        """Attach a restored calibrator to the explainer prediction context."""
+        if isinstance(calibrator, list):
+            for item in calibrator:
+                self.restore_calibrator_with_learner(
+                    item,
+                    learner,
+                    difficulty_estimator=difficulty_estimator,
+                )
+            self.explainer.interval_learner = calibrator
+            return
+        if isinstance(calibrator, tuple):
+            restored_items = []
+            for item in calibrator:
+                self.restore_calibrator_with_learner(
+                    item,
+                    learner,
+                    difficulty_estimator=difficulty_estimator,
+                )
+                restored_items.append(item)
+            self.explainer.interval_learner = tuple(restored_items)
+            return
+        reattach = getattr(calibrator, "reattach_learner", None)
+        if callable(reattach):
+            reattach(
+                learner,
+                calibrated_explainer=self.explainer,
+                difficulty_estimator=difficulty_estimator,
+            )
+        self.explainer.interval_learner = calibrator
 
     def predict(
         self,
@@ -951,10 +990,20 @@ class PredictionOrchestrator:
                             f"Interval calibrator at index {idx} in '{label}' is non-compliant for {mode} mode "
                             f"(expected {expected_name}, got {actual})."
                         )
+                    self._validate_interval_output_sample(
+                        calibrator=item,
+                        context=context,
+                        identifier=f"{identifier or '<unknown>'}[{idx}]",
+                    )
                 return
 
             # Also accept protocol-compliant single objects
             if isinstance(calibrator, expected):
+                self._validate_interval_output_sample(
+                    calibrator=calibrator,
+                    context=context,
+                    identifier=identifier,
+                )
                 return
 
             # Otherwise it's invalid
@@ -979,3 +1028,45 @@ class PredictionOrchestrator:
                     f"Interval plugin '{label}' returned a non-compliant calibrator for {mode} mode "
                     f"(expected {expected_name}, got {actual})."
                 )
+            self._validate_interval_output_sample(
+                calibrator=calibrator,
+                context=context,
+                identifier=identifier,
+            )
+
+    def _validate_interval_output_sample(
+        self,
+        *,
+        calibrator: Any,
+        context: IntervalCalibratorContext,
+        identifier: str | None,
+    ) -> None:
+        """Validate a cheap probability sample for VennAbers-style calibrators."""
+        predict_proba = getattr(calibrator, "predict_proba", None)
+        if predict_proba is None:
+            return
+        try:
+            params = inspect.signature(predict_proba).parameters
+        except (TypeError, ValueError):
+            return
+        if "output_interval" not in params:
+            return
+        if not context.calibration_splits:
+            return
+        try:
+            validation_x = context.calibration_splits[0][0]
+        except (IndexError, TypeError):
+            return
+
+        kwargs: dict[str, Any] = {"output_interval": False}
+        if "bins" in params:
+            bins = context.bins.get("calibration")
+            if bins is not None:
+                kwargs["bins"] = bins
+        result = predict_proba(validation_x, **kwargs)
+        validate_interval_calibrator_output(
+            result,
+            context,
+            identifier=identifier,
+            output_interval=False,
+        )

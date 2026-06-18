@@ -1,7 +1,7 @@
 # CI: Nightly heavy jobs
 # Purpose: Scheduled heavy jobs (parity harness, notebook audits, examples).
 # Scope: Runs nightly or on demand; not required for quick PRs. See
-# docs/improvement/CI-upgrade.md for rationale and scheduling guidance.
+# development/current-work/CI-upgrade.md for rationale and scheduling guidance.
 name: CI — Nightly heavy jobs
 on:
   schedule:
@@ -88,6 +88,7 @@ jobs:
     # ADR-035: heavy job wired into the approved nightly entrypoint; no
     # standalone workflow.  Installs [notebooks,viz] extras only (ADR-010).
     continue-on-error: true
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -120,3 +121,16 @@ jobs:
           name: notebook-exec-report
           path: |
             reports/docs/notebook_execution_report.json
+
+  docs-build:
+    # ADR-012: advisory linkcheck on this dev fork (kristinebergs). Blocking-mode
+    # enforcement is the upstream Moffran repo's responsibility at release time.
+    # ADR-035: heavy job wired into the approved nightly entrypoint; no
+    # standalone workflow.
+    # Note: continue-on-error is not permitted on reusable-workflow call jobs
+    # (GitHub Actions schema restriction); advisory posture is maintained via
+    # the nightly workflow's non-blocking role for PRs.
+    name: Sphinx linkcheck (advisory)
+    uses: ./.github/workflows/reusable-build-docs.yml
+    with:
+      build-target: linkcheck

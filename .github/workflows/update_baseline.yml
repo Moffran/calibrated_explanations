@@ -1,9 +1,9 @@
 # CI: Update baseline (manual)
 # Purpose: Manually generate and commit new performance baselines and related
 # artifacts. Requires `contents: write` permission and is intended for
-# maintainers. See docs/improvement/CI-upgrade.md for maintenance guidance.
+# maintainers. See development/current-work/CI-upgrade.md for maintenance guidance.
 # NOTE: This workflow is scheduled for decommission and will be removed after the
-# CI validation window. See docs/improvement/CI-upgrade.md for the removal schedule.
+# CI validation window. See development/current-work/CI-upgrade.md for the removal schedule.
 name: update-baseline
 
 on:

@@ -34,7 +34,7 @@ substantive compliance analysis.
 
 ## Phase 1 — Understand the ADR intent
 
-1. **Read the full ADR text** (`docs/improvement/adrs/ADR-XXX-*.md`). Extract:
+1. **Read the full ADR text** (`development/adrs/ADR-XXX-*.md`). Extract:
    - **Decisions** — what the ADR mandates, forbids, or constrains.
    - **Requirements** — concrete deliverables (APIs, contracts, invariants,
      enforcement mechanisms, documentation, tests).
@@ -79,7 +79,7 @@ substantive compliance analysis.
 ## Phase 4 — Update the ADR status appendix
 
 The output format and rules are defined in the **ADR status appendix** heading
-of `docs/improvement/RELEASE_PLAN_v1.md`. The appendix states:
+of `development/current-work/RELEASE_PLAN_v1.md`. The appendix states:
 
 > This appendix lists only unresolved gaps per ADR. ADRs with no open gaps
 > show a clear compliance verification line (date-stamped). Tables use the
@@ -130,8 +130,8 @@ Follow these rules exactly when writing or updating appendix sections:
 ## Files to read
 
 ```
-docs/improvement/adrs/ADR-XXX-*.md     ← the ADR itself (primary source of intent)
-docs/improvement/RELEASE_PLAN_v1.md    ← appendix to update with gap results
+development/adrs/ADR-XXX-*.md     ← the ADR itself (primary source of intent)
+development/current-work/RELEASE_PLAN_v1.md    ← appendix to update with gap results
 src/                                   ← implementation evidence
 tests/                                 ← test coverage of ADR requirements
 docs/                                  ← RTD evidence (when ADR has doc requirements)

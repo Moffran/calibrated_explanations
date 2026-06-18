@@ -1,0 +1,44 @@
+claim_id: CE-CAP-PLUGIN-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations exposes an extensible plugin system through the
+  calibrated_explanations.plugins module: ExplainerPlugin defines the protocol for
+  custom explanation backends, and IntervalCalibratorPlugin defines the protocol for
+  custom interval calibrators, enabling replacement of default internal implementations.
+
+public_api:
+  - calibrated_explanations.plugins.base.ExplainerPlugin
+  - calibrated_explanations.plugins.intervals.IntervalCalibratorPlugin
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-PLUGIN-DOC-001
+
+verification:
+  proves:
+    - api_contract
+    - protocol_importable
+  verification_type: automated
+
+assumptions:
+  - Plugin registration requires access to internal PluginManager state and is subject
+    to API stability constraints documented in CONTRIBUTOR_INSTRUCTIONS.md. Registration
+    patterns are not part of the stable public API surface for end-users.
+  - Protocol conformance is checked at runtime; passing an object that does not
+    implement required methods raises AttributeError at invocation time.
+  - This claim asserts that the plugin protocols are importable and inspectable;
+    it does not assert that custom implementations will behave identically to
+    built-in implementations across all scenarios.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id

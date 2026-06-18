@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 SCRIPT = Path("scripts/quality/build_governance_status_artifact.py")
-SCHEMA = Path("docs/improvement/schemas/governance_status_schema_v1.json")
+SCHEMA = Path("development/schemas/governance_status_schema_v1.json")
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -239,12 +239,12 @@ def test_should_pass_lint_flags_to_artifact(tmp_path):
 def test_should_assert_governance_status_schema_not_in_runtime_package():
     """Governance status schema must not be placed in the runtime package (src/).
 
-    It is a derived CI artifact and must live under docs/improvement/schemas/.
+    It is a derived CI artifact and must live under development/schemas/.
     """
     runtime_schema_dir = Path("src/calibrated_explanations/schemas")
     if runtime_schema_dir.is_dir():
         found = list(runtime_schema_dir.glob("governance_status*.json"))
         assert not found, (
             "governance_status schema must not be placed in the runtime package "
-            f"(found: {found}). It belongs in docs/improvement/schemas/."
+            f"(found: {found}). It belongs in development/schemas/."
         )

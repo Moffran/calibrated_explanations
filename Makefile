@@ -59,7 +59,8 @@ check-report-paths:
 
 .PHONY: check-ci-policy
 check-ci-policy:
-	# Includes full-SHA action pin enforcement and reusable-workflow checks.
+	# Includes full-SHA action pin enforcement, reusable-workflow checks, and release-docs gate.
+	# Reusable workflows (reusable-*.yml) are exempt from heavy-gating; they are gated by callers.
 	python scripts/quality/validate_ci_policy.py --base-sha HEAD~1 --head-sha HEAD --advisory
 
 .PHONY: uv-install-smoke

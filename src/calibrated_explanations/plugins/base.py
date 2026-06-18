@@ -8,6 +8,7 @@ import warnings
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Protocol, Sequence
 
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import ValidationError
 
 try:  # Python < 3.10 compatibility
@@ -36,9 +37,27 @@ _MODALITY_ALIASES = {
     "multi_modal": "multimodal",
 }
 _PROVISIONAL_CONFIG_SCHEMA_VERSION = 1
-_ALLOWED_PLOT_KINDS: frozenset[str] = frozenset({"instance", "collection", "global"})
+_SEMANTIC_PLOT_KINDS: frozenset[str] = frozenset(
+    {
+        "factual_probabilistic",
+        "factual_regression",
+        "alternative_probabilistic",
+        "alternative_regression",
+        "global_probabilistic",
+        "global_regression",
+    }
+)
+_CATEGORY_PLOT_KINDS: frozenset[str] = frozenset({"instance", "collection", "global"})
+_ALLOWED_PLOT_KINDS: frozenset[str] = _SEMANTIC_PLOT_KINDS | _CATEGORY_PLOT_KINDS
 _ALLOWED_PLOT_MODES: frozenset[str] = frozenset({"factual", "alternative", "fast", "any"})
-_DEFAULT_PLOT_KINDS: tuple[str, ...] = ("instance", "collection", "global")
+_DEFAULT_PLOT_KINDS: tuple[str, ...] = (
+    "factual_probabilistic",
+    "factual_regression",
+    "alternative_probabilistic",
+    "alternative_regression",
+    "global_probabilistic",
+    "global_regression",
+)
 _DEFAULT_PLOT_MODES: tuple[str, ...] = ("factual", "alternative", "fast")
 _CONFIG_SCHEMA_TYPES = {
     "str",
@@ -309,6 +328,11 @@ def validate_plugin_config(
 
 def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     """Validate minimal plugin metadata required by ADR-006."""
+    # ADR-038 §5: plugin config surfaces exposed through the plugin contract
+    # should follow the *Spec/*Options/*Config naming taxonomy. This is a
+    # documentation-level requirement; runtime enforcement of third-party naming
+    # conventions is not feasible at registration time. See
+    # docs/contributor/plugin-contract.md for the naming convention guidance.
     if not isinstance(meta, dict):
         raise ValidationError("plugin_meta must be a dict")
 
@@ -353,7 +377,13 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     meta["plugin_api_version"] = _parse_plugin_api_version(
         meta.get("plugin_api_version", "1.0"), plugin_name=meta.get("name")
     )
-    meta["data_modalities"] = _normalise_data_modalities(meta.get("data_modalities", ("tabular",)))
+    # ADR-033 §6.2: plugins must declare data_modalities explicitly; default-fallback removed in v0.11.4.
+    if "data_modalities" not in meta:
+        raise ValidationError(
+            "plugin_meta missing required key: data_modalities. "
+            "Declare e.g. data_modalities=['tabular'] per ADR-033 §6.2."
+        )
+    meta["data_modalities"] = _normalise_data_modalities(meta["data_modalities"])
     if "config_schema" in meta:
         validate_plugin_config_schema(meta["config_schema"])
 
@@ -385,6 +415,18 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
                 raise ValidationError(
                     f"plugin_meta['plot_kinds'] contains invalid values: {sorted(invalid)}; "
                     f"allowed: {sorted(_ALLOWED_PLOT_KINDS)}"
+                )
+            deprecated_kinds = sorted(k for k in kinds if k in _CATEGORY_PLOT_KINDS)
+            if deprecated_kinds:
+                deprecate(
+                    "plugin_meta['plot_kinds'] values "
+                    f"{deprecated_kinds} use the deprecated category vocabulary "
+                    "('instance', 'collection', 'global'). Use semantic kind names "
+                    "('factual_probabilistic', 'factual_regression', etc.) instead. "
+                    "Category names will be removed in v1.0.0.",
+                    key="plot_kinds_category_vocabulary",
+                    stacklevel=4,
+                    raise_on_error=False,
                 )
             meta["plot_kinds"] = kinds
         else:

@@ -132,6 +132,7 @@ def test_register_plot_builder_renderer_and_style_register_all_components():
             "provider": "tests",
             "capabilities": ["plot"],
             "style": "combo",
+            "data_modalities": ("tabular",),
             "dependencies": (),
             "legacy_compatible": True,
             "output_formats": ("png",),

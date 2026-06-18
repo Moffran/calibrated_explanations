@@ -236,4 +236,4 @@ print(cfg.telemetry_diagnostic_mode())   # True or False
   feature-filter env-var settings
 - [Configure telemetry](configure_telemetry.md) — telemetry diagnostics and
   governance logging
-- ADR-034: `docs/improvement/adrs/ADR-034-centralized-configuration-management.md`
+- ADR-034: `development/adrs/ADR-034-centralized-configuration-management.md`

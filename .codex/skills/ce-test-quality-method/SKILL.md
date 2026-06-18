@@ -25,18 +25,18 @@ agent prompts.
 
 ## Required references
 
-- `docs/improvement/test-quality-method/README.md` (canonical method + options)
-- `docs/improvement/test-quality-method/implementer.md` (execution prompt)
-- `docs/improvement/test-quality-method/process_architect.md` (workflow prompt)
+- `development/standards/test-quality-method/README.md` (canonical method + options)
+- `development/standards/test-quality-method/implementer.md` (execution prompt)
+- `development/standards/test-quality-method/process_architect.md` (workflow prompt)
 
 ## Specialist skill to prompt mapping
 
-- `ce-test-pruning-expert` -> `docs/improvement/test-quality-method/pruner.md`
-- `ce-test-creator` -> `docs/improvement/test-quality-method/test_creator.md`
-- `ce-test-audit` -> `docs/improvement/test-quality-method/anti_pattern_auditor.md`
-- `ce-code-quality-auditor` -> `docs/improvement/test-quality-method/code_quality_auditor.md`
-- `ce-deadcode-hunter` -> `docs/improvement/test-quality-method/deadcode_hunter.md`
-- `ce-devils-advocate` -> `docs/improvement/test-quality-method/devils_advocate.md`
+- `ce-test-pruning-expert` -> `development/standards/test-quality-method/pruner.md`
+- `ce-test-creator` -> `development/standards/test-quality-method/test_creator.md`
+- `ce-test-audit` -> `development/standards/test-quality-method/anti_pattern_auditor.md`
+- `ce-code-quality-auditor` -> `development/standards/test-quality-method/code_quality_auditor.md`
+- `ce-deadcode-hunter` -> `development/standards/test-quality-method/deadcode_hunter.md`
+- `ce-devils-advocate` -> `development/standards/test-quality-method/devils_advocate.md`
 
 ## Use this skill when
 

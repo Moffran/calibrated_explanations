@@ -15,7 +15,7 @@ the planning structure stable and repeatable.
    - `# vX.Y.Z Release Task Implementation Plan`
 2. Scope paragraph:
    - state that this plan expands milestone tasks from
-     `docs/improvement/RELEASE_PLAN_v1.md`.
+     `development/current-work/RELEASE_PLAN_v1.md`.
 3. Milestone framing:
    - state milestone type (for example ADR gap closure, hardening, RC, etc.).
 4. Authoritative task source:
@@ -144,8 +144,8 @@ Not started.
 
 ### N.2 Relevant references
 
-- `docs/improvement/RELEASE_PLAN_v1.md` — milestone task list and packaging decision record
-- `docs/improvement/RELEASE_PLAN_status_appendix.md` — per-ADR gap rows
+- `development/current-work/RELEASE_PLAN_v1.md` — milestone task list and packaging decision record
+- `development/current-work/RELEASE_PLAN_status_appendix.md` — per-ADR gap rows
 - `docs/migration/deprecations.md` — active/history deprecation ledger
 - `scripts/local_checks.py` — umbrella check runner
 - `scripts/quality/snapshot_public_api.py` — public API surface snapshot
@@ -184,7 +184,7 @@ and must be checked manually or via explicit invocations at milestone closure.
    (Breaking / Added / Fixed / Removed).
 9. Migration guide (`docs/migration/deprecations.md`): symbols removed in this version moved
    from active to history table; no phantom active entries from prior milestones remain.
-10. ADR gap tables (`docs/improvement/RELEASE_PLAN_status_appendix.md`): all gaps closed in
+10. ADR gap tables (`development/current-work/RELEASE_PLAN_status_appendix.md`): all gaps closed in
     this milestone reflected as closed; no open row still targets `vX.Y.Z`.
 11. `RELEASE_PLAN_v1.md` milestone closure: all vX.Y.Z tasks marked `[x]`; milestone section
     records closure date.

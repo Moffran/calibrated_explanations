@@ -183,6 +183,35 @@ Interval plugins are selected globally or per-mode:
 - **pyproject.toml**: Under `[tool.calibrated_explanations.intervals]` with keys `default`, `fast`
 - **Dependencies**: Seeded from explanation plugin metadata `interval_dependency`
 
+### Migration from pre-plugin helper functions
+
+Older integrations sometimes reached into `CalibratedExplainer` internals or
+called interval helper functions directly. New code should wrap that behavior in
+an interval plugin instead:
+
+```python
+# Before: direct internal helper access
+calibrator = explainer.interval_learner
+interval = calibrator.predict_uncertainty(x, (5, 95))
+
+# After: plugin contract
+class LegacyCompatibleIntervalPlugin:
+    plugin_meta = {
+        "schema_version": 1,
+        "name": "external.interval.legacy",
+        "version": "0.1.0",
+        "provider": "example-team",
+        "capabilities": ["interval", "interval:regression"],
+        "data_modalities": ("tabular",),
+    }
+
+    def create(self, context, **kwargs):
+        return context
+```
+
+Use `IntervalCalibratorContext` to receive calibration splits, bins, residuals,
+difficulty metadata, and plugin state through the governed plugin boundary.
+
 ---
 
 ## Hello, explanation plugin
@@ -605,21 +634,40 @@ Document how probabilistic and interval regression stay calibrated after your
 extension by linking back to the practitioner quickstarts and interpretation
 guides.
 
+## Config surface naming convention (ADR-038 §5)
+
+Any configuration surface you expose through the plugin contract must follow the
+`*Spec` / `*Options` / `*Config` naming taxonomy defined in ADR-038 §5:
+
+| Suffix | Intended use |
+|--------|-------------|
+| `*Spec` | Declarative, user-authored payloads (immutable after construction) |
+| `*Options` | Call-time tuning knobs passed to a single operation |
+| `*Config` | Durable per-instance configuration bound at construction time |
+
+Example: a plugin that accepts tuning parameters for a single `explain_batch`
+call should name the class `MyExplanationOptions`, not `MyExplanationConfig`.
+
+This convention is enforced by code review, not by `validate_plugin_meta`. The
+`validate_plugin_meta` function contains a comment marking the extension point
+for future automated checking. Non-conforming names will not be rejected at
+registration time, but they may be flagged in contributor review.
+
 ## Guardrails and ADR references
 
 Use these decision records when designing new plugins:
 
-- [ADR-006 - plugin registry trust model](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md)
+- [ADR-006 - plugin registry trust model](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-006-plugin-registry-trust-model.md)
   defines explicit trust controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and governance expectations for third-party plugins.
-- [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
+- [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   defines the architecture for interval calibrator plugins and their integration with core calibrators.
-- [ADR-037 - visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
+- [ADR-037 - visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
   defines builder/renderer governance, deterministic metadata requirements, and default behavior.
-- [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md)
+- [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-015-explanation-plugin.md)
   specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
-- [ADR-036 - PlotSpec canonical contract and validation boundary](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
+- [ADR-036 - PlotSpec canonical contract and validation boundary](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
   documents canonical PlotSpec semantics, validation boundaries, and compatibility rules.
-- [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
+- [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/development/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval
   plugins.
 

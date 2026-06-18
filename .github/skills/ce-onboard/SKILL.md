@@ -32,7 +32,7 @@ It extracts calibrated factual rules, alternative rules, and prediction
 intervals from any model.
 
 - **Current version**: v0.10.4
-- **Target milestone**: v0.11.0 (see `docs/improvement/RELEASE_PLAN_v1.md`)
+- **Target milestone**: v0.11.0 (see `development/current-work/RELEASE_PLAN_v1.md`)
 - **Core entry points**: `CalibratedExplainer`, `WrapCalibratedExplainer`
 - **Public install**: `pip install calibrated-explanations`
 
@@ -61,8 +61,8 @@ intervals from any model.
 | File | What it tells you |
 |---|---|
 | `CONTRIBUTOR_INSTRUCTIONS.md` | Canonical CE-First rules **(authoritative — read this first)** |
-| `docs/improvement/RELEASE_PLAN_v1.md` | Current milestone + outstanding gates |
-| `docs/improvement/adrs/` | All architectural decisions (ADRs 001–033) |
+| `development/current-work/RELEASE_PLAN_v1.md` | Current milestone + outstanding gates |
+| `development/adrs/` | All architectural decisions (ADRs 001–033) |
 | `QUICK_API.md` | Public API surface cheat-sheet |
 | `tests/README.md` | Test structure and coverage requirements |
 | `src/calibrated_explanations/ce_agent_utils.py` | Secondary agent helpers **(not the public contract — helpers only; always check if they are still canonical before use)** |

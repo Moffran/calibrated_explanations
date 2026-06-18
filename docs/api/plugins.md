@@ -21,7 +21,7 @@ explanation, interval, and plot builders/renderers.
 ## Trust model
 
 The trust model is documented in
-`docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md`. External plugins
+`development/adrs/ADR-006-plugin-registry-trust-model.md`. External plugins
 should register through the approved entry points and include the required
 metadata for auditability.
 

@@ -12,8 +12,8 @@ criteria from ADR-030, `tests/README.md`, and the test-quality-method docs.
 Load these references before auditing:
 
 - `references/adr-030-test-quality.md`
-- `docs/improvement/test-quality-method/README.md`
-- `docs/improvement/test-quality-method/anti_pattern_auditor.md`
+- `development/standards/test-quality-method/README.md`
+- `development/standards/test-quality-method/anti_pattern_auditor.md`
 
 ## Focus option handling
 

@@ -14,6 +14,7 @@ class LegacyPlugin:
         "capabilities": ("factual",),
         "modes": ("factual",),
         "tasks": ("classification",),
+        "data_modalities": ("tabular",),
         "dependencies": (),
         "trusted": False,
     }

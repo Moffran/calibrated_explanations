@@ -62,8 +62,13 @@ def test_normalize_public_kwargs_and_import_mapping_stash(monkeypatch):
     w = WrapCalibratedExplainer(learner=SimpleNamespace(fitted=True))
     with pytest.raises(ConfigurationError, match="removed in v0.11.0"):
         w.normalize_public_kwargs({"alpha": 0.1, "foo": 2})
-    res = w.normalize_public_kwargs({"foo": 2})
+    with pytest.warns(UserWarning, match="unknown keyword arguments"):
+        res = w.normalize_public_kwargs({"foo": 2})
     assert res.get("foo") == 2
+
+    with pytest.warns(UserWarning, match="unknown keyword arguments"):
+        filtered = w.normalize_public_kwargs({"foo": 2, "threshold": 0.5}, allowed={"threshold"})
+    assert filtered == {"threshold": 0.5}
 
     # import_preprocessor_mapping should warn when mapping cannot be applied
     mapping = {"a": 1}

@@ -25,5 +25,5 @@ The CLI is backed by `calibrated_explanations.plugins.cli:main`.
 
 ## Related documentation
 
-- Plugin governance and trust model: `docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md`.
-- Plot plugin lifecycle and metadata: `docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md`.
+- Plugin governance and trust model: `development/adrs/ADR-006-plugin-registry-trust-model.md`.
+- Plot plugin lifecycle and metadata: `development/adrs/ADR-037-visualization-extension-and-rendering-governance.md`.

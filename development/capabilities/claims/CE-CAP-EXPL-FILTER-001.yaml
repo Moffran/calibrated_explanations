@@ -1,0 +1,72 @@
+claim_id: CE-CAP-EXPL-FILTER-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations supports rule-type filtering on alternative explanations via five
+  filter operations: super_explanations (rules with higher probability supporting the
+  predicted class), semi_explanations (rules with lower probability supporting the
+  predicted class), counter_explanations (rules not supporting the predicted class),
+  ensured_explanations (rules with narrow uncertainty intervals), and pareto_explanations
+  (Pareto-optimal rules by probability shift and uncertainty width). Each operation is
+  available on both AlternativeExplanations (collection) and AlternativeExplanation
+  (individual), with short-form aliases (.super(), .semi(), .counter(), .ensured(),
+  .pareto()) that delegate to the canonical long-form methods.
+
+public_api:
+  - calibrated_explanations.explanations.explanations.AlternativeExplanations.super_explanations
+  - calibrated_explanations.explanations.explanations.AlternativeExplanations.semi_explanations
+  - calibrated_explanations.explanations.explanations.AlternativeExplanations.counter_explanations
+  - calibrated_explanations.explanations.explanations.AlternativeExplanations.ensured_explanations
+  - calibrated_explanations.explanations.explanations.AlternativeExplanations.pareto_explanations
+  - calibrated_explanations.explanations.explanation.AlternativeExplanation.super_explanations
+  - calibrated_explanations.explanations.explanation.AlternativeExplanation.semi_explanations
+  - calibrated_explanations.explanations.explanation.AlternativeExplanation.counter_explanations
+  - calibrated_explanations.explanations.explanation.AlternativeExplanation.ensured_explanations
+  - calibrated_explanations.explanations.explanation.AlternativeExplanation.pareto_explanations
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-EXPL-FILTER-SUPER-001
+  - CE-REQ-EXPL-FILTER-SEMI-001
+  - CE-REQ-EXPL-FILTER-COUNTER-001
+  - CE-REQ-EXPL-FILTER-ENSURED-001
+  - CE-REQ-EXPL-FILTER-PARETO-001
+
+verification:
+  proves:
+    - api_contract
+    - output_structure
+  verification_type: automated
+
+assumptions:
+  - All filter methods require the explainer to be fitted and calibrated, and
+    explore_alternatives must have been called to produce an AlternativeExplanations
+    collection before any filter method is called.
+  - Filter methods are available only on AlternativeExplanations and AlternativeExplanation.
+    They are NOT available on CalibratedExplanations or FactualExplanation.
+  - The returned collection or individual explanation may contain zero rules per instance
+    if no rules satisfy the filter criterion; this is not an error.
+  - The only_ensured parameter on super/semi/counter applies an additional ensured filter
+    within the already-filtered set; it does not change the primary filter criterion.
+  - Short-form aliases (.super(), .semi(), .counter(), .ensured(), .pareto()) are pure
+    delegators to the long-form methods; they produce identical results.
+  - This claim does not assert that any filter produces a statistically optimal selection;
+    it asserts only that the API is callable and returns a non-None collection or
+    individual explanation of the correct type.
+  - "Ensured" here means the calibrated probability interval for the rule does not
+    straddle the decision boundary. This is a calibration-data-dependent property.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result
