@@ -126,9 +126,10 @@ jobs:
     # enforcement is the upstream Moffran repo's responsibility at release time.
     # ADR-035: heavy job wired into the approved nightly entrypoint; no
     # standalone workflow.
+    # Note: continue-on-error is not permitted on reusable-workflow call jobs
+    # (GitHub Actions schema restriction); advisory posture is maintained via
+    # the nightly workflow's non-blocking role for PRs.
     name: Sphinx linkcheck (advisory)
-    continue-on-error: true
-    needs: []
     uses: ./.github/workflows/reusable-build-docs.yml
     with:
       build-target: linkcheck
