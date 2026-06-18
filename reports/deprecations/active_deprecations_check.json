@@ -2,7 +2,7 @@
   "active_rows_count": 15,
   "blocking_rows_count": 0,
   "blocking_symbols": [],
-  "generated_at": "2026-06-18T12:54:02.130147+00:00",
+  "generated_at": "2026-06-18T15:52:08.894909+00:00",
   "permitted_rows_count": 15,
   "permitted_symbols": [
     "`guarded=True` boolean kwarg on `explain_factual` / `explore_alternatives`",

@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-06-18T12:54:37.269450+00:00",
+  "generated_at": "2026-06-18T15:52:50.202939+00:00",
   "platform": "Windows",
   "python_version": "3.11.9",
   "schema_version": 1,
   "steps": [
     {
       "command": "python scripts/anti-pattern-analysis/scan_private_usage.py tests --check",
-      "elapsed_seconds": 0.766,
+      "elapsed_seconds": 0.812,
       "exit_code": 0,
       "name": "Private-member scan"
     },
     {
       "command": "python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --tests-dir tests --check --output reports/anti-pattern-analysis/test_anti_pattern_report.csv --report reports/anti-pattern-analysis/test_quality_report.json --baseline .github/test-quality-baseline.json",
-      "elapsed_seconds": 2.235,
+      "elapsed_seconds": 1.766,
       "exit_code": 0,
       "name": "ADR-030 anti-pattern detector"
     },
     {
       "command": "python scripts/quality/check_no_test_helper_exports.py --root src/calibrated_explanations --report reports/anti-pattern-analysis/test_helper_wrapper_report.json",
-      "elapsed_seconds": 0.968,
+      "elapsed_seconds": 0.672,
       "exit_code": 0,
       "name": "ADR-030 test-helper export guard"
     },
     {
       "command": "python scripts/quality/check_marker_hygiene.py --check --report reports/marker-hygiene/marker_hygiene_report.json --baseline .github/marker-hygiene-baseline.json",
-      "elapsed_seconds": 1.125,
+      "elapsed_seconds": 0.922,
       "exit_code": 0,
       "name": "ADR-030 marker hygiene"
     },
     {
       "command": "python scripts/quality/check_no_local_paths_in_reports.py --check --report reports/quality/no_local_paths_report.json",
-      "elapsed_seconds": 0.61,
+      "elapsed_seconds": 1.125,
       "exit_code": 0,
       "name": "Generated report local-path guard"
     }
   ],
-  "total_elapsed_seconds": 5.735
+  "total_elapsed_seconds": 5.359
 }
