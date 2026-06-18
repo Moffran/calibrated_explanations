@@ -11,17 +11,19 @@ assumption boundary.
 
 from __future__ import annotations
 
-import matplotlib
+import pytest
 
+matplotlib = pytest.importorskip(
+    "matplotlib", reason="matplotlib not installed; skipping viz contract tests"
+)
 matplotlib.use("Agg")  # Must be set before any other matplotlib import
 
-import matplotlib.pyplot as plt
-import pytest
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt  # noqa: E402
+from sklearn.datasets import make_classification  # noqa: E402
+from sklearn.ensemble import RandomForestClassifier  # noqa: E402
+from sklearn.model_selection import train_test_split  # noqa: E402
 
-from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer  # noqa: E402
 
 pytestmark = pytest.mark.viz
 
