@@ -1,9 +1,13 @@
 """Shared test fixtures for the calibrated_explanations test suite."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from tests.helpers.dataset_utils import read_csv_cached
+
+_DATA_DIR = Path(__file__).parent.parent / "data"
 
 
 @pytest.fixture
@@ -17,7 +21,7 @@ def regression_dataset(sample_limit):
     num_to_test = 2
     dataset = "abalone.txt"
 
-    ds = read_csv_cached(f"data/reg/{dataset}")
+    ds = read_csv_cached(str(_DATA_DIR / "reg" / dataset))
     max_rows = sample_limit
     x = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
     y = ds["REGRESSION"].values[:max_rows]
@@ -54,7 +58,7 @@ def binary_dataset():
     num_to_test = 2
     target_column = "Y"
 
-    filename = f"data/{dataset}.csv"
+    filename = str(_DATA_DIR / f"{dataset}.csv")
     df = read_csv_cached(filename, delimiter=delimiter, dtype=np.float64)
 
     columns = df.drop(target_column, axis=1).columns
@@ -109,7 +113,7 @@ def multiclass_dataset():
     dataset_name = "glass"
     delimiter = ","
     num_test_samples = 6
-    file_path = f"data/Multiclass/{dataset_name}.csv"
+    file_path = str(_DATA_DIR / "Multiclass" / f"{dataset_name}.csv")
 
     df = read_csv_cached(file_path, delimiter=delimiter).dropna()
     target_column = "Type"

@@ -1,8 +1,12 @@
 """Dataset helpers reused across calibration tests."""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+_DATA_DIR = Path(__file__).parent.parent / "data"
 
 # Simple in-memory CSV read cache to avoid repeated expensive disk reads during tests.
 # Keys are (path, sorted kwargs repr) so callers can pass delimiter/dtype when needed.
@@ -25,13 +29,7 @@ def read_csv_cached(path: str, **kwargs) -> pd.DataFrame:
 def make_binary_dataset():
     """Return the diabetes slice used for parity tests with train/cal/test splits."""
     dataset = "diabetes_full"
-    # Assuming data is in the root data/ folder relative to execution context
-    # Adjust path if necessary or make it robust
-    try:
-        df = pd.read_csv(f"data/{dataset}.csv", dtype=np.float64)
-    except FileNotFoundError:
-        # Fallback for when running from tests/ directory
-        df = pd.read_csv(f"../data/{dataset}.csv", dtype=np.float64)
+    df = pd.read_csv(_DATA_DIR / f"{dataset}.csv", dtype=np.float64)
 
     df = df.iloc[:500, :]
     target = "Y"
@@ -68,10 +66,7 @@ def make_binary_dataset():
 def make_regression_dataset():
     """Return the housing slice used for parity tests with train/cal/test splits."""
     dataset = "housing"
-    try:
-        df = pd.read_csv(f"data/reg/{dataset}.csv", sep=";")
-    except FileNotFoundError:
-        df = pd.read_csv(f"../data/reg/{dataset}.csv", sep=";")
+    df = pd.read_csv(_DATA_DIR / "reg" / f"{dataset}.csv", sep=";")
 
     df = df.dropna()
     df = df.iloc[:500, :]
