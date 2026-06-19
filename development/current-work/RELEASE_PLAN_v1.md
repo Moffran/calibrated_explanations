@@ -4,9 +4,9 @@
 
 # Release Plan to v1.0.0
 
-## Current released version: v0.11.1
+## Current released version: v0.11.4
 
-> Status: v0.11.1 shipped on 2026-04-18.
+> Status: v0.11.4 shipped on 2026-06-19.
 
 
 Maintainers: Core team
@@ -33,9 +33,9 @@ Detailed ADR/Standard status tables, gap inventories, and historical compliance 
 
 ### Control snapshot
 
-- **Current released version:** v0.11.3
-- **Active detailed milestone:** v0.11.4 (`development/current-work/v0.11.4_plan.md`)
-- **Next milestone:** v1.0.0-rc (after v0.11.4 closes)
+- **Current released version:** v0.11.4
+- **Active detailed milestone:** v1.0.0-rc
+- **Next milestone:** v1.0.0-rc
 - **Status appendix:** `development/current-work/RELEASE_PLAN_status_appendix.md`
 
 ### Release-blocking conditions

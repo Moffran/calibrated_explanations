@@ -34,7 +34,7 @@ author = "Helena Löfström, Tuwe Löfström"
 version = "0.11"
 
 # The full version, including alpha/beta/rc tags
-release = "0.11.3"
+release = "0.11.4"
 
 # -- General configuration ---------------------------------------------------
 

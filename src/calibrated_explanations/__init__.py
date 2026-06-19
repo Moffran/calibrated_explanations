@@ -39,7 +39,7 @@ except (TypeError, AttributeError) as exc:
 # Provide a default no-op handler to avoid "No handler" warnings for library users.
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
-__version__ = "0.11.4-dev"
+__version__ = "v0.11.4"
 
 # Note: core submodules are intentionally not imported here to avoid importing
 # large backends and to make deprecation transitions explicit. We still expose

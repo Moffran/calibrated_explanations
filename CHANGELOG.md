@@ -3,9 +3,13 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.3...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.4...main)
 
-### Breaking changes
+## [v0.11.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.4) - 2026-06-19
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.3...v0.11.4)
+
+### Breaking changes (v0.11.4)
 
 - **ADR-033 §6.2: `data_modalities` is now required in `plugin_meta`.**
   `validate_plugin_meta` previously applied a silent `("tabular",)` default when
@@ -15,7 +19,7 @@
   dict. Entry-point discovery warns and skips invalid plugin metadata fail-closed. See
   `docs/upgrade/v0.11.4-upgrade-checklist.md` for the full migration note.
 
-### Bug fixes
+### Bug fixes (v0.11.4)
 
 - **ADR-031: Migrated native calibrator primitives to JSON-safe schema v2.**
   `VennAbers` and `IntervalRegressor` now serialize field-level JSON-safe
@@ -50,7 +54,7 @@
 
 - **ADR-008: Fixed multiclass `class_index` latent serialization bug.** `MultiClassCalibratedExplanations.to_json()` and `to_json_stream()` previously lost `class_index` (and `class_label`) because those keys were added to the legacy payload dict after `legacy_to_domain()` had already constructed the `Explanation` object, so `from_legacy_dict` never extracted them and the domain object carried no class annotation. After the `_exp_to_domain` migration, class annotations are now explicitly merged into `domain.metadata` before serialization — `to_json → from_json` round-trips for multiclass collections preserve `class_index` in each explanation's metadata.
 
-### CI / infrastructure
+### CI / infrastructure (v0.11.4)
 
 - **ADR-012: Added strict release docs workflow support.** The reusable docs
   workflow now runs `sphinx-build -W --keep-going`; nightly docs remain advisory,
