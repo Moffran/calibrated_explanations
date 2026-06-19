@@ -323,3 +323,26 @@ jobs:
         run: python scripts/quality/check_governance_event_schema.py
       - name: Run governance-event tests
         run: pytest -q --no-cov tests/observability/test_governance_events.py tests/scripts/test_check_governance_event_schema.py
+
+  evaluation-freeze:
+    # evaluation/ is frozen — all content has moved to calibrated-explanations-studies.
+    # Only README.md redirect stubs are permitted; any other file fails CI.
+    name: evaluation/ freeze guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      - name: Verify evaluation/ contains only README.md files
+        shell: bash
+        run: |
+          non_readme=$(find evaluation -type f ! -name 'README.md' 2>/dev/null || true)
+          if [ -n "$non_readme" ]; then
+            echo "ERROR: evaluation/ is frozen. All study content has moved to"
+            echo "       github.com/kristinebergs/calibrated-explanations-studies"
+            echo ""
+            echo "Only README.md redirect stubs are permitted. Remove these files:"
+            printf '  %s\n' $non_readme
+            exit 1
+          fi
+          echo "evaluation/ freeze guard: OK — only README.md files present."
