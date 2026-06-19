@@ -1,6 +1,9 @@
 # CI governance ownership
-/.github/workflows/ @loftuw
-/.github/actions/ci-policy/ @loftuw
-/.github/CODEOWNERS @loftuw
+/.github/workflows/ @tuvelofstrom
+/.github/actions/ci-policy/ @tuvelofstrom
+/.github/CODEOWNERS @tuvelofstrom
 # ADR-035 §1 governance: scripts/local_checks.py is an ADR-035-governed file
-/scripts/local_checks.py @loftuw
+/scripts/local_checks.py @tuvelofstrom
+# evaluation/ is frozen — all content has moved to calibrated-explanations-studies.
+# Any PR touching this folder requires explicit owner approval.
+/evaluation/ @tuvelofstrom

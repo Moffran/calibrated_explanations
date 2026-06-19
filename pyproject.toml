@@ -148,7 +148,6 @@ omit = [
     "notebooks/*",
     "tests/benchmarks/*",
     "scripts/*",
-    "evaluation/*",
     "setup.py",
     "src/calibrated_explanations/viz/matplotlib_adapter.py",
 ]
@@ -206,7 +205,6 @@ extend-exclude = [
     "benchmarks",
     "docs/_build",
     "scripts",
-    "evaluation",
 ]
 
 [tool.ruff.lint]
@@ -255,7 +253,7 @@ convention = "numpy"
 add-ignore = [
     "D104",
 ]
-match-dir = "(?!tests|docs|benchmarks|notebooks|scripts|evaluation).*"
+match-dir = "(?!tests|docs|benchmarks|notebooks|scripts).*"
 match = "(?!test_).*\\.py"
 
 [tool.mypy]
@@ -272,7 +270,6 @@ exclude = [
     "docs",
     "notebooks",
     "scripts",
-    "evaluation",
 ]
 follow_imports = "skip"
 check_untyped_defs = false
@@ -302,9 +299,8 @@ exclude = [
     "scripts",
     "docs",
     "dist",
-    "evaluation",
 ]
 
 [tool.codespell]
-skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks,docs/improvement/anti_pattern_gap_analysis.ipynb"
+skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,notebooks,docs/improvement/anti_pattern_gap_analysis.ipynb"
 ignore-words-list = "dataframe,nd"

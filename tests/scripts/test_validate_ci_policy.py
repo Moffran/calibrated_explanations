@@ -695,4 +695,4 @@ def test_should_have_dated_rationale_in_allowlist_entries() -> None:
 
 def test_should_cover_scripts_local_checks_path_in_codeowners() -> None:
     codeowners_text = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
-    assert "/scripts/local_checks.py @loftuw" in codeowners_text
+    assert "/scripts/local_checks.py @tuvelofstrom" in codeowners_text
