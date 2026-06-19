@@ -36,7 +36,14 @@ def test_plot_plugin_without_plot_kinds_gets_defaults():
     meta = _minimal_plot_meta()
     validate_plugin_meta(meta)
     assert "plot_kinds" in meta
-    assert set(meta["plot_kinds"]) == {"instance", "collection", "global"}
+    assert set(meta["plot_kinds"]) == {
+        "factual_probabilistic",
+        "factual_regression",
+        "alternative_probabilistic",
+        "alternative_regression",
+        "global_probabilistic",
+        "global_regression",
+    }
 
 
 def test_plot_plugin_without_plot_modes_gets_defaults():
@@ -58,8 +65,18 @@ def test_plot_plugin_with_valid_plot_kinds_accepted():
     """Declaring a valid subset of plot_kinds is accepted."""
     from calibrated_explanations.plugins.base import validate_plugin_meta
 
-    meta = _minimal_plot_meta(plot_kinds=["instance", "global"])
+    meta = _minimal_plot_meta(plot_kinds=["factual_probabilistic", "global_regression"])
     validate_plugin_meta(meta)
+    assert set(meta["plot_kinds"]) == {"factual_probabilistic", "global_regression"}
+
+
+def test_plot_plugin_with_category_plot_kinds_warns():
+    """Declaring legacy category plot_kinds remains transitional but warns."""
+    from calibrated_explanations.plugins.base import validate_plugin_meta
+
+    meta = _minimal_plot_meta(plot_kinds=["instance", "global"])
+    with pytest.warns(DeprecationWarning, match="category vocabulary"):
+        validate_plugin_meta(meta)
     assert set(meta["plot_kinds"]) == {"instance", "global"}
 
 
@@ -78,6 +95,16 @@ def test_plot_plugin_with_invalid_plot_kinds_raises():
     from calibrated_explanations.utils.exceptions import ValidationError
 
     meta = _minimal_plot_meta(plot_kinds=["instance", "UNSUPPORTED_KIND"])
+    with pytest.raises(ValidationError, match="plot_kinds"):
+        validate_plugin_meta(meta)
+
+
+def test_plot_plugin_with_triangular_plot_kind_raises():
+    """Triangular is an internal routing kind, not plugin metadata vocabulary."""
+    from calibrated_explanations.plugins.base import validate_plugin_meta
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    meta = _minimal_plot_meta(plot_kinds=["triangular"])
     with pytest.raises(ValidationError, match="plot_kinds"):
         validate_plugin_meta(meta)
 

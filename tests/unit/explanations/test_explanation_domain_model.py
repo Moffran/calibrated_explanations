@@ -82,6 +82,7 @@ def test_legacy_to_domain_metadata_absent_leaves_fields_none():
 # Gap 1: _exp_to_domain replaces _legacy_payload + legacy_to_domain chain
 # (verified through the public to_json / from_json API)
 # ---------------------------------------------------------------------------
+# ADR-030 requires this behavior to be verified through public serialization APIs.
 
 
 def _make_minimal_factual():

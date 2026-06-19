@@ -73,11 +73,11 @@ A milestone cannot close while any of the following remains open:
 ### Active control items
 
 - **Milestone execution control**
-  - **Status:** Active milestone is v0.11.1; only this milestone is maintained as an active detailed control surface.
-  - **Next action:** Execute and close v0.11.1 plan, then promote v0.11.2 at the next milestone boundary.
+  - **Status:** Active milestone is v0.11.4; `development/current-work/v0.11.4_plan.md` is the maintained detailed control surface.
+  - **Next action:** Finish v0.11.4 closure validation, then promote v1.0.0-rc at the next milestone boundary.
 - **Future milestone discipline**
-  - **Status:** v0.11.2 and v0.11.3 plans remain detailed for continuity, but are not maintained continuously while a different milestone is active.
-  - **Next action:** Re-baseline future milestone statuses only when the active milestone boundary is reached.
+  - **Status:** v1.0.0-rc planning remains bounded to validation/freeze work; v0.11.4 carries the remaining pre-RC implementation closures.
+  - **Next action:** Re-baseline RC status only after v0.11.4 implementation closure is verified.
 - **Boundary-update policy**
   - **Status:** Governance/planning docs are updated at milestone boundaries, not on every PR.
   - **Next action:** Apply batched plan-grooming updates at milestone close/open checkpoints to keep process overhead low.
@@ -111,33 +111,33 @@ Gap-by-gap severity tables now live only in `development/current-work/RELEASE_PL
 
 **ADR-003 - Caching Strategy:** Completed; no open appendix gaps.
 
-**ADR-004 - Parallel Execution Framework:** Partially complete; v0.11.0 target is to close naming alignment and finalize `strategy="auto"` policy handling. Any remaining behavioral redesign defers to v0.11.1+.
+**ADR-004 - Parallel Execution Framework:** Completed (2026-06-17); v0.11.4 deprecated `strategy="auto"` when `enabled=True`, added focused warning tests, and filed the v1.0.0 removal row. No open appendix gaps.
 
 **ADR-005 - Explanation Payload Schema:** Completed (2026-06-11); provenance propagates through both legacy adapters and the canonical `schema.validate_payload` plus serialization invariants are verified in code. No open appendix gaps. (Domain-model authority work continues under ADR-008.)
 
-**ADR-006 - Plugin Trust Model:** Partially complete; v0.11.0 includes `PluginManager` shell, `PluginTrustPolicy`, public-surface cleanup, and accepted-registration audit events. Trust-state atomicity unification and legacy-list deprecation remain v0.11.1.
+**ADR-006 - Plugin Trust Model:** Completed (2026-06-17); v0.11.4 closed the checksum trust-elevation bypass and retained keyed trust controls. No open appendix gaps.
 
 **ADR-007 - PlotSpec Abstraction:** Superseded by ADR-036/ADR-037; use ADR-036 for PlotSpec canonical contract and ADR-037 for visualization extension governance.
 
-**ADR-008 - Explanation Domain Model:** Partially complete; major domain-authoritative migration and full round-trip/golden parity remain v0.11.1+ due cross-cutting scope.
+**ADR-008 - Explanation Domain Model:** Completed (v0.11.4); domain-model authority at the serialization boundary, typed calibration/model descriptors, and multiclass `class_index` preservation are closed. No open appendix gaps.
 
-**ADR-009 - Input Preprocessing and Mapping Policy:** Partially complete; v0.11.0 target is to close JSON-safe mapping export hardening and document helper placement decisions.
+**ADR-009 - Input Preprocessing and Mapping Policy:** Completed (2026-06-15); JSON-safe mapping export and helper-placement decisions are closed or explicitly documented. No open appendix gaps.
 
-**ADR-010 - Optional Dependency Split:** Partially complete; v0.11.0 target is to add automated core-only vs extras parity checks.
+**ADR-010 - Optional Dependency Split:** Completed; core-only vs extras parity checks are in place. No open appendix gaps.
 
 **ADR-011 - Deprecation and Migration Policy:** Completed (2026-06-15). The two-minor default remains normal policy; all active deprecations are filed with v1.0.0 removal ETAs under the binding finalization exception. All three 2026-06-11 reopened gaps closed: (1) guarded wrappers removed in v0.11.3 via finalization exception; (2) active-deprecations ledger rebuilt with 9 correctly filed rows, `make deprecation-closure` passes (0 blocking); (3) raw `DeprecationWarning` sites in `normalization_strategy.py`, `core/reject.py`, `core/explain/__init__.py`, and `core/calibrated_explainer.py` all use `deprecate()` helper. No open appendix gaps.
 
 **ADR-012 - Documentation & Gallery Build Policy:** Accepted; gallery-tooling decision closed (nbconvert, 2026-06-02). Re-evidenced 2026-06-11: notebook execution exists (nightly advisory driver with timeouts; `nbsphinx_execute="always"` on non-RTD builds). Gap 1 closed (v0.11.4): docs HTML/linkcheck CI job wired via `docs-build` job in `ci-nightly.yml` calling `reusable-build-docs.yml`. Gap 2 (per-example runtime ceiling enforcement) remains advisory-only; blocking enforcement is a release-branch obligation. Target: v1.0.0-rc.
 
-**ADR-013 - Interval Calibrator Plugin Strategy:** Partially complete; protocol/signature alignment and fallback-chain strictness remain v0.11.1+.
+**ADR-013 - Interval Calibrator Plugin Strategy:** Completed (2026-06-18); v0.11.4 closed runtime output validation, documented the frozen-context replacement for the legacy adaptor name, and added pre-plugin migration guidance. No open appendix gaps.
 
 **ADR-014 - Visualization Plugin Architecture:** Superseded by ADR-037; use ADR-037 for builder/renderer governance and runtime kind-extension policy.
 
-**ADR-015 - Explanation Plugin Integration:** Partially complete; v0.11.0 target is invariant-enforcement consistency and bridge-surface hardening in line with ADR-026 tasking.
+**ADR-015 - Explanation Plugin Integration:** Completed (2026-06-18); v0.11.4 closed monitor hard-failure, classification bounds enforcement, `ExplainerHandle.learner` deprecation, and broad delegation documentation. No open appendix gaps.
 
 **ADR-016 - PlotSpec Separation and Schema:** Superseded by ADR-036/ADR-037; use ADR-036 for semantic contract and ADR-037 for rendering governance.
 
-**ADR-020 - Legacy User API Stability:** Accepted (2026-03-03); `legacy_user_api_contract.md` updated for v0.11.0 removals. Remaining open appendix gaps (parity assertions, contributor workflow guidance) targeted v0.11.1.
+**ADR-020 - Legacy User API Stability:** Completed; legacy public API contract tests and contributor workflow guidance are closed. No open appendix gaps.
 
 **ADR-021 - Calibrated Interval Semantics:** Completed; no open appendix gaps.
 
@@ -149,39 +149,39 @@ Gap-by-gap severity tables now live only in `development/current-work/RELEASE_PL
 
 **ADR-025 - Legacy Plot Rendering Semantics:** Superseded/retired; maintained in `docs/maintenance/legacy-plotting-reference.md`.
 
-**ADR-026 - Explanation Plugin Semantics:** Partially complete; telemetry gaps closed in v0.11.2. Re-scoped 2026-06-11: context immutability has substantially landed (frozen dataclasses with nested freezing); the residual gap is a set of specific unfrozen nested fields (`helper_handles`, `bins`, `fast_flags`, etc.), targeted v1.0.0-rc.
+**ADR-026 - Explanation Plugin Semantics:** Completed (2026-06-18); v0.11.4 closed rule-level batch validation, monitor hard-failure, and documented the trusted `core.*` monitor exemption. No open appendix gaps.
 
-**ADR-027 - FAST-Based Feature Filtering:** Partially complete; v0.11.0 target is observability policy/docs/examples closure.
+**ADR-027 - FAST-Based Feature Filtering:** Completed (2026-06-18); v0.11.4 reclassified non-strict feature-filter governance events to `DEBUG`. No open appendix gaps.
 
-**ADR-028 - Logging and Governance Observability:** Accepted (2026-03-03); v0.11.1 tooling and v0.11.3 Task 9 Workstream C closures delivered. **Reopened minor 2026-06-11:** warning-policy inventory regressed to 1 unclassified site (`api/config.py:265`, added by Task 12). Closure: v0.11.3 plan Task 15.
+**ADR-028 - Logging and Governance Observability:** Completed (2026-06-18); warning-policy closure holds, operational loggers are in accepted domains, and `configure_logging()` is implemented. No open appendix gaps.
 
 **ADR-029 - Reject Integration Strategy:** Accepted (2026-01-06); policy enum, strategy registry, and reject envelope direction documented in ADR-029. `RejectResult` → `RejectResultV2` public-API migration: an active `deprecate()` call is present in `explanations/reject.py`; under ADR-011 finalization exception all active deprecations must be closed in v0.11.x. Migration or deprecation reset (removing the active warning and deferring to post-v1.0) must be resolved in v0.11.3 Task 5 (Group L). RC does not implement this; RC only verifies the deprecation ledger is empty.
 
 **ADR-030 - Test Quality Priorities and Enforcement:** Accepted; v0.11.0 delivered full detector extension and CI check-mode enforcement (assertion + determinism checks). Zero-tolerance ratification (marker hygiene, mutation testing policy) targets v0.11.3.
 
-**ADR-031 - Calibrator Serialization & State Persistence:** Completed in v0.11.0; versioned `to_primitive`/`from_primitive` contracts plus `WrapCalibratedExplainer` save/load delivered. No open appendix gaps.
+**ADR-031 - Calibrator Serialization & State Persistence:** Completed (2026-06-18); v0.11.4 migrated calibrator primitives to JSON-safe schema v2 with v1 migration warnings and direct round-trip tests. No open appendix gaps.
 
 **ADR-032 - Guarded Explanation Semantics:** Accepted (scoped); schema-compatible representative-point guarded semantics and guarded auditability are authoritative for v0.11.x. Semantic identity, plugin-path identity, and whole-interval certification are explicitly out of scope. **2026-06-11 sweep:** decisions verified in code; one minor open gap (`get_guarded_audit` error message recommends the deprecated wrappers) plus a pending decision on the guarded-wrapper removal schedule (ADR-011 conflict). Closure: v0.11.3 plan Task 15.
 
-**ADR-033 - Modality Extension Plugin Contract and Packaging Strategy:** Accepted; split across v0.11.0 (breaking metadata/resolver semantics) and v0.11.1 (CLI/shims/docs/packaging hardening).
+**ADR-033 - Modality Extension Plugin Contract and Packaging Strategy:** Completed (2026-06-18); `data_modalities` enforcement is closed and the skipped warning-phase deviation is documented. No open appendix gaps.
 
 **ADR-034 - Centralized Configuration Management:** Accepted (2026-04-07); v0.11.2 runtime conformance closure is complete (Phase B migration + release-plan synchronization). v0.11.3 Task 10 closes remaining gaps (§7 scope boundary addendum, `CE_DEBUG_TRUST_INVARIANTS` governance, perturbation.py lifecycle fix, zombie `config.ini` deletion, `ExplainerConfig.task`/`parallel_workers` removal, root namespace exports). Remaining open items resolved: (a) sensitive-value redaction — declared out of scope for v1.0.0; CE_ env vars are behavioral flags, not secrets; documented in ADR-034 §7; (b) export payload schema versioning — `ResolvedConfigSnapshot` already carries a `schema_version` field; schema versioning is complete; ADR-034 §7 documents the version contract. No deferred v1.0 implementation items remain.
 
 **ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Completed (2026-06-15); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.3 Task 6 promoted PlotSpec to the default user-facing plotting path; Task 15 closed the final gap: `validate_plot_artifact()` inserted at both build/render boundaries (`plotting.py:387`, `:439`). No open appendix gaps.
 
-**ADR-037 - Visualization Extension and Rendering Governance:** Completed (2026-06-15); builder/renderer contracts, deterministic extension metadata requirements, and default-path posture established. v0.11.3 Task 6 promoted the governed built-in PlotSpec default; Task 15 closed the final gap: `plot_kinds`/`plot_modes` fields declared on all four built-in descriptors and validated by `validate_plugin_meta`. No open appendix gaps.
+**ADR-037 - Visualization Extension and Rendering Governance:** Completed (2026-06-18); v0.11.4 migrated plugin metadata to six semantic plot kinds, deprecated category vocabulary, and documented `triangular` as internal routing. No open appendix gaps.
 
-**ADR-038 - Call-time Configuration Taxonomy and Naming Conventions:** Accepted (2026-06-12); v0.11.3 Task 17 delivered `GuardedOptions`, `reject_confidence`, and the four-tier taxonomy. Two open hardening items remain for v1.0.0-rc: `**kwargs` graduation gate on `explain_factual`/`explore_alternatives`, and plugin §5 taxonomy enforcement in `validate_plugin_meta`. See appendix for details.
+**ADR-038 - Call-time Configuration Taxonomy and Naming Conventions:** Accepted with RC graduation item only (2026-06-18); v0.11.4 closed plugin taxonomy policy drift, warning allowlist drift, and unknown wrapper-kwarg visibility. Remaining item: `**kwargs` graduation gate for v1.0.0-rc.
 
-**Standard-001 - Nomenclature Standardization:** Partially complete; v0.11.0 delivered naming guardrail automation and private-member allowlist emptied. Double-underscore mutation cleanup targets v0.11.1; final transitional shim removal targets v0.11.3.
+**Standard-001 - Nomenclature Standardization:** Completed; nomenclature guardrails and transitional shim removals are closed. No open appendix gaps.
 
-**Standard-002 - Code Documentation Standardisation:** Partially complete; v0.11.0 target is wrapper/public numpydoc closure. Known gap (WrapCalibratedExplainer numpydoc blocks) targets v0.11.3.
+**Standard-002 - Code Documentation Standardisation:** Completed; docstring coverage and wrapper/public numpydoc closure are complete. No open appendix gaps.
 
 **Standard-003 - Test Coverage Standard:** Completed; no open appendix gaps.
 
 **Standard-004 - Documentation Standard (Audience Hubs):** Completed; no open appendix gaps.
 
-**Standard-005 - Logging and Observability Standard:** Accepted (2026-01-15); v0.11.1 tooling and v0.11.3 fallback-visibility closures delivered. **Reopened minor 2026-06-11:** shares the ADR-028 warning-policy regression (1 unclassified site). Closure: v0.11.3 plan Task 15.
+**Standard-005 - Logging and Observability Standard:** Completed (2026-06-18); shares ADR-028 closure with `configure_logging()`, logger-domain compliance, and 0 unclassified warning sites. No open appendix gaps.
 
 ## Release milestones
 
@@ -200,7 +200,7 @@ Gap-by-gap severity tables now live only in `development/current-work/RELEASE_PL
 | v0.11.1 | Notebook execution + runtime ceilings (ADR-012); remaining ADR-027/028 enforcement hardening; ADR-033 additive modality rollout follow-through. | No major new code-doc initiative planned beyond maintenance. | No major new coverage initiative planned beyond maintenance. | Double-underscore mutation cleanup completion tasks (Standard-001). | Registry hardening deferred from v0.11.0: full PluginManager resolution migration, trust-state atomicity unification, governance audit completion, and legacy list deprecation. CI upgrade: decommission legacy workflows. |
 | v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, governance dashboard artifact, LIME/SHAP v0.11.2 removal phase (Task 21 execution), deep memory audit (retention/leak fixes), PlotSpec default-promotion follow-up decision (ADR-036/ADR-037), ADR-035 conformance gap remediation, and packaging metadata maturity correction. |
 | v0.11.3 | Minimal docs-build changes; Standard-002 numpydoc gap closure. | Close WrapCalibratedExplainer numpydoc blocks (Standard-002). | No new coverage work planned. | Final transitional shim removal (Standard-001). | RC readiness: Standard-001 shim closure, Standard-002 gap, ADR-030 zero-tolerance ratification, OSS perf harness (stretch), RejectResult→V2 migration (Group L, ADR-011 finalization), configuration management contract closure (Task 10), RC upgrade checklist + safe-defaults guide (Task 11). All implementation work that was previously in v1.0.0-rc is now in this milestone. |
-| v0.11.4 | No new documentation-overhaul work. | No new code-docs work. | No new coverage work. | No new naming work. | Pre-RC ADR gap closure: ADR-004 Gap 1 (`strategy="auto"` deprecation), ADR-008 Gaps 1+3 (serialization domain authority, `CalibrationDescriptor`/`ModelDescriptor` structured metadata, multiclass `class_index` bug fix), ADR-012 Gap 1 (docs linkcheck CI wired), ADR-015 Gap 2 (`ExplainerHandle.learner` deprecation stacklevel), ADR-033 Gap 1 (`data_modalities` required), ADR-038 Gaps 2+3 (plugin taxonomy documentation policy). Nightly parity-reference scikit-learn determinism fix (Task 7). |
+| v0.11.4 | ADR-012 release-branch docs hardening plus plugin-contract migration notes. | No broad code-doc initiative; targeted ADR/STD documentation closure only. | No broad coverage initiative; targeted tests added for ADR-031, ADR-038, plugins, logging, CI, and persistence. | No broad naming initiative. | Pre-RC ADR gap closure: Tasks 1-19 closed or explicitly deferred. Major closures include ADR-004, ADR-008, ADR-012, ADR-013, ADR-015, ADR-021, ADR-026, ADR-027, ADR-028/STD-005, ADR-031, ADR-033, ADR-037, ADR-038 hardening, ADR-030/005/006 fixes, documentation migration, capability scaffold, and nightly parity-reference determinism. |
 | v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals verified post-tag; legacy API guard tests green. | Stability declaration: RC contract freeze confirmed, production staging signed off, post-release maintenance cadences scheduled, and packaging classifier promoted to `Development Status :: 5 - Production/Stable` at GA cutover. |
 
 ### v0.6.x (stabilisation patches)
@@ -605,15 +605,15 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 
   **Milestone closure — 2026-06-13:** v0.11.3 is complete. All 18 tasks implemented and verified. Key closures: Standard-001 shim removal (Task 1), Standard-002 numpydoc gap (Task 2), ADR-030 zero-tolerance ratification (Task 3), full deprecation ledger closure including `data_modalities` fail-closed enforcement (Tasks 5, 15, 17, 18), PlotSpec default promotion (Task 6), `uv` workflow support (Task 7), reject hardening (Tasks 8, 11), config management contract (Task 10), RC upgrade checklist and safe-defaults guide (Task 12), guarded explanation parameterization (Task 13), parameter naming CI guard (Task 14), ADR gap closure sweep (Task 15), constraint minimization (Task 16), call-time configuration taxonomy `GuardedOptions`/`reject_confidence` (Task 17), release preparation (Task 18). Gates: `make local-checks-pr` ✅, `make deprecation-closure` ✅ (9 v1.0.0 permitted, 0 blocking), Sphinx strict build ✅, warning policy ✅ (0 unclassified), `uv-install-smoke` ✅. Version tagged: `0.11.3`. CHANGELOG converted. ADR/appendix rows closed. Next: v1.0.0-rc.
 
-**Known open implementation gaps — must be resolved before RC snapshot is taken.** These are pre-RC patch work (most likely v0.11.4), not RC validation tasks per the no-implementation posture above. Full gap details and resolution checklist tracked in `development/finished-work/v0.11.3_plan.md §15+) ADR gap closure: pre-RC implementation gaps (re-opened 2026-06-14)`. Summary:
+**Known pre-RC implementation gaps — v0.11.4 closure status.** These were the pre-RC patch items that motivated v0.11.4. Their detailed closure evidence is tracked in `development/current-work/v0.11.4_plan.md` and `development/current-work/RELEASE_PLAN_status_appendix.md`; only the explicitly deferred RC/post-v1 items remain open.
 
 | Gap | ADR | Severity | Decision required |
 |-----|-----|----------|-------------------|
-| `strategy="auto"` silently selects backend when `enabled=True` | ADR-004 gap 1 | 9 | Deprecate `strategy="auto"` via ADR-011 cycle; require explicit strategy for v1.0.0 |
-| Domain model authority (3 sub-gaps) | ADR-008 gaps 1/2/3 | 20/14/12 | Scope decision: RC gate vs. post-v1.0 re-target |
-| `ExplainerHandle.learner` direct bypass | ADR-015 gap 2 | 8 | Restrict or document as escape hatch |
-| Unfrozen nested context fields | ADR-026 gap 1 | 6 | Freeze mapping-type fields or scope to post-v1.0 |
-| Docs HTML/linkcheck CI job wired (nightly advisory) | ADR-012 Gap 1 | — | **Closed v0.11.4**: `docs-build` job added to `ci-nightly.yml` |
+| `strategy="auto"` silently selects backend when `enabled=True` | ADR-004 gap 1 | 9 | **Closed v0.11.4:** deprecation warning plus v1.0.0 removal ledger row |
+| Domain model authority (3 sub-gaps) | ADR-008 gaps 1/2/3 | 20/14/12 | **Closed v0.11.4:** domain-authoritative serialization, typed descriptors, and multiclass metadata preservation |
+| `ExplainerHandle.learner` direct bypass | ADR-015 gap 2 | 8 | **Closed v0.11.4:** deprecation warning retained and broad delegation documented as accepted risk |
+| Unfrozen nested context fields / rule-level semantics | ADR-026 gap 1/3 | 6/9 | **Closed v0.11.4:** nested freezing verified; rule-level validation and trusted built-in exemption documented |
+| Docs HTML/linkcheck CI job wired (nightly advisory) | ADR-012 Gap 1 | - | **Closed v0.11.4:** `docs-build` job added to `ci-nightly.yml`; release-branch strict docs workflow added in Task 16 |
 
 
 ### v1.0.0-rc (release candidate readiness)

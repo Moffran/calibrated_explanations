@@ -134,3 +134,16 @@ Negative / Risks:
 ## Open Questions
 
 No blocking open questions remain for the `v0.11.0` / `v0.11.1` split scope.
+
+## Deviation Record
+
+The Section 6.1 migration plan originally expected a `DeprecationWarning` phase
+for plugins missing `data_modalities`. In practice, v0.11.1 used a
+notebook-visible `UserWarning` and skipped those entry-point plugins
+fail-closed. v0.11.4 then promoted the validation boundary directly to
+`ValidationError` in `validate_plugin_meta`.
+
+This deviation is accepted because the skipped-plugin behavior was safer than a
+silent default, no known third-party plugin ecosystem depended on omitted
+`data_modalities`, and v1.0.0-rc is a validation-only milestone where this
+implementation work cannot land.

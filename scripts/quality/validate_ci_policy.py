@@ -137,6 +137,9 @@ def _check_action_sha_pins(file_path: Path, text: str, errors: list[str]) -> Non
 
 
 def _check_heavy_gating(file_path: Path, text: str, errors: list[str]) -> None:
+    # Reusable workflows are always gated by their callers; skip this check for them.
+    if file_path.name.startswith("reusable-"):
+        return
     lowered = (file_path.as_posix() + "\n" + text).lower()
     if not any(keyword in lowered for keyword in HEAVY_KEYWORDS):
         return

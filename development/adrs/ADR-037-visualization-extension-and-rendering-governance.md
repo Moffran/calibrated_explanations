@@ -51,6 +51,18 @@ Visualization extension descriptors/registrations **MUST** provide minimal but s
 
 Metadata **MUST NOT** be so thin that resolver outcomes depend on implicit defaults or non-auditable side effects.
 
+`plot_kinds` uses the semantic PlotSpec content vocabulary:
+`factual_probabilistic`, `factual_regression`,
+`alternative_probabilistic`, `alternative_regression`,
+`global_probabilistic`, and `global_regression`. The PlotSpec registry also
+contains `triangular`, but that value is an internal rendering/routing variant
+for alternative/global probabilistic visuals, not a distinct content kind that
+plugin authors declare in metadata.
+
+The legacy category vocabulary (`instance`, `collection`, `global`) is accepted
+only as a v0.11.4 transition path and emits `DeprecationWarning`; it is removed
+at v1.0.0. New plugins must use the semantic names.
+
 ### 5. Default and legacy behavior (v0.11.1 -> v0.11.2)
 
 - Legacy plotting remains the default path in v0.11.1.

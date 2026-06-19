@@ -62,6 +62,10 @@ Goals:
 - Contributors MUST NOT call `logging.basicConfig` in library code;
   configuration is the responsibility of the host application or top-level
   scripts.
+- Host applications that want a package-level default SHOULD use
+  `calibrated_explanations.configure_logging()`, which configures the
+  `calibrated_explanations` root logger and installs the shared context filter
+  without touching unrelated application loggers.
 
 ## 4. Log Levels and Message Conventions
 

@@ -118,6 +118,12 @@ linkcheck_ignore = [
     # runs; ignore repo-hosted notebooks to avoid transient failures.
     r"https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/.*",
     r"https://raw.githubusercontent.com/Moffran/calibrated_explanations/main/notebooks/.*",
+    # development/ (ADRs, standards, plans) is the kristinebergs working tree and
+    # has not yet been merged to Moffran/main. Links to these paths will 404 or
+    # rate-limit until the next upstream sync; suppress them in linkcheck so that
+    # genuine public-facing broken links are not masked by development-tree churn.
+    r"https://github.com/Moffran/calibrated_explanations/blob/main/development/.*",
+    r"https://raw.githubusercontent.com/Moffran/calibrated_explanations/main/development/.*",
     # External academic portals can be flaky / time out from CI linkcheck runners
     # Ignore diva-portal host to avoid transient timeouts causing CI failures.
     r"https://www.diva-portal.org/.*",

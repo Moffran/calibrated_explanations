@@ -224,6 +224,8 @@ class ExplainerHandle:
 
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying explainer."""
+        if name == "learner":
+            return self.learner
         explainer = self.__dict__.get("_explainer")
         if explainer is None:
             raise AttributeError(name)
@@ -464,8 +466,139 @@ def validate_explanation_batch(
         prediction = instance.get("prediction")
         if isinstance(prediction, MappingABC):
             _validate_prediction_invariant(prediction, f"Instance {index} prediction")
+        mode = str(instance.get("mode") or instance.get("explanation_type") or mode_hint or "")
+        if mode == "alternative":
+            _validate_alternative_reference_prediction(instance, metadata, index)
+        for rule_index, rule in enumerate(_iter_rule_mappings(instance, index)):
+            _validate_rule_weight_interval(rule, index, rule_index)
+            if mode == "alternative":
+                _validate_alternative_rule_prediction(rule, index, rule_index)
 
     return batch
+
+
+def _iter_rule_mappings(instance: MappingABC[str, Any], instance_index: int) -> SequenceABC:
+    """Return rule mappings from an instance payload, validating container shape."""
+    rules = instance.get("rules")
+    if rules is None:
+        return ()
+    if not isinstance(rules, SequenceABC) or isinstance(rules, (str, bytes)):
+        raise ValidationError(
+            f"Instance {instance_index} rules must be a sequence of mappings",
+            details={"instance_index": instance_index, "actual_type": type(rules).__name__},
+        )
+    for rule_index, rule in enumerate(rules):
+        if not isinstance(rule, MappingABC):
+            raise ValidationError(
+                f"Instance {instance_index} rule {rule_index} must be a mapping",
+                details={
+                    "instance_index": instance_index,
+                    "rule_index": rule_index,
+                    "actual_type": type(rule).__name__,
+                },
+            )
+    return rules
+
+
+def _validate_rule_weight_interval(
+    rule: MappingABC[str, Any], instance_index: int, rule_index: int
+) -> None:
+    """Validate factual rule weight intervals when supplied by a plugin."""
+    rule_weight = rule.get("rule_weight")
+    weight_interval = rule.get("weight_interval")
+    if not isinstance(weight_interval, MappingABC) and isinstance(rule_weight, MappingABC):
+        weight_interval = rule_weight
+
+    if not isinstance(weight_interval, MappingABC):
+        return
+    if "low" not in weight_interval or "high" not in weight_interval:
+        return
+
+    weight = rule.get("weight")
+    if weight is None and isinstance(rule_weight, MappingABC):
+        weight = rule_weight.get("predict", rule_weight.get("weight"))
+    if weight is None:
+        raise ValidationError(
+            f"Instance {instance_index} rule {rule_index}: weight interval requires weight",
+            details={"instance_index": instance_index, "rule_index": rule_index},
+        )
+
+    _validate_numeric_interval(
+        weight,
+        weight_interval["low"],
+        weight_interval["high"],
+        f"Instance {instance_index} rule {rule_index} weight",
+    )
+
+
+def _validate_alternative_reference_prediction(
+    instance: MappingABC[str, Any],
+    metadata: MappingABC[str, Any],
+    instance_index: int,
+) -> None:
+    """Validate the required alternative reference prediction payload."""
+    reference_prediction = instance.get(
+        "reference_prediction", metadata.get("reference_prediction")
+    )
+    if reference_prediction is None:
+        raise ValidationError(
+            f"Instance {instance_index}: alternative explanations require reference_prediction",
+            details={"instance_index": instance_index},
+        )
+    if isinstance(reference_prediction, MappingABC):
+        _validate_prediction_invariant(
+            reference_prediction, f"Instance {instance_index} reference_prediction"
+        )
+
+
+def _validate_alternative_rule_prediction(
+    rule: MappingABC[str, Any], instance_index: int, rule_index: int
+) -> None:
+    """Validate alternative rule predicted values and optional intervals."""
+    if "predicted_value" not in rule:
+        raise ValidationError(
+            f"Instance {instance_index} rule {rule_index}: alternative rule requires predicted_value",
+            details={"instance_index": instance_index, "rule_index": rule_index},
+        )
+
+    prediction_interval = rule.get("prediction_interval")
+    if not isinstance(prediction_interval, MappingABC):
+        return
+    if "low" not in prediction_interval or "high" not in prediction_interval:
+        return
+
+    _validate_numeric_interval(
+        rule["predicted_value"],
+        prediction_interval["low"],
+        prediction_interval["high"],
+        f"Instance {instance_index} rule {rule_index} predicted_value",
+    )
+
+
+def _validate_numeric_interval(value: Any, low: Any, high: Any, context: str) -> None:
+    """Enforce low <= value <= high with small floating-point tolerance."""
+    with contextlib.suppress(TypeError, ValueError):
+        value_arr = np.asanyarray(value)
+        low_arr = np.asanyarray(low)
+        high_arr = np.asanyarray(high)
+
+        if value_arr.size == 0 or low_arr.size == 0 or high_arr.size == 0:
+            return
+        if not (
+            np.issubdtype(value_arr.dtype, np.number)
+            and np.issubdtype(low_arr.dtype, np.number)
+            and np.issubdtype(high_arr.dtype, np.number)
+        ):
+            return
+
+        if not np.all(low_arr <= high_arr):
+            raise ValidationError(f"{context}: Interval invariant violated: low > high")
+
+        epsilon = 1e-9
+        if not np.all((low_arr - epsilon <= value_arr) & (value_arr <= high_arr + epsilon)):
+            raise ValidationError(
+                f"{context}: Prediction invariant violated: predict not in [low, high]"
+            )
 
 
 def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> None:

@@ -512,7 +512,7 @@ def test_should_roundtrip_state_with_native_classification_primitive_when_saved(
 
     primitive = json.loads((state_dir / "calibrator_primitive.json").read_text(encoding="utf-8"))
     assert primitive["calibrator_type"] == "venn_abers"
-    assert primitive["schema_version"] == 1
+    assert primitive["schema_version"] == 2
 
     restored = WrapCalibratedExplainer.load_state(state_dir)
     reloaded = restored.predict_proba(x_test[:12], uq_interval=True)

@@ -9,13 +9,21 @@ Covers:
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
 from unittest.mock import MagicMock
 
+import numpy as np
+import pytest
 
 from calibrated_explanations.plugins.manager import (
     DEFAULT_INTERVAL_IDENTIFIERS,
     PluginManager,
 )
+from calibrated_explanations.plugins.intervals import (
+    IntervalCalibratorContext,
+    validate_interval_calibrator_output,
+)
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 # ---------------------------------------------------------------------------
@@ -196,3 +204,57 @@ def test_should_confirm_venn_abers_implements_full_classification_protocol_signa
     # VennAbers satisfies the structural protocol
     va = VennAbers.__new__(VennAbers)
     assert isinstance(va, ClassificationIntervalCalibrator)
+
+
+def test_legacy_interval_context_design_decision_documented():
+    """ADR-013 must document the frozen context design decision."""
+    adr_path = (
+        Path(__file__).resolve().parents[3]
+        / "development"
+        / "adrs"
+        / "ADR-013-interval-calibrator-plugin-strategy.md"
+    )
+    adr_text = adr_path.read_text(encoding="utf-8")
+
+    assert "LegacyIntervalContext" in adr_text
+    assert "superseded by `IntervalCalibratorContext`" in adr_text
+
+
+def test_runtime_output_validation_rejects_shape_mismatch():
+    """Runtime interval validation must reject mismatched sample counts."""
+    context = IntervalCalibratorContext(
+        learner=object(),
+        calibration_splits=((np.zeros((2, 3)), np.zeros(2)),),
+        bins={},
+        residuals={},
+        difficulty={},
+        metadata={},
+        fast_flags={},
+    )
+
+    with pytest.raises(ValidationError, match="unexpected row count"):
+        validate_interval_calibrator_output(
+            np.asarray([[0.5, 0.5]], dtype=float),
+            context,
+            identifier="tests.interval.bad_shape",
+        )
+
+
+def test_runtime_output_validation_rejects_wrong_dtype():
+    """Runtime interval validation must reject non-floating probability outputs."""
+    context = IntervalCalibratorContext(
+        learner=object(),
+        calibration_splits=((np.zeros((2, 3)), np.zeros(2)),),
+        bins={},
+        residuals={},
+        difficulty={},
+        metadata={},
+        fast_flags={},
+    )
+
+    with pytest.raises(ValidationError, match="non-floating output dtype"):
+        validate_interval_calibrator_output(
+            np.asarray([[1, 0], [0, 1]], dtype=int),
+            context,
+            identifier="tests.interval.bad_dtype",
+        )

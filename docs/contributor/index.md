@@ -12,7 +12,7 @@ Repository authority:
 2. Use {doc}`extending/guides/index` for implementation workflows.
 3. Run checks from {doc}`../foundations/governance/pr_guide` and
    {doc}`../foundations/governance/test_policy`.
-4. Use {doc}`../standards/STD-004-documentation-audience-standard` for docs
+4. Use `development/standards/STD-004-documentation-audience-standard.md` (maintainer-only docs set) for docs
    structure and semantics-layer requirements.
 
 Contributor-facing semantics references:
@@ -27,6 +27,7 @@ Contributor-facing semantics references:
 plugin-contract
 notebook_policy
 performance_harness
+reject_policy_usage
 extending/plugin-advanced-contract
 extending/guides/index
 extending/advanced

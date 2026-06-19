@@ -79,8 +79,16 @@ We therefore need a plugin model that lets external contributors add new interva
      semantics and exposing `.calibrators` for introspection.
    - Immutability follows a hybrid approach: freeze critical structures such as
      `bins`, `residuals`, `difficulty`, and `metadata` (using read-only views
-     and defensive copies) while avoiding deep copies of every field to keep
-     overhead bounded.
+   and defensive copies) while avoiding deep copies of every field to keep
+   overhead bounded.
+
+   **Design decision (2026-06-17):** the originally named `LegacyIntervalContext`
+   adaptor is superseded by `IntervalCalibratorContext`. The frozen dataclass is
+   the legacy-state adaptor: it wraps existing `CalibratedExplainer` calibration
+   state, freezes mutable mappings and outer sequences, and provides
+   `plugin_state` for plugin-local scratch data without mutating the explainer.
+   No separate `LegacyIntervalContext` class is required unless a future ADR
+   introduces a materially different legacy adapter boundary.
 
 5. **Documentation and tooling.**
    - Developer docs gain a dedicated section that explains the layered protocol, the context object, and examples that subclass and compose IntervalRegressor / VennAbers.

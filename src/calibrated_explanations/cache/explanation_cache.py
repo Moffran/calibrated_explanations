@@ -17,7 +17,7 @@ import numpy as np
 if TYPE_CHECKING:
     from .cache import CalibratorCache
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("calibrated_explanations.core.cache")
 
 
 class ExplanationCacheFacade:

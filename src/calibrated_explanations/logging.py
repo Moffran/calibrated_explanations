@@ -54,6 +54,40 @@ def coerce_bool(value: str | bool | None) -> bool:
     return _coerce_bool(value)
 
 
+def configure_logging(
+    level: int | str = logging.WARNING,
+    handler: logging.Handler | None = None,
+    formatter: logging.Formatter | None = None,
+) -> logging.Logger:
+    """Configure and return the package root logger.
+
+    Parameters
+    ----------
+    level
+        Logging level for the ``calibrated_explanations`` root logger.
+    handler
+        Optional handler to attach. When omitted, a ``StreamHandler`` is used.
+    formatter
+        Optional formatter for the handler.
+
+    Returns
+    -------
+    logging.Logger
+        The configured package logger.
+    """
+    logger = logging.getLogger("calibrated_explanations")
+    logger.setLevel(level)
+    active_handler = handler or logging.StreamHandler()
+    active_handler.setLevel(level)
+    active_handler.setFormatter(
+        formatter or logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+    )
+    if active_handler not in logger.handlers:
+        logger.addHandler(active_handler)
+    ensure_logging_context_filter(logger.name)
+    return logger
+
+
 def telemetry_diagnostic_mode() -> bool:
     """Return whether telemetry should emit full diagnostic payloads.
 
@@ -112,6 +146,7 @@ def ensure_logging_context_filter(logger_name: str = "calibrated_explanations") 
 
 
 __all__ = [
+    "configure_logging",
     "telemetry_diagnostic_mode",
     "get_logging_context",
     "update_logging_context",

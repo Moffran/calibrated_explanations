@@ -135,6 +135,15 @@ class LegacyPredictBridge(PredictBridge):
             payload["low"] = low_arr
             payload["high"] = high_arr
 
+            if not (
+                np.issubdtype(low_arr.dtype, np.number) and np.issubdtype(high_arr.dtype, np.number)
+            ):
+                if task == "classification":
+                    payload["classes"] = np.asarray(
+                        self.explainer.predict(x, calibrated=True, bins=bins)
+                    )
+                return payload
+
             # ADR-021: Enforce interval invariants
             epsilon = 1e-9
             # Ignore NaNs in the check
@@ -146,8 +155,14 @@ class LegacyPredictBridge(PredictBridge):
                 raise ValidationError(f"Interval invariant violated: low > high (max diff: {diff})")
 
             # Check prediction is within bounds (with epsilon tolerance)
-            if task == "regression":
+            if task in {"classification", "regression"}:
                 preds_arr = np.asarray(preds)
+                if not np.issubdtype(preds_arr.dtype, np.number):
+                    if task == "classification":
+                        payload["classes"] = np.asarray(
+                            self.explainer.predict(x, calibrated=True, bins=bins)
+                        )
+                    return payload
                 valid_pred_mask = valid_mask & ~np.isnan(preds_arr)
                 if np.any(valid_pred_mask) and not np.all(
                     (low_arr[valid_pred_mask] - epsilon <= preds_arr[valid_pred_mask])
@@ -370,13 +385,16 @@ class _LegacyExplanationBase(ExplanationPlugin):
         #       bins=request.bins,
         #   )
         # The bridge return value is intentionally not consumed here; interval
-        # shaping happens below through the explanation callable.
-        self._bridge.predict(
-            x,
-            mode=self._mode,
-            task=self._context.task,
-            bins=request.bins,
-        )
+        # shaping happens below through the explanation callable. Core plugins
+        # are exempt from bridge-usage enforcement and skip this marker call.
+        plugin_name = str(self.plugin_meta.get("name", ""))
+        if not plugin_name.startswith("core."):
+            self._bridge.predict(
+                x,
+                mode=self._mode,
+                task=self._context.task,
+                bins=request.bins,
+            )
 
         explanation_callable = getattr(self.explainer, self._explanation_attr)
 
@@ -626,7 +644,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             logging.getLogger(__name__).warning(msg, extra=extra)
                         else:
                             logging.getLogger(__name__).debug(msg, extra=extra)
-                        level = logging.WARNING if cfg.strict_observability else logging.INFO
+                        level = logging.WARNING if cfg.strict_observability else logging.DEBUG
                         emit_feature_filter_governance_event(
                             decision="filter_skipped",
                             level=level,
@@ -663,7 +681,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     logging.getLogger(__name__).warning(msg, extra=extra)
                 else:
                     logging.getLogger(__name__).debug(msg, extra=extra)
-                level = logging.WARNING if cfg.strict_observability else logging.INFO
+                level = logging.WARNING if cfg.strict_observability else logging.DEBUG
                 emit_feature_filter_governance_event(
                     decision="filter_error",
                     level=level,
@@ -1150,7 +1168,14 @@ class LegacyPlotBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "legacy_compatible": True,
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 
@@ -1198,7 +1223,14 @@ class LegacyPlotRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "supports_interactive": False,
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 
@@ -1241,7 +1273,14 @@ class PlotSpecDefaultBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "legacy_compatible": True,
         "output_formats": ["png", "svg", "pdf"],
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 
@@ -1555,7 +1594,14 @@ class PlotSpecDefaultRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png", "svg", "pdf"],
         "supports_interactive": False,
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 

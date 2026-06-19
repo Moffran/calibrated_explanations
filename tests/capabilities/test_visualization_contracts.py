@@ -11,17 +11,21 @@ assumption boundary.
 
 from __future__ import annotations
 
-import matplotlib
+import pytest
 
+matplotlib = pytest.importorskip(
+    "matplotlib", reason="matplotlib not installed; skipping viz contract tests"
+)
 matplotlib.use("Agg")  # Must be set before any other matplotlib import
 
-import matplotlib.pyplot as plt
-import pytest
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt  # noqa: E402
+from sklearn.datasets import make_classification  # noqa: E402
+from sklearn.ensemble import RandomForestClassifier  # noqa: E402
+from sklearn.model_selection import train_test_split  # noqa: E402
 
-from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer  # noqa: E402
+
+pytestmark = pytest.mark.viz
 
 _RNG_SEED = 42
 _N_SAMPLES = 120
@@ -73,5 +77,7 @@ def test_should_not_raise_when_plot_called_with_agg_backend(
 
     try:
         explanations.plot(show=False)
+        assert matplotlib.get_backend().lower() == "agg"
+        assert plt.get_fignums() == []
     finally:
         plt.close("all")
