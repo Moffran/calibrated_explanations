@@ -1,1 +1,0 @@
-"""Reject evaluation suite package."""
