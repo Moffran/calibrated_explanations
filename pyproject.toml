@@ -366,4 +366,4 @@ exclude = [
 
 [tool.codespell]
 skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,notebooks"
-ignore-words-list = "dataframe,nd"
+ignore-words-list = "dataframe,nd,nknown"

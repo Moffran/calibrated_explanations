@@ -41,7 +41,7 @@ repos:
     rev: v2.3.0
     hooks:
       - id: codespell
-        args: ["-L", "dataframe,nd", "-S", "*.lock,*.csv,*.txt,*.json,*.md,*.png,*.jpg,*.gif,*.zip"]
+        args: ["-L", "dataframe,nd,nknown", "-S", "*.lock,*.csv,*.txt,*.json,*.md,*.png,*.jpg,*.gif,*.zip"]
         exclude: "(^data/|^tests/benchmarks/|^build/|^dist/|^notebooks/|^evaluation/|^docs/_build/|^docs_old/_build/)"
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
