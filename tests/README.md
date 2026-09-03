@@ -69,6 +69,7 @@ When CI workflows are extended or new checks are added under `.github/workflows/
        explanation = explainer.explain_factual(x_test)
        assert explanation is not None
 
+
    # Test that explicitly validates fallback behavior
    def test_explanation_plugin_fallback_chain(enable_fallbacks):
        """Verify fallback chain handles missing plugin."""
@@ -162,9 +163,10 @@ def test_plotspec_to_dict_contains_expected_keys():
     spec = PlotSpec(header=IntervalHeaderSpec(...))
     d = plotspec_to_dict(spec)
     assert "plotspec_version" in d  # Q1: Internal detail (dict keys)
-    assert "title" in d              # Q2: Breaks if we rename "title" → "figure_title"
+    assert "title" in d  # Q2: Breaks if we rename "title" → "figure_title"
     # Q3: No clear business rule (why must these keys exist?)
     # ❌ REFACTOR
+
 
 # ✅ PATTERN: Testing behavior
 def test_plotspec_roundtrip__should_preserve_interval_invariants():
@@ -172,7 +174,7 @@ def test_plotspec_roundtrip__should_preserve_interval_invariants():
     original = PlotSpec(
         header=IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8),
         title="My Plot",
-        body=BarHPanelSpec(bars=[...])
+        body=BarHPanelSpec(bars=[...]),
     )
 
     # Roundtrip
@@ -270,14 +272,18 @@ def is_valid_probability_values(*values: Any) -> bool:
             return False
     return len(values) > 0
 
+
 # tests/unit/viz/test_builders_validation.py (new file)
 def test_is_valid_probability_values__should_return_true_for_valid_probabilities():
     from calibrated_explanations.viz.builders import is_valid_probability_values
+
     assert is_valid_probability_values(0.0, 0.5, 1.0)
     assert is_valid_probability_values("0.5")
 
+
 def test_is_valid_probability_values__should_return_false_for_invalid_values():
     from calibrated_explanations.viz.builders import is_valid_probability_values
+
     assert not is_valid_probability_values(1.1)
     assert not is_valid_probability_values(-0.1)
     assert not is_valid_probability_values()  # Empty args
@@ -291,8 +297,9 @@ def test_build_regression_bars_spec__should_reject_invalid_probabilities():
     with pytest.raises(ValueError, match="probability"):
         build_regression_bars_spec(
             title="test",
-            predict={"predict": 1.5, "low": 0.2, "high": 0.8}  # Invalid: 1.5 > 1.0
+            predict={"predict": 1.5, "low": 0.2, "high": 0.8},  # Invalid: 1.5 > 1.0
         )
+
 
 def test_build_regression_bars_spec__should_construct_valid_spec_with_valid_bounds():
     """Verify that valid probability specs are constructed correctly."""
@@ -378,9 +385,7 @@ def test_interval_header__should_satisfy_ordering_invariant():
     Invariant: The point estimate must lie within the interval.
     Ref: ADR-005 Explanation Envelope
     """
-    spec = PlotSpec(
-        header=IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8)
-    )
+    spec = PlotSpec(header=IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8))
     d = plotspec_to_dict(spec)
     restored = plotspec_from_dict(d)
 
@@ -391,10 +396,12 @@ def test_interval_header__should_satisfy_ordering_invariant():
     assert header.high is not None, "Upper bound is mandatory"
 
     # The core invariant: ordering
-    assert header.low <= header.pred, \
+    assert header.low <= header.pred, (
         f"Lower bound ({header.low}) should not exceed prediction ({header.pred})"
-    assert header.pred <= header.high, \
+    )
+    assert header.pred <= header.high, (
         f"Prediction ({header.pred}) should not exceed upper bound ({header.high})"
+    )
 ```
 
 ---
@@ -435,7 +442,7 @@ def test_plotspec_roundtrip_and_validate():
     spec = PlotSpec(
         header=IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8),
         title="My Plot",
-        body=BarHPanelSpec(bars=[BarItem(label="f1", value=0.1)])
+        body=BarHPanelSpec(bars=[BarItem(label="f1", value=0.1)]),
     )
     d = plotspec_to_dict(spec)
     s2 = plotspec_from_dict(d)
@@ -449,7 +456,7 @@ def test_plotspec_roundtrip__should_preserve_serialization_and_semantics():
     original = PlotSpec(
         header=IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8),
         title="My Plot",
-        body=BarHPanelSpec(bars=[BarItem(label="f1", value=0.1)])
+        body=BarHPanelSpec(bars=[BarItem(label="f1", value=0.1)]),
     )
 
     # Roundtrip
@@ -462,8 +469,9 @@ def test_plotspec_roundtrip__should_preserve_serialization_and_semantics():
     # Semantic checks (domain invariants)
     # ← ADD THESE
     assert restored.header is not None, "Header is mandatory"
-    assert restored.header.low <= restored.header.pred <= restored.header.high, \
+    assert restored.header.low <= restored.header.pred <= restored.header.high, (
         "Interval invariant violated"
+    )
     assert restored.body is not None, "Body is mandatory"
     assert len(restored.body.bars) > 0, "Must have at least one bar"
     assert all(b.label for b in restored.body.bars), "All bars must have labels"
@@ -471,12 +479,15 @@ def test_plotspec_roundtrip__should_preserve_serialization_and_semantics():
 
 **Parametrized Variant (Test Edge Cases):**
 ```python
-@pytest.mark.parametrize("header", [
-    IntervalHeaderSpec(pred=0.0, low=0.0, high=0.0),    # All zeros
-    IntervalHeaderSpec(pred=1.0, low=0.0, high=1.0),    # Boundaries
-    IntervalHeaderSpec(pred=0.5, low=0.5, high=0.5),    # Point estimate
-    IntervalHeaderSpec(pred=0.5, low=0.0, high=1.0),    # Wide interval
-])
+@pytest.mark.parametrize(
+    "header",
+    [
+        IntervalHeaderSpec(pred=0.0, low=0.0, high=0.0),  # All zeros
+        IntervalHeaderSpec(pred=1.0, low=0.0, high=1.0),  # Boundaries
+        IntervalHeaderSpec(pred=0.5, low=0.5, high=0.5),  # Point estimate
+        IntervalHeaderSpec(pred=0.5, low=0.0, high=1.0),  # Wide interval
+    ],
+)
 def test_plotspec_roundtrip_with_edge_case_intervals(header):
     """Verify roundtrip handles edge cases."""
     spec = PlotSpec(header=header, body=BarHPanelSpec(bars=[BarItem(label="x", value=0.1)]))
@@ -527,8 +538,13 @@ FOR EACH MOCK-HEAVY TEST:
 # Unit test: Mocks too much; only validates structure
 class _DummyPlugin:
     plugin_meta = {...}
-    def supports_mode(self, mode, *, task): return True
-    def explain_batch(self, x, request): return ExplanationBatch(...)
+
+    def supports_mode(self, mode, *, task):
+        return True
+
+    def explain_batch(self, x, request):
+        return ExplanationBatch(...)
+
 
 def test_explanation_plugin_runtime_checks():
     plugin = _DummyPlugin()
@@ -553,8 +569,7 @@ def test_explanation_plugin__should_implement_required_interface():
     plugin.initialize(ctx)  # Should not raise
 
     batch = plugin.explain_batch(
-        x=np.array([[0.1, 0.2]]),
-        request=ExplanationRequest(threshold=0.5)
+        x=np.array([[0.1, 0.2]]), request=ExplanationRequest(threshold=0.5)
     )
 
     # Verify output structure and semantics
@@ -670,7 +685,7 @@ def test_explanation_context__should_be_immutable_after_construction() -> None:
         categorical_features=[],
         predict_bridge=None,
         test_data=None,
-        target_data=None
+        target_data=None,
     )
 
     # Attempt modification
@@ -709,11 +724,14 @@ def test_calibrated_explainer__should_require_fit_before_explain():
 ### Example 2: Parametrized Behavior Test
 
 ```python
-@pytest.mark.parametrize("task,n_classes", [
-    ("classification", 2),   # Binary classification
-    ("classification", 3),   # Multiclass
-    ("regression", 1),        # Regression
-])
+@pytest.mark.parametrize(
+    "task,n_classes",
+    [
+        ("classification", 2),  # Binary classification
+        ("classification", 3),  # Multiclass
+        ("regression", 1),  # Regression
+    ],
+)
 def test_explainer__should_infer_task_from_model(task, n_classes):
     """Verify that the explainer correctly identifies the task type from the model structure."""
     model = create_mock_model(n_classes=n_classes)
@@ -771,8 +789,7 @@ def test_explanation_plugin__should_fallback_when_primary_fails(enable_fallbacks
     """Verify fallback chain activates when primary plugin fails."""
     # This test explicitly validates fallback behavior
     explainer = CalibratedExplainer(
-        model, x_cal, y_cal,
-        _explanation_plugin_override="intentionally-missing"
+        model, x_cal, y_cal, _explanation_plugin_override="intentionally-missing"
     )
 
     # Should fall back to default plugin and not raise
@@ -853,6 +870,7 @@ from tests.helpers.fallback_control import (
     disable_all_fallbacks,
     enable_specific_fallback,
 )
+
 
 def test_complex_workflow():
     """Verify workflow without fallbacks."""
