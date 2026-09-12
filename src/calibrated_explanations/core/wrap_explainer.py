@@ -189,6 +189,8 @@ class WrapCalibratedExplainer:
         self._pre_fitted: bool = False
         self._auto_encode: bool | str = "auto"
         self._unseen_category_policy: str = "error"
+        self._builtin_categorical_features: tuple[int, ...] = ()
+        self._missing_value_policy: str = "category"
         # Check if the learner is a CalibratedExplainer
         if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
@@ -342,6 +344,10 @@ class WrapCalibratedExplainer:
             w._preprocessor = cfg.preprocessor  # type: ignore[attr-defined]
             w._auto_encode = cfg.auto_encode  # type: ignore[attr-defined]
             w._unseen_category_policy = cfg.unseen_category_policy  # type: ignore[attr-defined]
+            w._builtin_categorical_features = tuple(
+                int(feature) for feature in getattr(cfg, "categorical_features", ()) or ()
+            )  # type: ignore[attr-defined]
+            w._missing_value_policy = getattr(cfg, "missing_value_policy", "category")  # type: ignore[attr-defined]
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
@@ -1182,7 +1188,11 @@ class WrapCalibratedExplainer:
                     BuiltinEncoder,
                 )
 
-                encoder = BuiltinEncoder(unseen_policy=self._unseen_category_policy)
+                encoder = BuiltinEncoder(
+                    unseen_policy=self._unseen_category_policy,
+                    categorical_features=self._builtin_categorical_features,
+                    missing_value_policy=self._missing_value_policy,
+                )
                 try:
                     x_out = encoder.fit_transform(x)
                 except Exception as exc:  # adr002_allow - translated to ValidationError below
@@ -1680,6 +1690,10 @@ class WrapCalibratedExplainer:
                 "kind": "builtin",
                 "transformer_id": transformer_id,
                 "unseen_policy": getattr(preprocessor, "unseen_policy", "error"),
+                "categorical_features": list(
+                    getattr(preprocessor, "categorical_features_", ()) or ()
+                ),
+                "missing_value_policy": getattr(preprocessor, "missing_value_policy", "category"),
                 "pre_fitted": bool(self._pre_fitted),
             }
         return {
@@ -1743,6 +1757,8 @@ class WrapCalibratedExplainer:
             "wrapper": {
                 "auto_encode": self._normalize_auto_encode_flag(),
                 "unseen_category_policy": self._unseen_category_policy,
+                "builtin_categorical_features": list(self._builtin_categorical_features),
+                "missing_value_policy": self._missing_value_policy,
             },
             "learner": self._build_learner_descriptor(),
             "preprocessor": self._build_preprocessor_state_payload(),
@@ -2077,7 +2093,11 @@ class WrapCalibratedExplainer:
         if kind == "builtin":
             from ..preprocessing.builtin_encoder import BuiltinEncoder
 
-            encoder = BuiltinEncoder(unseen_policy=preprocessor_state.get("unseen_policy", "error"))
+            encoder = BuiltinEncoder(
+                unseen_policy=preprocessor_state.get("unseen_policy", "error"),
+                categorical_features=tuple(preprocessor_state.get("categorical_features", ())),
+                missing_value_policy=preprocessor_state.get("missing_value_policy", "category"),
+            )
             if mapping_payload is not None:
                 encoder.set_mapping(dict(mapping_payload))
             wrapper._preprocessor = encoder
@@ -2226,6 +2246,10 @@ class WrapCalibratedExplainer:
         wrapper_meta = wrapper_meta if isinstance(wrapper_meta, Mapping) else {}
         wrapper._auto_encode = wrapper_meta.get("auto_encode", "auto")
         wrapper._unseen_category_policy = wrapper_meta.get("unseen_category_policy", "error")
+        wrapper._builtin_categorical_features = tuple(
+            int(feature) for feature in wrapper_meta.get("builtin_categorical_features", ()) or ()
+        )
+        wrapper._missing_value_policy = wrapper_meta.get("missing_value_policy", "category")
 
         learner_meta = state.get("learner")
         learner_meta = learner_meta if isinstance(learner_meta, Mapping) else {}

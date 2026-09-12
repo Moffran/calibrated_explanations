@@ -11,6 +11,11 @@
   calibrator output validator, including interval invariants, probability shape
   and normalization contracts, and calibration contexts without an inferable
   row count.
+- **Wrapper auto-encoding now preserves mixed-type columns:** the built-in
+  `auto_encode='auto'` path now leaves numeric columns unchanged while
+  encoding categorical columns deterministically, supports explicit
+  categorical feature overrides, and exposes a configurable missing-value
+  policy for categorical inputs.
 
 ### Documentation / Governance
 

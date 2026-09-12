@@ -14,6 +14,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.preprocessing.builtin_encoder import BuiltinEncoder
 from calibrated_explanations.utils.exceptions import (
     IncompatibleStateError,
     ValidationError,
@@ -175,6 +176,42 @@ def test_save_and_load_state_roundtrip_builtin_preprocessing(tmp_path: Path) -> 
     baseline = wrapper.predict_proba(x_test, uq_interval=True)
 
     state_dir = tmp_path / "builtin_preprocessing_state"
+    wrapper.save_state(state_dir)
+    restored = WrapCalibratedExplainer.load_state(state_dir, learner=learner)
+    reloaded = restored.predict_proba(x_test, uq_interval=True)
+
+    assert_payload_close(baseline, reloaded)
+
+
+def test_save_and_load_state_roundtrip_builtin_preprocessing_with_mixed_types(
+    tmp_path: Path,
+) -> None:
+    """Built-in preprocessing should round-trip on mixed numeric/categorical inputs."""
+    rng = np.random.default_rng(24)
+    numeric = np.linspace(0.0, 1.0, 96)
+    categories = np.array(["red", "green", "blue"])
+    x = np.column_stack(
+        [
+            numeric,
+            categories[np.arange(96) % len(categories)],
+            numeric * 2.0,
+            categories[(np.arange(96) + 1) % len(categories)],
+        ]
+    ).astype(object)
+    y = (rng.random(96) > 0.5).astype(int)
+
+    x_train, y_train = x[:48], y[:48]
+    x_cal, y_cal = x[48:72], y[48:72]
+    x_test = x[72:84]
+
+    learner = RandomForestClassifier(n_estimators=16, random_state=3)
+    wrapper = WrapCalibratedExplainer(learner)
+    wrapper.preprocessor = BuiltinEncoder()
+    wrapper.fit(x_train, y_train)
+    wrapper.calibrate(x_cal, y_cal, seed=6)
+    baseline = wrapper.predict_proba(x_test, uq_interval=True)
+
+    state_dir = tmp_path / "builtin_preprocessing_mixed_state"
     wrapper.save_state(state_dir)
     restored = WrapCalibratedExplainer.load_state(state_dir, learner=learner)
     reloaded = restored.predict_proba(x_test, uq_interval=True)

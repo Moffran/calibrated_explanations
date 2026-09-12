@@ -26,9 +26,9 @@ class ExplainerConfig:
     Notes
     -----
     Fields wired by ``from_config()``
-        ``model``, ``preprocessor``, ``auto_encode``, ``unseen_category_policy``;
-        performance primitives (cache, parallel executor) via the perf factory;
-        internal feature-filter config.
+        ``model``, ``preprocessor``, ``auto_encode``, ``unseen_category_policy``,
+        ``categorical_features``, ``missing_value_policy``; performance primitives
+        (cache, parallel executor) via the perf factory; internal feature-filter config.
 
     Fields applied at explain-time
         ``threshold`` and ``low_high_percentiles`` are forwarded to
@@ -49,6 +49,8 @@ class ExplainerConfig:
     preprocessor: Any | None = None
     auto_encode: bool | Literal["auto"] = "auto"
     unseen_category_policy: Literal["ignore", "error"] = "error"
+    categorical_features: tuple[int, ...] = ()
+    missing_value_policy: Literal["category", "error"] = "category"
 
     # Performance feature flags (ADR-003/ADR-004) - disabled by default
     perf_cache_enabled: bool = False
@@ -140,6 +142,29 @@ class ExplainerBuilder:
             Policy to apply when encountering unseen categories at inference time.
         """
         self._cfg.unseen_category_policy = policy
+        return self
+
+    def categorical_features(self, features: tuple[int, ...] | list[int]) -> ExplainerBuilder:
+        """Select categorical feature indices for built-in auto-encoding.
+
+        Parameters
+        ----------
+        features : sequence of int
+            Zero-based column indices to force through the categorical encoder.
+        """
+        self._cfg.categorical_features = tuple(int(feature) for feature in features)
+        return self
+
+    def missing_value_policy(self, policy: Literal["category", "error"]) -> ExplainerBuilder:
+        """Select the handling strategy for missing categorical values.
+
+        Parameters
+        ----------
+        policy : {"category", "error"}
+            Whether missing categorical values become a deterministic category
+            or raise a validation error.
+        """
+        self._cfg.missing_value_policy = policy
         return self
 
     # Perf flags (feature-flagged; no behavior change when off)

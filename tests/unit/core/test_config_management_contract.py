@@ -165,6 +165,26 @@ def test_should_not_have_parallel_workers_method_on_explainer_builder() -> None:
     )
 
 
+def test_should_expose_t4_preprocessing_fields_on_explainer_config() -> None:
+    cfg = ExplainerConfig(model=RandomForestClassifier())
+    assert "categorical_features" in ExplainerConfig.__dataclass_fields__
+    assert "missing_value_policy" in ExplainerConfig.__dataclass_fields__
+    assert cfg.categorical_features == ()
+    assert cfg.missing_value_policy == "category"
+
+
+def test_should_configure_t4_preprocessing_fields_through_builder() -> None:
+    cfg = (
+        ExplainerBuilder(RandomForestClassifier())
+        .categorical_features([1, 3])
+        .missing_value_policy("error")
+        .build_config()
+    )
+
+    assert cfg.categorical_features == (1, 3)
+    assert cfg.missing_value_policy == "error"
+
+
 # ---------------------------------------------------------------------------
 # Finding 5 — env-var precedence Notes in perf_cache / perf_parallel docstrings
 # ---------------------------------------------------------------------------

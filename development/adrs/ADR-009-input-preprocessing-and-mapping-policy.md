@@ -1,6 +1,6 @@
 > **Active scope:** Governing architectural decision for feature input validation, categorical encoding, and the calibration-set mapping contract at `CalibratedExplainer` entry points. Remains active as long as this contract governs CE data ingestion; superseded when the policy is revised.
 
-> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-09-04):** Last edited 2026-09-04 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-009: Input Preprocessing & Mapping Persistence Policy
 
@@ -88,3 +88,113 @@ However, until the `auto_encode='auto'` path and full mapping persistence UX (pe
 - Complete the `auto_encode='auto'` mapping persistence path so the wrapper is the sole recommended preprocessing entry point.
 - Deprecate `transform_to_numeric` from the root namespace (move to `calibrated_explanations.utils` for users who need it explicitly).
 - Remove from `__all__` in a v1.1+ ADR-011 deprecation cycle.
+
+## Adoption Progress (2026-09-04, v1.0.1 T4 / issue #202)
+
+ADR consult for T4 (v1.0.1 plan) surfaced two gaps this ADR left unaddressed
+for the `auto_encode='auto'` built-in encoder path: missing-value handling,
+and numeric-vs-categorical column detection for non-DataFrame input. Both are
+resolved below so implementation and requirements-authoring (`CE-REQ-PREPROC-*`)
+have a governing decision to build against.
+
+**Decision — configuration home: Session tier (`ExplainerConfig`), not
+`ConfigManager`.** All configuration introduced by this addendum —
+`missing_value_policy` and the `categorical_features` override described
+below — is added to `ExplainerConfig`/`ExplainerBuilder`
+(`calibrated_explanations.api.config`), the same object that already holds
+`preprocessor`, `auto_encode`, and `unseen_category_policy` per this ADR's
+2025-09-02 adoption note. This is a Session-tier concern under ADR-038's
+four-tier taxonomy (deployment / session / strategy / tuning): it is
+per-dataset, per-explainer behavioral configuration fixed once at
+`WrapCalibratedExplainer`/`CalibratedExplainer` construction, not deployment
+configuration resolved from environment variables or `pyproject.toml`.
+
+`ConfigManager` (ADR-034) was considered and rejected for this role.
+ADR-034 §"Capabilities governed by ConfigManager" scopes it to deployment
+configuration — plugin selection, telemetry mode, cache/parallel settings,
+feature-filter settings, strict observability, CI markers — resolved through
+an env-var → `pyproject.toml` → call-site precedence chain and snapshotted
+once per process/CLI invocation. `categorical_features` (column indices of a
+specific `X`) and `missing_value_policy` vary per dataset and per explainer
+instance, not per deployment; there is no meaningful environment-variable or
+`pyproject.toml` default for "which columns of this dataset are
+categorical." Routing them through `ConfigManager` would also violate
+ADR-038's rule that the four tiers "cannot override" one another by
+collapsing a Session-tier concept into the Deployment tier. `ExplainerConfig`
+is the ADR-038-compliant, already-established home for this exact class of
+setting.
+
+**Decision — missing-value policy.** A new, independent `missing_value_policy`
+field is added to `ExplainerConfig`/`ExplainerBuilder`, alongside the
+existing `unseen_category_policy` field (default `'error'`, opt-in
+`'ignore'`). It is a distinct axis, not a value of `unseen_category_policy`,
+because "value never seen during fit" and "value absent from this row" are
+different conditions with different safe defaults.
+
+- `'category'` — a missing value (`NaN`/`None`) in a categorical column is
+  mapped to a deterministic sentinel category (e.g. `"__missing__"`), learned
+  and persisted like any other observed category. The sentinel must be
+  canonicalized/escaped so it cannot collide with a real observed category
+  value.
+- `'error'` — raise `ValidationError` on missing values, matching the
+  existing numeric NaN-rejection default used elsewhere in the codebase
+  (`core/validation.py`, `allow_nan=False`).
+
+Proposed default: **`'category'`**, on the grounds that missing categorical
+values are common in realistic mixed-type tabular data and `auto_encode='auto'`
+exists specifically to provide a zero-setup convenience path — an `'error'`
+default would silently defeat that purpose for a large share of real
+datasets. **This default is a proposal, not yet maintainer-confirmed; treat
+it as open until confirmed in requirements-authoring or by explicit
+maintainer sign-off.**
+
+**Decision — numeric-vs-categorical detection on non-DataFrame input.** For
+pandas `DataFrame` input, dtype already distinguishes numeric from
+object/categorical/string/boolean columns unambiguously (existing scope, no
+change). For raw array input (e.g. a plain `numpy` array, as in issue #202's
+own reproduction case), detection is defined as:
+
+1. **Default auto-detection: per-column castability.** Attempt numeric
+   coercion per column; a column that fully coerces is treated as numeric and
+   passed through untouched, a column that does not is encoded categorically.
+   This is a dtype/castability test, not a semantic or cardinality-based
+   guess, and therefore stays inside issue #202's explicit non-goal
+   ("Automatically guessing semantic categories from arbitrary numeric
+   values"). A column of numeric-looking strings that denote coded categories
+   (e.g. ZIP-like codes) will be classified as numeric passthrough under this
+   rule; this is a disclosed, accepted limitation of castability-based
+   detection, not a defect to remediate later.
+2. **Explicit override: reuse the existing `categorical_features` parameter,
+   promoted to `ExplainerConfig`.** `CalibratedExplainer.__init__` already
+   accepts `categorical_features` as a list of column indices; that name and
+   index-based semantics are reused as-is — no new parameter is introduced.
+   What changes is *where it is first captured*: `ExplainerConfig`/
+   `ExplainerBuilder` gains a `categorical_features` field so the value is
+   fixed at `WrapCalibratedExplainer`/`CalibratedExplainer` construction
+   (`from_config`) rather than being known only once `calibrate(**kwargs)`
+   runs. `calibrate(**kwargs)` MAY still accept a per-call
+   `categorical_features` override for `CalibratedExplainer.__init__`'s
+   existing discretization/perturbation use (unrelated to the encoder), but
+   the built-in encoder's detection reads exclusively from the
+   session-level `ExplainerConfig` value, which is always available before
+   both `fit()` and `calibrate()`. When supplied, listed indices are always
+   treated as categorical by the built-in encoder regardless of castability;
+   unlisted indices fall back to rule 1.
+
+**Resolution of the fit()/calibrate() timing gap.** Promoting
+`categorical_features` to `ExplainerConfig` (this addendum) resolves the
+sequencing question raised when this decision was first drafted:
+`ExplainerConfig` is fixed at construction, strictly before both `fit()`
+(which needs the hint to encode `x_proper_train` before the learner is
+fit) and `calibrate()` (which needs the same hint to encode
+`x_calibration`). Both encoding passes read the same, already-known,
+immutable Session-tier value — no reconciliation rule between two arrival
+times is needed because there is only one arrival time.
+
+**Persistence note.** Both decisions change what `BuiltinEncoder.get_mapping_snapshot()`
+stores (per-column numeric-passthrough/categorical classification, and a
+missing-value sentinel entry where applicable). Per ADR-031, this is an
+incompatible change to the `preprocessing_mapping.json` artifact shape and
+requires a `schema_version` increment there, with the same fail-fast
+rejection of old-schema artifacts already used for the wrapper's own state
+schema. ADR-031's versioning rules govern this; they are not restated here.

@@ -56,5 +56,36 @@ def test_fit_handles_none_and_repr_fallback_when_str_fails() -> None:
     enc.fit(np.array([None, BadStringValue()], dtype=object))
     mapping = enc.get_mapping_snapshot()
     assert mapping is not None
-    assert "__none__" in mapping["col_0"]
+    assert "__missing__" in mapping["col_0"]
     assert "BadStringValue()" in mapping["col_0"]
+
+
+def test_fit_should_preserve_numeric_columns_when_input_is_mixed_type() -> None:
+    """Mixed arrays should leave numeric columns untouched while encoding categories."""
+    enc = BuiltinEncoder()
+    transformed = enc.fit_transform(np.array([[1, "red"], [2, "blue"], [3, None]], dtype=object))
+
+    mapping = enc.get_mapping_snapshot()
+    assert mapping is not None
+    assert "col_0" not in mapping
+    assert "col_1" in mapping
+    np.testing.assert_allclose(transformed[:, 0], np.array([1.0, 2.0, 3.0]))
+    assert transformed.shape == (3, 2)
+
+
+def test_fit_should_respect_explicit_categorical_features_and_missing_policy() -> None:
+    """Forced categorical columns should be encoded and missing values should be handled."""
+    enc = BuiltinEncoder(categorical_features=(0,), missing_value_policy="category")
+    transformed = enc.fit_transform(np.array([[10], [20], [None]], dtype=object))
+
+    assert enc.categorical_features_ == (0,)
+    assert transformed.shape == (3, 1)
+    assert transformed[2, 0] >= 0.0
+
+
+def test_fit_should_raise_for_missing_categorical_values_when_policy_is_error() -> None:
+    """Missing categorical values should fail fast when category fallback is disabled."""
+    enc = BuiltinEncoder(missing_value_policy="error")
+
+    with pytest.raises(ValidationError, match="Missing value encountered"):
+        enc.fit_transform(np.array([["red"], [None]], dtype=object))

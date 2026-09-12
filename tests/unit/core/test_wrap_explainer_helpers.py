@@ -471,14 +471,15 @@ def test_pre_fit_preprocess_auto_mode_uses_builtin_encoder(
 ) -> None:
     wrapper.preprocessor = None
     wrapper.auto_encode = "auto"
-    data = np.array([["a"], ["b"], ["a"]], dtype=object)
+    data = np.array([[1, "a"], [2, "b"], [3, "a"]], dtype=object)
 
     transformed = pre_fit_preprocess(wrapper, data)
 
     assert wrapper.pre_fitted is True
     assert wrapper.preprocessor is not None
     assert wrapper.preprocessor.__class__.__name__ == "BuiltinEncoder"
-    assert transformed.shape == (3, 1)
+    assert transformed.shape == (3, 2)
+    np.testing.assert_allclose(transformed[:, 0], np.array([1.0, 2.0, 3.0]))
     assert transformed.dtype.kind == "f"
 
 
@@ -528,3 +529,19 @@ def test_non_numeric_input_without_preprocessing_raises_actionable_error(
 
     with pytest.raises(ValidationError, match="Set auto_encode='auto'"):
         pre_fit_preprocess(wrapper, np.array([["x"]], dtype=object))
+
+
+def test_pre_fit_preprocess_auto_mode_respects_missing_value_policy_from_config() -> None:
+    cfg = SimpleNamespace(
+        model=PredictOnlyLearner(),
+        threshold=0.5,
+        low_high_percentiles=(5, 95),
+        preprocessor=None,
+        auto_encode="auto",
+        unseen_category_policy="error",
+        missing_value_policy="error",
+    )
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
+
+    with pytest.raises(ValidationError, match="Missing value encountered"):
+        pre_fit_preprocess(wrapper, np.array([["a"], [None]], dtype=object))
