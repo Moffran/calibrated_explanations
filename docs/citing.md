@@ -189,7 +189,7 @@ Hanna, A. (2025).
 
 # BibTeX entries
 
-## Published papers
+## Bibtex to Published papers
 
 ### Calibrated Explanations: with Uncertainty Information and Counterfactuals
 
@@ -204,3 +204,250 @@ Hanna, A. (2025).
   doi     = {10.1016/j.eswa.2024.123154},
   url     = {https://doi.org/10.1016/j.eswa.2024.123154}
 }
+````
+
+### Calibrated Explanations for Regression
+
+```bibtex
+@article{lofstrom2025ce_regression,
+  title   = {Calibrated Explanations for Regression},
+  author  = {Löfström, Tuwe and Löfström, Helena and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
+  journal = {Machine Learning},
+  volume  = {114},
+  number  = {100},
+  year    = {2025},
+  doi     = {10.1007/s10994-024-06642-8},
+  url     = {https://doi.org/10.1007/s10994-024-06642-8}
+}
+```
+
+### Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty
+
+```bibtex
+@inproceedings{lofstrom2024ce_conditional,
+  author    = {Löfström, Helena and Löfström, Tuwe},
+  editor    = {Longo, Luca and Lapuschkin, Sebastian and Seifert, Christin},
+  title     = {Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty},
+  booktitle = {Explainable Artificial Intelligence},
+  series    = {Communications in Computer and Information Science},
+  volume    = {2153},
+  pages     = {332--355},
+  year      = {2024},
+  publisher = {Springer Nature Switzerland},
+  address   = {Cham},
+  doi       = {10.1007/978-3-031-63787-2_17},
+  url       = {https://doi.org/10.1007/978-3-031-63787-2_17}
+}
+```
+
+### Calibrated Explanations for Multi-class
+
+```bibtex
+@inproceedings{pmlr-v230-lofstrom24a,
+  title     = {Calibrated Explanations for Multi-class},
+  author    = {Löfström, Tuwe and Löfström, Helena and Johansson, Ulf},
+  booktitle = {Proceedings of the Thirteenth Symposium on Conformal and Probabilistic Prediction with Applications},
+  pages     = {175--194},
+  year      = {2024},
+  editor    = {Vantini, Simone and Fontana, Matteo and Solari, Aldo and Boström, Henrik and Carlsson, Lars},
+  volume    = {230},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v230/lofstrom24a.html}
+}
+```
+
+### Fast Calibrated Explanations
+
+```bibtex
+@inproceedings{lofstrom2026fast,
+  author    = {Löfström, Tuwe and Yapicioglu, Fatima Rabia and Stramiglio, Alessandra and Löfström, Helena and Vitali, Fabio},
+  editor    = {Guidotti, Riccardo and Schmid, Ute and Longo, Luca},
+  title     = {Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models},
+  booktitle = {Explainable Artificial Intelligence},
+  series    = {Communications in Computer and Information Science},
+  volume    = {2580},
+  pages     = {340--363},
+  year      = {2026},
+  publisher = {Springer Nature Switzerland},
+  address   = {Cham},
+  doi       = {10.1007/978-3-032-08333-3_16},
+  url       = {https://doi.org/10.1007/978-3-032-08333-3_16}
+}
+```
+
+### Beyond the Predicted Class: Calibrated Explanations for Real Multiclass Decisions
+
+```bibtex
+@inproceedings{pmlr-v329-hanna26a,
+  title     = {Beyond the Predicted Class: Calibrated Explanations for Real Multiclass Decisions},
+  author    = {Hanna, Ayham and Löfström, Tuwe},
+  booktitle = {Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications},
+  pages     = {402--421},
+  year      = {2026},
+  editor    = {Ahlberg, Ernst and Johansson, Ulf and Boström, Henrik and Carlevaro, Alberto and Hallberg Szabadváry, Johan and Carlsson, Lars},
+  volume    = {329},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v329/hanna26a.html}
+}
+```
+
+### Guarded Explanations: Conformal-Style Filtering for Distribution-Aware Rule Conditions
+
+```bibtex
+@inproceedings{pmlr-v329-lofstrom26a,
+  title     = {Guarded Explanations: Conformal-Style Filtering for Distribution-Aware Rule Conditions},
+  author    = {Löfström, Tuwe and Hjort, Anders and Löfström, Helena},
+  booktitle = {Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications},
+  pages     = {422--438},
+  year      = {2026},
+  editor    = {Ahlberg, Ernst and Johansson, Ulf and Boström, Henrik and Carlevaro, Alberto and Hallberg Szabadváry, Johan and Carlsson, Lars},
+  volume    = {329},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v329/lofstrom26a.html}
+}
+```
+
+### Uncertainty-aware Decision Support in Power Grid Demand Forecasting
+
+```bibtex
+@inproceedings{pmlr-v329-lofstrom26c,
+  title     = {Uncertainty-aware Decision Support in Power Grid Demand Forecasting},
+  author    = {Löfström, Tuwe and Hallberg Szabadváry, Johan and Pettersson, Kristoffer and Aldea, Madalina and Löfström, Helena},
+  booktitle = {Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications},
+  pages     = {1029--1042},
+  year      = {2026},
+  editor    = {Ahlberg, Ernst and Johansson, Ulf and Boström, Henrik and Carlevaro, Alberto and Hallberg Szabadváry, Johan and Carlsson, Lars},
+  volume    = {329},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v329/lofstrom26c.html}
+}
+```
+
+### Concerning uncertainty—a systematic survey of uncertainty-aware XAI
+
+```bibtex
+@article{lofstrom2026uaxai_survey,
+  title   = {Concerning uncertainty---a systematic survey of uncertainty-aware XAI},
+  author  = {Löfström, Helena and Löfström, Tuwe and Hjort, Anders and Yapicioglu, Fatima Rabia},
+  journal = {Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences},
+  volume  = {384},
+  number  = {2327},
+  pages   = {20250079},
+  year    = {2026},
+  doi     = {10.1098/rsta.2025.0079},
+  url     = {https://doi.org/10.1098/rsta.2025.0079}
+}
+```
+
+### Calibrated Explanations: Trustworthy Uncertainty for Every Prediction and Explanation
+
+```bibtex
+@inproceedings{lofstrom2026ce_demo,
+  title     = {Calibrated Explanations: Trustworthy Uncertainty for Every Prediction and Explanation},
+  author    = {Löfström, Helena and Löfström, Tuwe},
+  booktitle = {Joint Proceedings of the xAI 2026 Late-breaking Work, Demos and Doctoral Consortium},
+  series    = {CEUR Workshop Proceedings},
+  volume    = {4259},
+  pages     = {193--200},
+  year      = {2026},
+  publisher = {CEUR-WS.org},
+  url       = {https://ceur-ws.org/Vol-4259/paper25.pdf}
+}
+```
+
+### Investigating the impact of calibration on the quality of explanations
+
+```bibtex
+@article{lofstrom2026calibration_quality,
+  title   = {Investigating the impact of calibration on the quality of explanations},
+  author  = {Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia},
+  journal = {Annals of Mathematics and Artificial Intelligence},
+  volume  = {94},
+  pages   = {219--236},
+  year    = {2026},
+  note    = {First published online 13 March 2023},
+  doi     = {10.1007/s10472-023-09837-2},
+  url     = {https://doi.org/10.1007/s10472-023-09837-2}
+}
+```
+
+## Related conformal reject-option research
+
+### Classification with reject option: Distribution-free error guarantees via conformal prediction
+
+```bibtex
+@article{hallbergszabadvary2025reject,
+  author  = {Hallberg Szabadváry, Johan and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Ahlberg, Ernst and Carlsson, Lars},
+  title   = {Classification with reject option: Distribution-free error guarantees via conformal prediction},
+  journal = {Machine Learning with Applications},
+  volume  = {20},
+  pages   = {100664},
+  year    = {2025},
+  doi     = {10.1016/j.mlwa.2025.100664},
+  url     = {https://doi.org/10.1016/j.mlwa.2025.100664}
+}
+```
+
+## Preprints and in-press
+
+### Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions
+
+```bibtex
+@misc{lofstrom2024ce_ensured,
+  title         = {Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions},
+  author        = {Löfström, Helena and Löfström, Tuwe and Hallberg Szabadváry, Johan},
+  year          = {2024},
+  eprint        = {2410.05479},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2410.05479}
+}
+```
+
+### Calibrated Explanations for Within-Spec Risk Prediction: Uncertainty-Aware Decision Support
+
+```bibtex
+@unpublished{lofstrom_withinspec_inpress,
+  title  = {Calibrated Explanations for Within-Spec Risk Prediction: Uncertainty-Aware Decision Support},
+  author = {Löfström, Tuwe and Löfström, Helena and Uddin, Nasir},
+  note   = {In press}
+}
+```
+
+## Other research outputs
+
+### Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification
+
+```bibtex
+@phdthesis{lofstrom2023dissertation,
+  author      = {Löfström, Helena},
+  institution = {Jönköping University, JIBS, Informatics},
+  school      = {Jönköping International Business School},
+  publisher   = {Jönköping University},
+  title       = {Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification},
+  series      = {JIBS Dissertation Series},
+  number      = {159},
+  year        = {2023}
+}
+```
+
+## Software
+
+```bibtex
+@software{lofstrom2026ce_repository,
+  author  = {Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
+  title   = {Calibrated Explanations},
+  license = {BSD-3-Clause},
+  url     = {https://github.com/Moffran/calibrated_explanations},
+  version = {v1.0.0},
+  year    = {2026}
+}
+```
+
+
+
+
