@@ -3,27 +3,57 @@
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
 
 For narrative summaries of the research program, benchmarks, and funding, visit the {doc}`research hub <researcher/index>` before diving into the detailed references below.
+# Citing calibrated-explanations
+
+If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
+
+For narrative summaries of the research program, benchmarks, and funding, visit the {doc}`research hub <researcher/index>` before diving into the detailed references below.
+
 ## Published papers
+
 - [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
+
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://linkinghub.elsevier.com/retrieve/pii/S0957417424000198). Expert Systems with Applications, 1-27. https://linkinghub.elsevier.com/retrieve/pii/S0957417424000198
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-with-uncertainty-information-and-counterfactuals) — **Experimental code available**, together with analysis and archived results.
+
 - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2025). [Calibrated Explanations for Regression](https://link.springer.com/article/10.1007/s10994-024-06642-8). Machine Learning 114, 100. https://link.springer.com/article/10.1007/s10994-024-06642-8
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-for-regression) — **Experimental code available**, together with analysis and archived results.
+
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://link.springer.com/chapter/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham. https://link.springer.com/chapter/10.1007/978-3-031-63787-2_17
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/conditional-calibrated-explanations-finding-a-path-between-bias-and-uncertainty) — **Experimental code available** as notebook-driven experiments, with archived results.
+
 - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>, PMLR 230:175-194.
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-for-multi-class) — **Experimental code available**, with archived results.
+
 - [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16). In: Guidotti, R., Schmid, U., Longo, L. (eds) Explainable Artificial Intelligence. xAI 2025. Communications in Computer and Information Science, vol 2580. Springer, Cham. https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16.
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/fast-calibrated-explanations-efficient-and-uncertainty-aware-explanations-for-machine-learning-models) — **Experimental code available**, together with archived evaluation material.
+
+- Hanna, A., and [Löfström, T](https://github.com/tuvelofstrom). (2026). [Beyond the Predicted Class: Calibrated Explanations for Real Multiclass Decisions](https://proceedings.mlr.press/v329/hanna26a.html). *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, 329:402-421.
+  - **Experimental code:** no dedicated study package is currently available in the Calibrated Explanations studies repository.
+
+- [Löfström, T](https://github.com/tuvelofstrom)., Hjort, A., and [Löfström, H](https://github.com/Moffran). (2026). [Guarded Explanations: Conformal-Style Filtering for Distribution-Aware Rule Conditions](https://proceedings.mlr.press/v329/lofstrom26a.html). *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, 329:422-438.
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/guarded-explanations-conformal-filtering-for-distribution-aware-rule-conditions) — **experimental material partially available**. The generic/synthetic Guarded Explanations material is represented, but the Oslo real-estate case data and case-specific experimental code are not included.
+
+- [Löfström, T](https://github.com/tuvelofstrom)., Hallberg Szabadváry, J., Pettersson, K., Aldea, M., and [Löfström, H](https://github.com/Moffran). (2026). [Uncertainty-aware Decision Support in Power Grid Demand Forecasting](https://proceedings.mlr.press/v329/lofstrom26c.html). *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, 329:1029-1042.
+  - [Study information](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/uncertainty-aware-decision-support-in-power-grid-demand-forecasting) — **public experimental code is not available as a reproduction package**. The study currently contains documentation only because the operational energy-consumption data are restricted.
 
 The paper that originated the idea of `calibrated-explanations` is:
 
-- [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
+- [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18.
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/investigating-the-impact-of-calibration-on-the-quality-of-explanations) — **Experimental code available**; original experiment code, analysis, and archived results have been migrated to the studies repository.
 
 - Hallberg Szabadváry, J., Löfström, T., Johansson, U., Sönströd, C., Ahlberg, E., and Carlsson, L. (2025). [Classification with reject option: Distribution-free error guarantees via conformal prediction](https://doi.org/10.1016/j.mlwa.2025.100664). Machine Learning with Applications, 20, 100664. https://doi.org/10.1016/j.mlwa.2025.100664
 
 This package's conformal reject singleton-error accounting follows the paper above: epsilon controls conformal set miscoverage, while accepted singleton error is estimated separately via sigma-hat.
 
 ## Master Theses
--  [Ayham Hanna](https://github.com/Aiham00) (2025) [Explainable AI for Multi-Class Machine Failure Prediction: A Focus on Calibrated Explainability and Model Uncertainty](https://hj.diva-portal.org/smash/record.jsf?pid=diva2%3A1968367)
 
-## Preprints:
+- [Ayham Hanna](https://github.com/Aiham00) (2025) [Explainable AI for Multi-Class Machine Failure Prediction: A Focus on Calibrated Explainability and Model Uncertainty](https://hj.diva-portal.org/smash/record.jsf?pid=diva2%3A1968367)
+
+## Preprints
+
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
+  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/ensured-explanations-for-decreasing-the-epistemic-uncertainty-in-predictions) — **Experimental code available**; pre-computed result archives are not currently included.
 
 
 # Bibtex Entries
