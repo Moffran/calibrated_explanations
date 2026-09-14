@@ -1,221 +1,206 @@
 # Citing calibrated-explanations
 
-If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
+If you use `calibrated-explanations` in a scientific publication, please cite
+the paper or papers most relevant to the functionality or research contribution
+you use.
 
-For narrative summaries of the research program, benchmarks, and funding, visit the {doc}`research hub <researcher/index>` before diving into the detailed references below.
-# Citing calibrated-explanations
+For narrative summaries of the research programme, benchmarks, and funding,
+visit the {doc}`research hub <researcher/index>`.
 
-If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
-
-For narrative summaries of the research program, benchmarks, and funding, visit the {doc}`research hub <researcher/index>` before diving into the detailed references below.
+Reproduction material is maintained separately in the
+[Calibrated Explanations Studies](https://github.com/kristinebergs/calibrated-explanations-studies)
+repository. The reproduction status stated below refers to the publicly available
+material at the time this page was updated.
 
 ## Published papers
 
-- [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
+### Calibrated Explanations: with Uncertainty Information and Counterfactuals
 
-- [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://linkinghub.elsevier.com/retrieve/pii/S0957417424000198). Expert Systems with Applications, 1-27. https://linkinghub.elsevier.com/retrieve/pii/S0957417424000198
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-with-uncertainty-information-and-counterfactuals) — **Experimental code available**, together with analysis and archived results.
+Löfström, H., Löfström, T., Johansson, U., and Sönströd, C. (2024).
+[Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154).
+*Expert Systems with Applications*, 246, 123154.
 
-- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2025). [Calibrated Explanations for Regression](https://link.springer.com/article/10.1007/s10994-024-06642-8). Machine Learning 114, 100. https://link.springer.com/article/10.1007/s10994-024-06642-8
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-for-regression) — **Experimental code available**, together with analysis and archived results.
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-with-uncertainty-information-and-counterfactuals)
+  — **Experimental code available**, together with analysis and archived results.
 
-- [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://link.springer.com/chapter/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham. https://link.springer.com/chapter/10.1007/978-3-031-63787-2_17
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/conditional-calibrated-explanations-finding-a-path-between-bias-and-uncertainty) — **Experimental code available** as notebook-driven experiments, with archived results.
+### Calibrated Explanations for Regression
 
-- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>, PMLR 230:175-194.
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-for-multi-class) — **Experimental code available**, with archived results.
+Löfström, T., Löfström, H., Johansson, U., Sönströd, C., and Matela, R. (2025).
+[Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8).
+*Machine Learning*, 114, 100.
 
-- [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16). In: Guidotti, R., Schmid, U., Longo, L. (eds) Explainable Artificial Intelligence. xAI 2025. Communications in Computer and Information Science, vol 2580. Springer, Cham. https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16.
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/fast-calibrated-explanations-efficient-and-uncertainty-aware-explanations-for-machine-learning-models) — **Experimental code available**, together with archived evaluation material.
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-for-regression)
+  — **Experimental code available**, together with analysis and archived results.
 
-- Hanna, A., and [Löfström, T](https://github.com/tuvelofstrom). (2026). [Beyond the Predicted Class: Calibrated Explanations for Real Multiclass Decisions](https://proceedings.mlr.press/v329/hanna26a.html). *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, 329:402-421.
-  - **Experimental code:** no dedicated study package is currently available in the Calibrated Explanations studies repository.
+### Conditional Calibrated Explanations
 
-- [Löfström, T](https://github.com/tuvelofstrom)., Hjort, A., and [Löfström, H](https://github.com/Moffran). (2026). [Guarded Explanations: Conformal-Style Filtering for Distribution-Aware Rule Conditions](https://proceedings.mlr.press/v329/lofstrom26a.html). *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, 329:422-438.
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/guarded-explanations-conformal-filtering-for-distribution-aware-rule-conditions) — **experimental material partially available**. The generic/synthetic Guarded Explanations material is represented, but the Oslo real-estate case data and case-specific experimental code are not included.
+Löfström, H., and Löfström, T. (2024).
+[Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17).
+In L. Longo, S. Lapuschkin, and C. Seifert (eds),
+*Explainable Artificial Intelligence. xAI 2024*,
+Communications in Computer and Information Science, vol. 2153,
+pp. 332–355. Springer, Cham.
 
-- [Löfström, T](https://github.com/tuvelofstrom)., Hallberg Szabadváry, J., Pettersson, K., Aldea, M., and [Löfström, H](https://github.com/Moffran). (2026). [Uncertainty-aware Decision Support in Power Grid Demand Forecasting](https://proceedings.mlr.press/v329/lofstrom26c.html). *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, 329:1029-1042.
-  - [Study information](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/uncertainty-aware-decision-support-in-power-grid-demand-forecasting) — **public experimental code is not available as a reproduction package**. The study currently contains documentation only because the operational energy-consumption data are restricted.
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/conditional-calibrated-explanations-finding-a-path-between-bias-and-uncertainty)
+  — **Experimental code available** as notebook-driven experiments, with archived results.
 
-The paper that originated the idea of `calibrated-explanations` is:
+### Calibrated Explanations for Multi-class
 
-- [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18.
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/investigating-the-impact-of-calibration-on-the-quality-of-explanations) — **Experimental code available**; original experiment code, analysis, and archived results have been migrated to the studies repository.
+Löfström, T., Löfström, H., and Johansson, U. (2024).
+[Calibrated Explanations for Multi-class](https://proceedings.mlr.press/v230/lofstrom24a.html).
+*Proceedings of the Thirteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+Proceedings of Machine Learning Research, 230:175–194.
 
-- Hallberg Szabadváry, J., Löfström, T., Johansson, U., Sönströd, C., Ahlberg, E., and Carlsson, L. (2025). [Classification with reject option: Distribution-free error guarantees via conformal prediction](https://doi.org/10.1016/j.mlwa.2025.100664). Machine Learning with Applications, 20, 100664. https://doi.org/10.1016/j.mlwa.2025.100664
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-for-multi-class)
+  — **Experimental code available**, with archived results.
 
-This package's conformal reject singleton-error accounting follows the paper above: epsilon controls conformal set miscoverage, while accepted singleton error is estimated separately via sigma-hat.
+### Fast Calibrated Explanations
 
-## Master Theses
+Löfström, T., Yapicioglu, F. R., Stramiglio, A., Löfström, H., and Vitali, F. (2026).
+[Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://doi.org/10.1007/978-3-032-08333-3_16).
+In R. Guidotti, U. Schmid, and L. Longo (eds),
+*Explainable Artificial Intelligence. xAI 2025*,
+Communications in Computer and Information Science, vol. 2580,
+pp. 340–363. Springer, Cham.
 
-- [Ayham Hanna](https://github.com/Aiham00) (2025) [Explainable AI for Multi-Class Machine Failure Prediction: A Focus on Calibrated Explainability and Model Uncertainty](https://hj.diva-portal.org/smash/record.jsf?pid=diva2%3A1968367)
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/fast-calibrated-explanations-efficient-and-uncertainty-aware-explanations-for-machine-learning-models)
+  — **Experimental code available**, together with archived evaluation material.
 
-## Preprints
+### Beyond the Predicted Class
 
-- [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
-  - [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/ensured-explanations-for-decreasing-the-epistemic-uncertainty-in-predictions) — **Experimental code available**; pre-computed result archives are not currently included.
+Hanna, A., and Löfström, T. (2026).
+[Beyond the Predicted Class: Calibrated Explanations for Real Multiclass Decisions](https://proceedings.mlr.press/v329/hanna26a.html).
+*Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+Proceedings of Machine Learning Research, 329:402–421.
 
+- **Experimental code:** no dedicated study package is currently available in
+  the Calibrated Explanations Studies repository.
 
-# Bibtex Entries
+### Guarded Explanations
+
+Löfström, T., Hjort, A., and Löfström, H. (2026).
+[Guarded Explanations: Conformal-Style Filtering for Distribution-Aware Rule Conditions](https://proceedings.mlr.press/v329/lofstrom26a.html).
+*Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+Proceedings of Machine Learning Research, 329:422–438.
+
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/guarded-explanations-conformal-filtering-for-distribution-aware-rule-conditions)
+  — **Experimental material partially available**. The generic, synthetic, and
+  benchmark Guarded Explanations material is represented, but the Oslo
+  real-estate case data and the case-specific experimental code are not included.
+
+### Uncertainty-aware Decision Support in Power Grid Demand Forecasting
+
+Löfström, T., Hallberg Szabadváry, J., Pettersson, K., Aldea, M., and Löfström, H. (2026).
+[Uncertainty-aware Decision Support in Power Grid Demand Forecasting](https://proceedings.mlr.press/v329/lofstrom26c.html).
+*Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+Proceedings of Machine Learning Research, 329:1029–1042.
+
+- [Study information](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/uncertainty-aware-decision-support-in-power-grid-demand-forecasting)
+  — **Public experimental code is not available as a reproduction package**.
+  The study currently contains documentation only because the operational
+  energy-consumption data are restricted.
+
+### Concerning uncertainty—a systematic survey of uncertainty-aware XAI
+
+Löfström, H., Löfström, T., Hjort, A., and Yapicioglu, F. R. (2026).
+[Concerning uncertainty—a systematic survey of uncertainty-aware XAI](https://doi.org/10.1098/rsta.2025.0079).
+*Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences*,
+384(2327), 20250079.
+
+- **Experimental code:** not applicable as a conventional benchmark study.
+  No dedicated study package is currently maintained in the Calibrated
+  Explanations Studies repository.
+
+### Calibrated Explanations demo paper
+
+Löfström, H., and Löfström, T. (2026).
+[Calibrated Explanations: Trustworthy Uncertainty for Every Prediction and Explanation](https://ceur-ws.org/Vol-4259/paper25.pdf).
+In *Joint Proceedings of the xAI 2026 Late-breaking Work, Demos and Doctoral Consortium
+(LB/D/DC@xAI 2026)*, CEUR Workshop Proceedings, vol. 4259, pp. 193–200.
+
+- **Experimental code:** no separate experiment package. This is a demo paper
+  describing the Calibrated Explanations software and interactive demonstration.
+
+## Originating calibration study
+
+The paper that originated the idea that later became `calibrated-explanations` is:
+
+Löfström, H., Löfström, T., Johansson, U., and Sönströd, C. (2026).
+[Investigating the impact of calibration on the quality of explanations](https://doi.org/10.1007/s10472-023-09837-2).
+*Annals of Mathematics and Artificial Intelligence*, 94, 219–236.
+
+The article was first published online on 13 March 2023; 2026 is the final issue
+year in the publisher's current citation.
+
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/investigating-the-impact-of-calibration-on-the-quality-of-explanations)
+  — **Experimental code available**. The original experiment code, analysis,
+  and archived results have been migrated to the studies repository.
+
+## Related conformal reject-option research
+
+Hallberg Szabadváry, J., Löfström, T., Johansson, U., Sönströd, C.,
+Ahlberg, E., and Carlsson, L. (2025).
+[Classification with reject option: Distribution-free error guarantees via conformal prediction](https://doi.org/10.1016/j.mlwa.2025.100664).
+*Machine Learning with Applications*, 20, 100664.
+
+- **Experimental code:** no dedicated study package is currently maintained
+  for this paper in the Calibrated Explanations Studies repository.
+
+This package's conformal reject singleton-error accounting follows the paper
+above: epsilon controls conformal set miscoverage, while accepted singleton
+error is estimated separately via sigma-hat.
+
+## Preprints and in-press
+
+### Ensured Explanations
+
+Löfström, H., Löfström, T., and Hallberg Szabadváry, J. (2024).
+[Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479).
+arXiv:2410.05479.
+
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/ensured-explanations-for-decreasing-the-epistemic-uncertainty-in-predictions)
+  — **Experimental code available**; pre-computed result archives are not
+  currently included.
+
+### Calibrated Explanations for Within-Spec Risk Prediction
+
+Löfström, T., Löfström, H., and Uddin, N. (in press).
+*Calibrated Explanations for Within-Spec Risk Prediction:
+Uncertainty-Aware Decision Support*.
+
+- [Studies and reproduction material](https://github.com/kristinebergs/calibrated-explanations-studies/tree/main/studies/calibrated-explanations-for-within-spec-risk-prediction-uncertainty-aware-decision-support)
+  — **Experimental material partially available**. The study is the canonical
+  reproducibility home, but the original experiment runners and raw result files
+  are not currently available in the repository.
+
+## Other research outputs
+
+### Doctoral dissertation
+
+Löfström, H. (2023).
+[Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440).
+Doctoral dissertation, Jönköping University,
+Jönköping International Business School.
+
+### Master thesis
+
+Hanna, A. (2025).
+[Explainable AI for Multi-Class Machine Failure Prediction: A Focus on Calibrated Explainability and Model Uncertainty](https://hj.diva-portal.org/smash/record.jsf?pid=diva2%3A1968367).
+
+# BibTeX entries
+
 ## Published papers
 
-Bibtex for Helena Löfström's dissertation:
-
-```bibtex
-@phdthesis{lofstrom2023dissertation,
-	author = 		{L{\"o}fstr{\"o}m, Helena},
-	institution = 	{Jönköping University, JIBS, Informatics},
-	pages = 		{72},
-	publisher = 	{Jönköping University},
-	school = 		{Jönköping International Business School, JIBS, Informatics},
-	title = 		{Trustworthy explanations : Improved decision support through well-calibrated uncertainty quantification},
-	series = 		{JIBS Dissertation Series},
-	ISSN = 			{1403-0470},
-	number = 		{159},
-	keywords = 		{Explainable Artificial Intelligence, Interpretable Machine Learning, Decision Support Systems, Uncertainty Estimation, Explanation Methods},
-	abstract = 		{The use of Artificial Intelligence (AI) has transformed fields like disease diagnosis and defence. Utilising sophisticated Machine Learning (ML) models, AI predicts future events based on historical data, introducing complexity that challenges understanding and decision-making. Previous research emphasizes users’ difficulty discerning when to trust predictions due to model complexity, underscoring addressing model complexity and providing transparent explanations as pivotal for facilitating high-quality decisions. Many ML models offer probability estimates for predictions, commonly used in methods providing explanations to guide users on prediction confidence. However, these probabilities often do not accurately reflect the actual distribution in the data, leading to potential user misinterpretation of prediction trustworthiness. Additionally, most explanation methods fail to convey whether the model’s probability is linked to any uncertainty, further diminishing the reliability of the explanations. Evaluating the quality of explanations for decision support is challenging, and although highlighted as essential in research, there are no benchmark criteria for comparative evaluations. This thesis introduces an innovative explanation method that generates reliable explanations, incorporating uncertainty information supporting users in determining when to trust the model’s predictions. The thesis also outlines strategies for evaluating explanation quality and facilitating comparative evaluations. Through empirical evaluations and user studies, the thesis provides practical insights to support decision-making utilising complex ML models. },
-	ISBN = 			{978-91-7914-031-1},
-	ISBN = 			{978-91-7914-032-8},
-	year = 			{2023}
-}
-```
-
-Bibtex entry for the original paper:
+### Calibrated Explanations: with Uncertainty Information and Counterfactuals
 
 ```bibtex
 @article{lofstrom2024ce_classification,
-	title = 	{Calibrated Explanations: with Uncertainty Information and Counterfactuals},
-	journal = 	{Expert Systems with Applications},
-	pages = 	{123154},
-	year = 		{2024},
-	issn = 		{0957-4174},
-	doi = 		{10.1016/j.eswa.2024.123154},
-	url = 		{https://www.sciencedirect.com/science/article/pii/S0957417424000198},
-	author = 	{Helena Löfström and Tuwe Löfström and Ulf Johansson and Cecilia Sönströd},
-	keywords = 	{Explainable AI, Feature importance, Calibrated explanations, Venn-Abers, Uncertainty quantification, alternative explanations},
-	abstract = 	{While local explanations for AI models can offer insights into individual predictions, such as feature importance, they are plagued by issues like instability. The unreliability of feature weights, often skewed due to poorly calibrated ML models, deepens these challenges. Moreover, the critical aspect of feature importance uncertainty remains mostly unaddressed in Explainable AI (XAI). The novel feature importance explanation method presented in this paper, called Calibrated Explanations (CE), is designed to tackle these issues head-on. Built on the foundation of Venn-Abers, CE not only calibrates the underlying model but also delivers reliable feature importance explanations with an exact definition of the feature weights. CE goes beyond conventional solutions by addressing output uncertainty. It accomplishes this by providing uncertainty quantification for both feature weights and the model’s probability estimates. Additionally, CE is model-agnostic, featuring easily comprehensible conditional rules and the ability to generate alternative explanations with embedded uncertainty quantification. Results from an evaluation with 25 benchmark datasets underscore the efficacy of CE, making it stand as a fast, reliable, stable, and robust solution.}
+  title   = {Calibrated Explanations: with Uncertainty Information and Counterfactuals},
+  author  = {Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia},
+  journal = {Expert Systems with Applications},
+  volume  = {246},
+  pages   = {123154},
+  year    = {2024},
+  doi     = {10.1016/j.eswa.2024.123154},
+  url     = {https://doi.org/10.1016/j.eswa.2024.123154}
 }
-```
-
-Bibtex entry for the regression paper:
-
-```bibtex
-@article{lofstrom2025ce_regression,
-	title =		{Calibrated explanations for regression},
-	author =	{L{\"o}fstr{\"o}m, Tuwe and L{\"o}fstr{\"o}m, Helena and Johansson, Ulf and S{\"o}nstr{\"o}d, Cecilia and Matela, Rudy},
-	journal =	{Machine Learning},
-	volume =	{114},
-	number =	{100},
-	year =		{2025},
-	publisher =	{Springer Nature},
-	doi = 		{10.1007/s10994-024-06642-8},
-	url = 		{https://link.springer.com/article/10.1007/s10994-024-06642-8},
-	abstract =  {Artificial Intelligence (AI) methods are an integral part of modern decision support systems. The best-performing predictive models used in AI-based decision support systems lack transparency. Explainable Artificial Intelligence (XAI) aims to create AI systems that can explain their rationale to human users. Local explanations in XAI can provide information about the causes of individual predictions in terms of feature importance. However, a critical drawback of existing local explanation methods is their inability to quantify the uncertainty associated with a feature’s importance. This paper introduces an extension of a feature importance explanation method, Calibrated Explanations, previously only supporting classification, with support for standard regression and probabilistic regression, i.e., the probability that the target is below an arbitrary threshold. The extension for regression keeps all the benefits of Calibrated Explanations, such as calibration of the prediction from the underlying model with confidence intervals, uncertainty quantification of feature importance, and allows both factual and alternative explanations. Calibrated Explanations for regression provides fast, reliable, stable, and robust explanations. Calibrated Explanations for probabilistic regression provides an entirely new way of creating probabilistic explanations from any ordinary regression model, allowing dynamic selection of thresholds. The method is model agnostic with easily understood conditional rules. An implementation in Python is freely available on GitHub and for installation using both pip and conda, making the results in this paper easily replicable.}
-}
-```
-
-Bibtex for the conditional paper:
-
-```bibtex
-@InProceedings{lofstrom2024ce_conditional,
-	author =	"L{\"o}fstr{\"o}m, Helena and L{\"o}fstr{\"o}m, Tuwe",
-	editor =	"Longo, Luca and Lapuschkin, Sebastian and Seifert, Christin",
-	title =		"Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty",
-	booktitle =	"Explainable Artificial Intelligence",
-	year =		"2024",
-	publisher =	"Springer Nature Switzerland",
-	address =	"Cham",
-	pages =		"332--355",
-	abstract =	"While Artificial Intelligence and Machine Learning models are becoming increasingly prevalent, it is essential to remember that they are not infallible or inherently objective. These models depend on the data they are trained on and the inherent bias of the chosen machine learning algorithm. Therefore, selecting and sampling data for training is crucial for a fair outcome of the model. A model predicting, e.g., whether an applicant should be taken further in the job application process, could create heavily biased predictions against women if the data used to train the model mostly contained information about men. The well-known concept of conditional categories used in Conformal Prediction can be utilised to address this type of bias in the data. The Conformal Prediction framework includes uncertainty quantification methods for classification and regression. To help meet the challenges of data sets with potential bias, conditional categories were incorporated into an existing explanation method called Calibrated Explanations, relying on conformal methods. This approach allows users to try out different settings while simultaneously having the possibility to study how the uncertainty in the predictions is affected on an individual level. Furthermore, this paper evaluated how the uncertainty changed when using conditional categories based on attributes containing potential bias. It showed that the uncertainty significantly increased, revealing that fairness came with a cost of increased uncertainty.",
-	isbn =		"978-3-031-63787-2"
-}
-```
-
-Bibtex for the multi-class paper:
-
-```bibtex
-@InProceedings{lofstrom2024ce_multiclass,
-	title = 	{Calibrated Explanations for Multi-class},
-	author =    {L\"{o}fstr\"{o}m, Tuwe and L\"{o}fstr\"{o}m, Helena and Johansson, Ulf},
-	booktitle = {Proceedings of the Thirteenth Symposium on Conformal and Probabilistic Prediction with Applications},
-	pages = 	{175--194},
-	year = 	 	{2024},
-	editor = 	{Vantini, Simone and Fontana, Matteo and Solari, Aldo and Boström, Henrik and Carlsson, Lars},
-	volume = 	{230},
-	series = 	{Proceedings of Machine Learning Research},
-	month = 	{09--11 Sep},
-	publisher = {PMLR},
-	pdf = 	 	{https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf},
-	url = 	 	{https://proceedings.mlr.press/v230/lofstrom24a.html},
-	abstract = 	{Calibrated Explanations is a recently proposed feature importance explanation method providing uncertainty quantification. It utilises Venn-Abers to generate well-calibrated factual and alternative explanations for binary classification. In this paper, we extend the method to support multi-class classification. The paper includes an evaluation illustrating the calibration quality of the selected multi-class calibration approach, as well as a demonstration of how the explanations can help determine which explanations to trust.}
-}
-```
-
-Bibtex entry for the fast paper:
-
-```bibtex
-@InProceedings{10.1007/978-3-032-08333-3_16,
-	author=		"L{\"o}fstr{\"o}m, Tuwe
-				and Yapicioglu, Fatima Rabia
-				and Stramiglio, Alessandra
-				and L{\"o}fstr{\"o}m, Helena
-				and Vitali, Fabio",
-	editor=		"Guidotti, Riccardo
-				and Schmid, Ute
-				and Longo, Luca",
-	title=		"Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models",
-	booktitle=	"Explainable Artificial Intelligence",
-	year=		"2025",
-	publisher=	"Springer Nature Switzerland",
-	address=	"Cham",
-	pages=		"340--363",
-	abstract=	"This paper introduces Fast Calibrated Explanations, an extension of an existing explanation method, Calibrated Explanations, designed for generating rapid, uncertainty-aware explanations for machine learning models. By incorporating perturbation techniques from ConformaSight, a global explanation method, into the core elements of Calibrated Explanations, we achieved significant speedups. These core elements include local feature importance with calibrated predictions, both of which retain uncertainty quantification. While the extension sacrifices some degree of detail, it excels in computational efficiency, making it ideal for high-stakes, real-time applications. Fast Calibrated Explanations applies to probabilistic explanations in classification and thresholded regression tasks, providing the probability of a target being above or below a user-defined threshold. This approach maintains the versatility of Calibrated Explanations for both classification and thresholded regression, making it suitable for a range of predictive tasks where uncertainty quantification is crucial.",
-	isbn=		"978-3-032-08333-3"
-}
-```
-
-## Preprints:
-
-Bibtex entry for the ensured paper:
-
-```bibtex
-@misc{lofstrom2024ce_ensured,
-	title = 	      {Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions},
-	author =          {L\"ofstr\"om, Helena and L\"ofstr\"om, Tuwe and Hallberg Szabadvary, Johan},
-	year =            {2024},
-	eprint =          {2410.05479},
-	archivePrefix =   {arXiv},
-	primaryClass =    {cs.LG}
-}
-```
-
-
-Bibtex entry for reject-option conformal singleton accounting paper:
-
-```bibtex
-@article{hallbergszabadvary2025reject,
-  author = {Johan Hallberg Szabadváry and Tuwe Löfström and Ulf Johansson and Cecilia Sönströd and Ernst Ahlberg and Lars Carlsson},
-  title = {Classification with reject option: Distribution-free error guarantees via conformal prediction},
-  journal = {Machine Learning with Applications},
-  volume = {20},
-  pages = {100664},
-  year = {2025},
-  doi = {10.1016/j.mlwa.2025.100664},
-  url = {https://doi.org/10.1016/j.mlwa.2025.100664}
-}
-```
-
-## Software
-To cite this software, use the following bibtex entry:
-
-```bibtex
-@software{lofstrom2024ce_repository,
-	author = 	{Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
-	license = 	{BSD-3-Clause},
-	title = 	{Calibrated Explanations},
-	url = 		{https://github.com/Moffran/calibrated_explanations},
-	version = 	{v1.0.0},
-	month = 	{July},
-	year = 		{2026}
-}
-```
