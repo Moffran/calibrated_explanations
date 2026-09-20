@@ -310,6 +310,36 @@ def _resolve_panel_layout_policy(
     return False, {"bbox_inches": "tight"}, False
 
 
+def _add_horizontal_rectangles(
+    ax: Any,
+    rectangles: Sequence[tuple[float, float, float, float, str, float]],
+) -> None:
+    """Add many horizontal rectangles to *ax* as a single collection."""
+    if not rectangles:
+        return
+    if not hasattr(ax, "add_collection"):
+        for left, right, y0, y1, color, alpha in rectangles:
+            ax.fill_betweenx([y0, y1], left, right, color=color, alpha=alpha)
+        return
+    import matplotlib.colors as mpl_colors
+    from matplotlib.collections import PolyCollection
+
+    verts: list[list[tuple[float, float]]] = []
+    facecolors: list[tuple[float, float, float, float]] = []
+    for left, right, y0, y1, color, alpha in rectangles:
+        verts.append(
+            [
+                (float(left), float(y0)),
+                (float(right), float(y0)),
+                (float(right), float(y1)),
+                (float(left), float(y1)),
+            ]
+        )
+        facecolors.append(mpl_colors.to_rgba(color, alpha))
+    collection = PolyCollection(verts, facecolors=facecolors, edgecolors="none")
+    ax.add_collection(collection)
+
+
 def _render_triangular_spec(
     spec: TriangularPlotSpec,
     *,
@@ -1086,16 +1116,28 @@ def render(
             rel_tol=1e-12,
             abs_tol=1e-12,
         )
+        rectangles: list[tuple[float, float, float, float, str, float]] = []
 
         if band == "negative":
             comp_pred = 1.0 - pred
             comp_low = 1.0 - high
             comp_high = 1.0 - low
-            ax.fill_betweenx(y_coords, comp_pred, comp_pred, color=base_color)
-            ax.fill_betweenx(y_coords, 0.0, comp_low, color=base_color)
+            rectangles.append(
+                (comp_pred, comp_pred, float(y_coords[0]), float(y_coords[1]), base_color, 1.0)
+            )
+            rectangles.append(
+                (0.0, comp_low, float(y_coords[0]), float(y_coords[1]), base_color, 1.0)
+            )
             if render_intervals:
-                ax.fill_betweenx(
-                    y_coords, comp_high, comp_low, color=overlay_color, alpha=alpha_val
+                rectangles.append(
+                    (
+                        comp_high,
+                        comp_low,
+                        float(y_coords[0]),
+                        float(y_coords[1]),
+                        overlay_color,
+                        alpha_val,
+                    )
                 )
             ax.plot(
                 [comp_pred, comp_pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2
@@ -1106,14 +1148,18 @@ def render(
             solid_range = (0.0, comp_low)
             overlay_range = (comp_high, comp_low)
         else:
-            ax.fill_betweenx(y_coords, pred, pred, color=base_color)
-            ax.fill_betweenx(y_coords, 0.0, low, color=base_color)
+            rectangles.append((pred, pred, float(y_coords[0]), float(y_coords[1]), base_color, 1.0))
+            rectangles.append((0.0, low, float(y_coords[0]), float(y_coords[1]), base_color, 1.0))
             if render_intervals:
-                ax.fill_betweenx(y_coords, low, high, color=overlay_color, alpha=alpha_val)
+                rectangles.append(
+                    (low, high, float(y_coords[0]), float(y_coords[1]), overlay_color, alpha_val)
+                )
             ax.plot([pred, pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2)
             ax.set_xticks([])
             solid_range = (0.0, low)
             overlay_range = (low, high)
+
+        _add_horizontal_rectangles(ax, rectangles)
 
         caption = _header_caption(header, band)
         ax.set_ylim([-_HEADER_Y_LIMIT, _HEADER_Y_LIMIT])
@@ -1197,6 +1243,8 @@ def render(
             y_centres, y_min, y_max, _ = _body_y_layout(body)
             y_base = np.array([y_min, y_max])
             bar_span = float(getattr(body, "bar_span", 0.2))
+            base_rectangles: list[tuple[float, float, float, float, str, float]] = []
+            overlay_rectangles: list[tuple[float, float, float, float, str, float]] = []
 
             base_segments = getattr(body, "base_segments", None)
             if base_segments:
@@ -1209,7 +1257,16 @@ def render(
                         high = float(seg.high)
                         if low > high:
                             low, high = high, low
-                        ax.fill_betweenx(y_base, low, high, color=seg.color, alpha=alpha_seg)
+                        base_rectangles.append(
+                            (
+                                float(low),
+                                float(high),
+                                float(y_base[0]),
+                                float(y_base[1]),
+                                seg.color,
+                                alpha_seg,
+                            )
+                        )
                         if export_drawn_primitives:
                             # When header is dual (probability header + contribution body),
                             # convert base segment endpoints into contribution-space
@@ -1224,6 +1281,16 @@ def render(
                             except Exception:  # adr002_allow
                                 conv_low, conv_high = (float(low), float(high))
                             if draw_intervals:
+                                overlay_rectangles.append(
+                                    (
+                                        float(conv_low),
+                                        float(conv_high),
+                                        float(y_base[0]),
+                                        float(y_base[1]),
+                                        seg.color,
+                                        alpha_seg,
+                                    )
+                                )
                                 primitives.setdefault("overlays", []).append(
                                     {
                                         "index": -1,
@@ -1313,7 +1380,16 @@ def render(
                             high = float(seg.high)
                             if low > high:
                                 low, high = high, low
-                            ax.fill_betweenx(y_j, low, high, color=seg.color, alpha=alpha_seg)
+                            base_rectangles.append(
+                                (
+                                    float(low),
+                                    float(high),
+                                    float(y_j[0]),
+                                    float(y_j[1]),
+                                    seg.color,
+                                    alpha_seg,
+                                )
+                            )
                             if export_drawn_primitives:
                                 # convert to contribution-space for dual headers
                                 conv_low, conv_high = (low, high)
@@ -1327,6 +1403,16 @@ def render(
                                 except Exception:  # adr002_allow
                                     conv_low, conv_high = (float(low), float(high))
                                 if draw_intervals:
+                                    overlay_rectangles.append(
+                                        (
+                                            float(conv_low),
+                                            float(conv_high),
+                                            float(y_j[0]),
+                                            float(y_j[1]),
+                                            seg.color,
+                                            alpha_seg,
+                                        )
+                                    )
                                     primitives.setdefault("overlays", []).append(
                                         {
                                             "index": idx,
@@ -1358,7 +1444,9 @@ def render(
                         color = getattr(item, "color_role", None) or config["colors"].get(
                             "positive", "r"
                         )
-                        ax.fill_betweenx(y_j, lo, hi, color=color)
+                        overlay_rectangles.append(
+                            (float(lo), float(hi), float(y_j[0]), float(y_j[1]), color, 1.0)
+                        )
                         if export_drawn_primitives:
                             primitives.setdefault("overlays", []).append(
                                 {"index": idx, "x0": lo, "x1": hi, "color": color, "alpha": 1.0}
@@ -1398,6 +1486,9 @@ def render(
                         logging.getLogger(__name__).debug(
                             "Failed to draw alternative marker line: %s", exc
                         )
+
+            _add_horizontal_rectangles(ax, base_rectangles)
+            _add_horizontal_rectangles(ax, overlay_rectangles)
 
             ax.set_yticks(y_centres)
             _set_compact_y_tick_labels(ax, [bar.label for bar in bars])
@@ -1713,6 +1804,8 @@ def render(
 
             x_min = 0.0
             x_max = 0.0
+            solid_rectangles: list[tuple[float, float, float, float, str, float]] = []
+            overlay_rectangles: list[tuple[float, float, float, float, str, float]] = []
             if has_intervals and spec.header is not None:
                 try:
                     header_pred = float(spec.header.pred)
@@ -1755,20 +1848,32 @@ def render(
                     if suppress_solid_on_cross and (wl < 0.0 < wh):
                         min_val = 0.0
                         max_val = 0.0
-                    ax.fill_betweenx(xj, min_val, max_val, color=color)
-                    if export_drawn_primitives and not math.isclose(
+                    if not math.isclose(
                         float(min_val), float(max_val), rel_tol=1e-12, abs_tol=1e-12
                     ):
-                        primitives.setdefault("solids", []).append(
-                            {
-                                "index": j,
-                                "x0": float(min_val),
-                                "x1": float(max_val),
-                                "color": color,
-                            }
+                        solid_rectangles.append(
+                            (float(min_val), float(max_val), float(xj[0]), float(xj[1]), color, 1.0)
                         )
+                        if export_drawn_primitives:
+                            primitives.setdefault("solids", []).append(
+                                {
+                                    "index": j,
+                                    "x0": float(min_val),
+                                    "x1": float(max_val),
+                                    "color": color,
+                                }
+                            )
                     if draw_intervals:
-                        ax.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
+                        overlay_rectangles.append(
+                            (
+                                float(wl),
+                                float(wh),
+                                float(xj[0]),
+                                float(xj[1]),
+                                color,
+                                float(alpha_val),
+                            )
+                        )
                         if export_drawn_primitives:
                             primitives.setdefault("overlays", []).append(
                                 {
@@ -1783,20 +1888,26 @@ def render(
                     x_max = max(x_max, min_val, max_val, wl, wh)
                 else:
                     min_val, max_val = (min(width, 0.0), max(width, 0.0))
-                    ax.fill_betweenx(xj, min_val, max_val, color=color)
-                    if export_drawn_primitives and not math.isclose(
+                    if not math.isclose(
                         float(min_val), float(max_val), rel_tol=1e-12, abs_tol=1e-12
                     ):
-                        primitives.setdefault("solids", []).append(
-                            {
-                                "index": j,
-                                "x0": float(min_val),
-                                "x1": float(max_val),
-                                "color": color,
-                            }
+                        solid_rectangles.append(
+                            (float(min_val), float(max_val), float(xj[0]), float(xj[1]), color, 1.0)
                         )
+                        if export_drawn_primitives:
+                            primitives.setdefault("solids", []).append(
+                                {
+                                    "index": j,
+                                    "x0": float(min_val),
+                                    "x1": float(max_val),
+                                    "color": color,
+                                }
+                            )
                     x_min = min(x_min, min_val, max_val)
                     x_max = max(x_max, min_val, max_val)
+
+            _add_horizontal_rectangles(ax, solid_rectangles)
+            _add_horizontal_rectangles(ax, overlay_rectangles)
 
             try:
                 ax.set_xlim([x_min, x_max])

@@ -285,6 +285,51 @@ def _warn_and_log_plotspec_fallback(message: str) -> None:
     warnings.warn(message, UserWarning, stacklevel=2)
 
 
+def _render_plotspec_once_and_save(
+    spec: Any,
+    *,
+    show: bool,
+    path: str,
+    title: str,
+    save_ext: Sequence[str],
+) -> None:
+    """Render a PlotSpec once and save all requested extensions from that figure."""
+    from .viz.matplotlib_adapter import (
+        _resolve_panel_layout_policy,  # pylint: disable=import-outside-toplevel
+    )
+    from .viz.matplotlib_adapter import (
+        render as render_plotspec,  # pylint: disable=import-outside-toplevel
+    )
+
+    if not save_ext:
+        render_plotspec(spec, show=show, save_path=None)
+        return
+
+    fig = render_plotspec(spec, show=show, return_fig=True)
+    try:
+        panels: list[tuple[str, Any]] = []
+        header = getattr(spec, "header", None)
+        body_spec = getattr(spec, "body", None)
+        if header is not None:
+            if getattr(header, "dual", False):
+                panels.append(("header_positive", header))
+                panels.append(("header_negative", header))
+            else:
+                panels.append(("header", header))
+        if body_spec is not None:
+            panels.append(("body", body_spec))
+        _, savefig_kwargs, _ = _resolve_panel_layout_policy(
+            spec,
+            panels=panels,
+            body_spec=body_spec,
+        )
+        for ext in save_ext:
+            fig.savefig(_format_save_path(path, title + ext), **savefig_kwargs)
+    finally:
+        if plt is not None:
+            plt.close(fig)
+
+
 # pre-v4 S4-H6: closed set of built-in ``plot_global`` keyword arguments.
 # Anything outside this set used to be forwarded silently (or with only an
 # INFO log, mirroring the S4-H3 explain-kwarg black hole) through both the
@@ -1243,8 +1288,7 @@ def plot_regression(
     use_legacy=None,
     **kwargs,
 ):
-    """
-    Plot regular and uncertainty explanations.
+    """Plot regression explanations.
 
     Parameters
     ----------
@@ -1399,11 +1443,20 @@ def plot_regression(
         )
 
     try:
-        # Render once and then save multiple extensions if requested
-        render_plotspec(spec, show=show, save_path=None)
         if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
-            for ext in save_ext:
-                render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
+            _render_plotspec_once_and_save(
+                spec,
+                show=show,
+                path=path,
+                title=title,
+                save_ext=save_ext,
+            )
+        else:
+            from .viz.matplotlib_adapter import (
+                render as render_plotspec,  # pylint: disable=import-outside-toplevel
+            )
+
+            render_plotspec(spec, show=show, save_path=None)
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
@@ -1521,13 +1574,16 @@ def plot_triangular(
         return spec
 
     try:
-        render_plotspec(spec, show=show, save_path=None)
-        # If caller requested saving in multiple extensions, call adapter for each
-        # extension so it can emit the expected save primitives (and actually save
-        # if matplotlib is available).
         if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
-            for ext in save_ext:
-                render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
+            _render_plotspec_once_and_save(
+                spec,
+                show=show,
+                path=path,
+                title=title,
+                save_ext=save_ext,
+            )
+        else:
+            render_plotspec(spec, show=show, save_path=None)
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
@@ -2024,12 +2080,20 @@ def plot_alternative(
             spec = build_alternative_probabilistic_spec(**builder_kwargs)
 
         try:
-            render_plotspec(spec, show=show, save_path=None)
             if save_ext and path is not None and title is not None:
-                for ext in save_ext:
-                    render_plotspec(
-                        spec, show=False, save_path=_format_save_path(path, title + ext)
-                    )
+                _render_plotspec_once_and_save(
+                    spec,
+                    show=show,
+                    path=path,
+                    title=title,
+                    save_ext=save_ext,
+                )
+            else:
+                from .viz.matplotlib_adapter import (
+                    render as render_plotspec,  # pylint: disable=import-outside-toplevel
+                )
+
+                render_plotspec(spec, show=show, save_path=None)
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise

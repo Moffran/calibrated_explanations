@@ -125,6 +125,68 @@ def test_resolve_plot_style_chain_should_delegate_to_plugin_manager_when_availab
     )
 
 
+def test_plot_regression_should_render_once_for_multiple_save_extensions(monkeypatch):
+    """Verify plot_regression renders one figure and saves multiple extensions from it."""
+
+    from pathlib import Path
+
+    class FakeFigure:
+        def __init__(self):
+            self.saved = []
+
+        def savefig(self, path, **kwargs):
+            self.saved.append((path, kwargs))
+
+    fake_figure = FakeFigure()
+    render_calls = []
+    closed_figures = []
+
+    def fake_render(spec, *, show=False, save_path=None, return_fig=False, **kwargs):
+        render_calls.append((spec, show, save_path, return_fig, kwargs))
+        if return_fig:
+            return fake_figure
+        return None
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_regression_bars_spec",
+        lambda **kwargs: SimpleNamespace(header=None, body=None),
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        fake_render,
+    )
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace(close=closed_figures.append))
+
+    explanation = SimpleNamespace(
+        calibrated_explanations=None,
+        reject_context=None,
+        y_minmax=(0.0, 1.0),
+    )
+
+    plotting.plot_regression(
+        explanation,
+        instance=[0.0],
+        predict={"predict": 0.4, "low": 0.2, "high": 0.6},
+        feature_weights=[0.1],
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["feature"],
+        title="plot",
+        path="out",
+        show=False,
+        interval=False,
+        idx=0,
+        save_ext=[".png", ".pdf"],
+        use_legacy=False,
+    )
+
+    assert len(render_calls) == 1
+    assert render_calls[0][3] is True
+    assert [Path(item[0]).name for item in fake_figure.saved] == ["plot.png", "plot.pdf"]
+    assert [Path(item[0]).suffix for item in fake_figure.saved] == [".png", ".pdf"]
+    assert closed_figures == [fake_figure]
+
+
 def test_setup_plot_style_should_apply_config_values_to_matplotlib(monkeypatch):
     require_name = "_" + "require_matplotlib"
     setup_name = "_" + "setup_plot_style"
