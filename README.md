@@ -185,25 +185,92 @@ explainer.explain_factual(
 
 ## Research and Citations
 
-`calibrated-explanations` is the product of peer-reviewed research. If you use it, please cite the relevant paper(s).
+`calibrated-explanations` is the product of a growing body of peer-reviewed research on
+calibrated, uncertainty-aware explanations and decision support.
 
-Reproduction code and published result artefacts are maintained in the
+For complete references, BibTeX entries, and reproduction status, see
+[`docs/citing.md`](docs/citing.md).
+
+Reproduction code, study environments, archived results, and known reproducibility
+limitations are maintained in the
 [Calibrated Explanations Studies](https://github.com/kristinebergs/calibrated-explanations-studies)
 repository.
 
-1. Löfström, H., Löfström, T., Johansson, U., Sönströd, C. (2024). "Calibrated Explanations: with Uncertainty Information and Counterfactuals." *Expert Systems with Applications*. doi:[10.1016/j.eswa.2024.123154](https://doi.org/10.1016/j.eswa.2024.123154)
+### Published research
 
-2. Löfström, T., Löfström, H., Johansson, U., Sönströd, C., Matela, R. (2025). "Calibrated Explanations for Regression." *Machine Learning* 114, 100. Springer Nature. doi:[10.1007/s10994-024-06642-8](https://doi.org/10.1007/s10994-024-06642-8)
+1. Löfström, H., Löfström, T., Johansson, U., Sönströd, C. (2024).
+   **Calibrated Explanations: with Uncertainty Information and Counterfactuals.**
+   *Expert Systems with Applications*, 246, 123154.
+   doi:[10.1016/j.eswa.2024.123154](https://doi.org/10.1016/j.eswa.2024.123154)
 
-3. Löfström, H., Löfström, T. (2024). "Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty." *xAI 2024*, Communications in Computer and Information Science, vol 2153. Springer, Cham. doi:[10.1007/978-3-031-63787-2_17](https://doi.org/10.1007/978-3-031-63787-2_17)
+2. Löfström, T., Löfström, H., Johansson, U., Sönströd, C., Matela, R. (2025).
+   **Calibrated Explanations for Regression.**
+   *Machine Learning*, 114, 100.
+   doi:[10.1007/s10994-024-06642-8](https://doi.org/10.1007/s10994-024-06642-8)
 
-4. Löfström, T., Löfström, H., Johansson, U. (2024). "Calibrated Explanations for Multi-class." *Proceedings of the Thirteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, PMLR 230:175–194.
+3. Löfström, H., Löfström, T. (2024).
+   **Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty.**
+   In *Explainable Artificial Intelligence. xAI 2024*, CCIS 2153, 332–355.
+   doi:[10.1007/978-3-031-63787-2_17](https://doi.org/10.1007/978-3-031-63787-2_17)
 
-5. Löfström, H., Löfström, T., Hallberg Szabadvary, J. (2024). "Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions." *arXiv:2410.05479*. [https://arxiv.org/abs/2410.05479](https://arxiv.org/abs/2410.05479)
+4. Löfström, T., Löfström, H., Johansson, U. (2024).
+   **Calibrated Explanations for Multi-class.**
+   *Proceedings of the Thirteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+   PMLR 230:175–194.
 
-6. Löfström, H. et al. (2023). "Investigating the impact of calibration on the quality of explanations." *Annals of Mathematics and Artificial Intelligence*.
+5. Löfström, T., Yapicioglu, F. R., Stramiglio, A., Löfström, H., Vitali, F. (2026).
+   **Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models.**
+   In *Explainable Artificial Intelligence. xAI 2025*, CCIS 2580, 340–363.
+   doi:[10.1007/978-3-032-08333-3_16](https://doi.org/10.1007/978-3-032-08333-3_16)
 
-BibTeX entries are available in [`CITATION.cff`](CITATION.cff).
+6. Hanna, A., Löfström, T. (2026).
+   **Beyond the Predicted Class: Calibrated Explanations for Real Multiclass Decisions.**
+   *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+   PMLR 329:402–421.
+
+7. Löfström, T., Hjort, A., Löfström, H. (2026).
+   **Guarded Explanations: Conformal-Style Filtering for Distribution-Aware Rule Conditions.**
+   *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+   PMLR 329:422–438.
+
+8. Löfström, T., Hallberg Szabadváry, J., Pettersson, K., Aldea, M., Löfström, H. (2026).
+   **Uncertainty-aware Decision Support in Power Grid Demand Forecasting.**
+   *Proceedings of the Fifteenth Symposium on Conformal and Probabilistic Prediction with Applications*,
+   PMLR 329:1029–1042.
+
+9. Löfström, H., Löfström, T. (2026).
+    **Calibrated Explanations: Trustworthy Uncertainty for Every Prediction and Explanation.**
+    *Joint Proceedings of the xAI 2026 Late-breaking Work, Demos and Doctoral Consortium*,
+    CEUR Workshop Proceedings 4259:193–200.
+
+### Related conformal decision-support research
+
+10. Löfström, H., Löfström, T., Hjort, A., Yapicioglu, F. R. (2026).
+   **Concerning uncertainty—a systematic survey of uncertainty-aware XAI.**
+   *Philosophical Transactions of the Royal Society A*, 384(2327), 20250079.
+   doi:[10.1098/rsta.2025.0079](https://doi.org/10.1098/rsta.2025.0079)
+
+11. Löfström, H., Löfström, T., Johansson, U., Sönströd, C. (2026).
+    **Investigating the impact of calibration on the quality of explanations.**
+    *Annals of Mathematics and Artificial Intelligence*, 94, 219–236.
+    doi:[10.1007/s10472-023-09837-2](https://doi.org/10.1007/s10472-023-09837-2)
+    First published online in 2023.
+
+12. Hallberg Szabadváry, J., Löfström, T., Johansson, U., Sönströd, C., Ahlberg, E., Carlsson, L. (2025).
+    **Classification with reject option: Distribution-free error guarantees via conformal prediction.**
+    *Machine Learning with Applications*, 20, 100664.
+    doi:[10.1016/j.mlwa.2025.100664](https://doi.org/10.1016/j.mlwa.2025.100664)
+
+### Preprints and in-press
+
+- Löfström, H., Löfström, T., Hallberg Szabadváry, J. (2024).
+  **Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions.**
+  arXiv:2410.05479.
+
+- Löfström, T., Löfström, H., Uddin, N. (in press).
+  **Calibrated Explanations for Within-Spec Risk Prediction: Uncertainty-Aware Decision Support.**
+
+For BibTeX and study-specific reproduction links, see [`docs/citing.md`](docs/citing.md).
 
 ---
 
