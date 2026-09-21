@@ -212,3 +212,4 @@ evaluation/
 .github/skills/cee*
 venv-wheel/
 venv-release/
+artifacts/plot_speed/*
