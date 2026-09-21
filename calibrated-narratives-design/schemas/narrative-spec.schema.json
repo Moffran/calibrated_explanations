@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://calibrated-explanations.invalid/schemas/narrative-spec-1.0.0.json",
+  "title": "NarrativeSpec",
+  "description": "Draft CE-owned semantic plan handed to a narrative provider. Local kinds only; global kinds are deferred (see deferred-scope.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "spec_id",
+    "kind",
+    "source_binding",
+    "task",
+    "facts",
+    "mandatory_fact_ids",
+    "prohibited_claims"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "spec_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "sha256 of the canonical JSON encoding with spec_id omitted."
+    },
+    "kind": {
+      "enum": ["local_factual", "local_alternative", "local_fast"]
+    },
+    "source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_type",
+        "ce_version",
+        "source_contract_version",
+        "builder_id",
+        "builder_version",
+        "source_hash"
+      ],
+      "properties": {
+        "source_type": {
+          "const": "explanation_payload",
+          "description": "PlotSpec is never a narrative source (ADR-041 D3, ADR-037)."
+        },
+        "ce_version": { "type": "string" },
+        "source_contract_version": { "type": "string" },
+        "explanation_index": { "type": ["integer", "null"] },
+        "builder_id": { "type": "string" },
+        "builder_version": { "type": "string" },
+        "source_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "source_calibrated": { "type": "boolean" },
+        "calibration_provenance": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_type", "problem_type"],
+      "properties": {
+        "task_type": {
+          "enum": ["classification", "regression"],
+          "description": "Frozen ADR-005 v1 vocabulary."
+        },
+        "problem_type": {
+          "enum": [
+            "binary_classification",
+            "multiclass_classification",
+            "regression",
+            "probabilistic_regression"
+          ],
+          "description": "Narration framing from metadata.narrative_context."
+        },
+        "class_labels": { "type": ["array", "null"], "items": { "type": "string" } },
+        "focus_class": { "type": ["string", "null"] },
+        "threshold": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["form"],
+          "properties": {
+            "form": { "enum": ["scalar", "interval"] },
+            "value": { "type": ["number", "null"] },
+            "lower": { "type": ["number", "null"] },
+            "upper": { "type": ["number", "null"] }
+          }
+        }
+      }
+    },
+    "facts": { "type": "array", "items": { "$ref": "#/$defs/fact" } },
+    "mandatory_fact_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "prohibited_claims": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["causal", "actionable", "fairness", "population_general"] }
+    },
+    "terminology": { "type": "object", "additionalProperties": { "type": "string" } },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "interval": {
+      "type": "object",
+      "required": ["estimate", "lower", "upper"],
+      "properties": {
+        "estimate": { "type": "number" },
+        "lower": { "type": "number" },
+        "upper": { "type": "number" },
+        "scale": { "type": "string" }
+      },
+      "description": "Builder enforces lower <= estimate <= upper (ADR-021)."
+    },
+    "fact": {
+      "type": "object",
+      "required": ["fact_id", "fact_type", "scope", "source_refs", "payload"],
+      "additionalProperties": false,
+      "properties": {
+        "fact_id": { "type": "string", "minLength": 1 },
+        "fact_type": {
+          "enum": [
+            "prediction",
+            "effect",
+            "alternative",
+            "decision_state",
+            "validity",
+            "caveat"
+          ]
+        },
+        "scope": { "enum": ["instance", "rule"] },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "description": "JSON pointers into the source payload."
+        },
+        "derivation": { "type": ["string", "null"] },
+        "payload": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "fact_type": { "const": "prediction" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "allOf": [{ "$ref": "#/$defs/interval" }],
+                "required": ["estimate", "lower", "upper", "scale", "interval_width"],
+                "properties": { "interval_width": { "type": "number" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "fact_type": { "const": "effect" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "allOf": [{ "$ref": "#/$defs/interval" }],
+                "required": [
+                  "feature_id",
+                  "label",
+                  "estimate",
+                  "lower",
+                  "upper",
+                  "scale",
+                  "direction",
+                  "direction_supported",
+                  "crosses_zero"
+                ],
+                "properties": {
+                  "feature_id": { "type": "string" },
+                  "label": { "type": "string" },
+                  "direction": { "enum": ["positive", "negative", "neutral"] },
+                  "direction_supported": { "type": "boolean" },
+                  "crosses_zero": { "type": "boolean" },
+                  "rank": { "type": ["integer", "null"] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "fact_type": { "const": "alternative" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "allOf": [{ "$ref": "#/$defs/interval" }],
+                "required": [
+                  "feature_id",
+                  "label",
+                  "current_condition",
+                  "proposed_condition",
+                  "estimate",
+                  "lower",
+                  "upper",
+                  "crosses_threshold"
+                ],
+                "properties": {
+                  "feature_id": { "type": "string" },
+                  "label": { "type": "string" },
+                  "current_condition": { "type": "string" },
+                  "proposed_condition": { "type": "string" },
+                  "crosses_threshold": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "fact_type": { "const": "decision_state" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": ["state"],
+                "properties": {
+                  "state": { "enum": ["accepted", "rejected", "deferred"] },
+                  "reason": { "type": ["string", "null"] },
+                  "confidence": { "type": ["number", "null"] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "fact_type": { "const": "validity" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": ["limitation"],
+                "properties": {
+                  "limitation": { "type": "string" },
+                  "detail": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "fact_type": { "const": "caveat" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": ["category", "detail"],
+                "properties": {
+                  "category": { "type": "string" },
+                  "detail": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

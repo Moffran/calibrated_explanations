@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://calibrated-explanations.invalid/schemas/narrative-result-1.0.0.json",
+  "title": "NarrativeResult",
+  "description": "Draft CE-owned narration result. Status vocabulary deliberately avoids 'verified'; host checks prove structural and numeric-binding consistency, not linguistic faithfulness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_hash",
+    "spec_hash",
+    "status",
+    "text",
+    "claims",
+    "verification",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "source_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "spec_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": {
+      "enum": ["checked", "fallback", "abstained", "unchecked"],
+      "description": "checked: host checks passed. fallback: requested provider failed, a checked built-in result is returned. abstained: no acceptable narrative. unchecked: verification disabled; not for governed use."
+    },
+    "text": {
+      "type": "string",
+      "description": "Assembled by CE from ordered claims after placeholder binding. Providers do not supply free text."
+    },
+    "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host_passed", "binding", "checks"],
+      "properties": {
+        "host_passed": { "type": "boolean" },
+        "binding": {
+          "enum": ["substituted", "structural"],
+          "description": "substituted: every numeric claim was host-bound from NarrativeSpec, so numeric fidelity holds by construction. structural: claims were checked against facts but numerics were not host-bound."
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["check_id", "passed"],
+            "properties": {
+              "check_id": { "type": "string" },
+              "passed": { "type": "boolean" },
+              "detail": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "scope_note": {
+          "type": "string",
+          "description": "Plain-language statement of what was and was not checked."
+        },
+        "provider_findings": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Additive only. Cannot clear a host failure or widen permissions."
+        }
+      }
+    },
+    "fallback": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["requested_provider", "used_provider", "reason_code"],
+      "properties": {
+        "requested_provider": { "type": "string" },
+        "used_provider": { "type": "string" },
+        "reason_code": { "type": "string" },
+        "warning_emitted": { "type": "boolean" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "ce_version",
+        "provider_id",
+        "provider_version",
+        "template_or_prompt_version",
+        "network_access",
+        "source_calibrated",
+        "attempts"
+      ],
+      "properties": {
+        "ce_version": { "type": "string" },
+        "provider_id": { "type": "string" },
+        "provider_version": { "type": "string" },
+        "model_id": { "type": ["string", "null"] },
+        "template_or_prompt_version": { "type": "string" },
+        "narrative_spec_version": { "type": "string" },
+        "expertise_level": { "type": ["string", "null"] },
+        "network_access": { "type": "boolean" },
+        "source_calibrated": {
+          "type": "boolean",
+          "description": "Refers to the source explanation only. Never implies the narrative is calibrated or verified."
+        },
+        "attempts": { "type": "integer", "minimum": 1 },
+        "duration_ms": { "type": ["number", "null"] },
+        "created_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim_id", "claim_type", "fact_ids", "template", "text"],
+      "properties": {
+        "claim_id": { "type": "string" },
+        "claim_type": {
+          "enum": ["factual", "qualifier", "rhetorical"],
+          "description": "factual and qualifier claims must cite facts and must not contain unbound numeric literals."
+        },
+        "fact_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "template": {
+          "type": "string",
+          "description": "Provider-authored text with {{fact:<fact_id>.<field>}} placeholders."
+        },
+        "text": {
+          "type": "string",
+          "description": "CE output after placeholder binding."
+        },
+        "bound_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Placeholders substituted by the host, for audit."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "claim_type": { "enum": ["factual", "qualifier"] } }
+          },
+          "then": { "properties": { "fact_ids": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "claim_type": { "const": "rhetorical" } } },
+          "then": { "properties": { "fact_ids": { "maxItems": 0 } } }
+        }
+      ]
+    }
+  }
+}
