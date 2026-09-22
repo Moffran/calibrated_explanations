@@ -34,6 +34,11 @@
 
 ### Documentation / Governance
 
+- **Strict docs build restored:** pinned `numpydoc==1.10.0` in
+  `docs/requirements-doc.txt`. The previously unpinned numpydoc resolved to
+  1.11.0, which links auto-generated class-member tables as `.name`; Sphinx then
+  resolved inherited members such as `predict` ambiguously across classes, and
+  `sphinx -W` failed with ten "more than one target found" warnings.
 - **Companion ecosystem documentation:** documented the core library, official
   plugin repository, and studies repository as the three current ecosystem
   components. Research reproduction now routes to the version-specific study

@@ -5,7 +5,7 @@ matplotlib >= 3.9.4
 myst_parser==3.0.1
 nbsphinx==0.9.8
 numpy >= 1.20
-numpydoc
+numpydoc==1.10.0 # 1.11.0 links class-member tables as '.name', which Sphinx resolves ambiguously (fails -W)
 pytest
 pydata_sphinx_theme==0.16.1
 furo==2025.12.19
