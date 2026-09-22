@@ -126,12 +126,14 @@ class BuiltinEncoder:
 
     @staticmethod
     def _as_2d(x: Any) -> np.ndarray:
+        """Coerce ``x`` to a 2D object array, reshaping 1D input to a single column."""
         arr = np.asarray(x, dtype=object)
         if arr.ndim == 1:
             arr = arr.reshape(-1, 1)
         return arr
 
     def _resolve_categorical_features(self) -> tuple[int, ...]:
+        """Return the categorical column indices, inferring them from ``mapping_`` if unset."""
         if self.categorical_features_:
             return self.categorical_features_
         if self.mapping_:
@@ -145,6 +147,7 @@ class BuiltinEncoder:
         return ()
 
     def _validate_explicit_feature_indices(self, n_features: int) -> None:
+        """Raise ``ValidationError`` if a configured categorical index is out of range."""
         if not self._explicit_categorical_features:
             return
         out_of_range = [i for i in self._explicit_categorical_features if i < 0 or i >= n_features]
@@ -155,11 +158,13 @@ class BuiltinEncoder:
             )
 
     def _should_encode_column(self, index: int, column: np.ndarray) -> bool:
+        """Return whether column ``index`` must be treated as categorical."""
         if index in self._explicit_categorical_features:
             return True
         return not self._is_numeric_column(column)
 
     def _is_numeric_column(self, column: np.ndarray) -> bool:
+        """Return whether every non-missing value in ``column`` coerces to ``float``."""
         values = [value for value in column if not self._is_missing(value)]
         if not values:
             return False
@@ -173,6 +178,7 @@ class BuiltinEncoder:
         return True
 
     def _sorted_categories(self, column: np.ndarray) -> List[Any]:
+        """Return the deterministic, sorted set of learned categories for ``column``."""
         values: set[Any] = set()
         sentinel = self._missing_sentinel(column)
         for value in column:
@@ -185,6 +191,7 @@ class BuiltinEncoder:
         return sorted(values, key=self._category_sort_key)
 
     def _numeric_column_to_float(self, column: np.ndarray, *, column_index: int) -> np.ndarray:
+        """Coerce a numeric column to ``float``, mapping missing values to ``NaN``."""
         out = np.empty(len(column), dtype=float)
         for row_index, value in enumerate(column):
             if self._is_missing(value):
@@ -200,6 +207,7 @@ class BuiltinEncoder:
         return out
 
     def _missing_sentinel(self, column: np.ndarray) -> str:
+        """Return a sentinel category for missing values that does not collide with real data."""
         sentinel = "__missing__"
         present = {self._safe_val(value) for value in column if not self._is_missing(value)}
         suffix = 1
@@ -210,8 +218,11 @@ class BuiltinEncoder:
 
     @staticmethod
     def _resolve_missing_sentinel(categories: Sequence[Any]) -> str:
-        # Fit picks the first of __missing__, __missing__1__, ... that is not a real
-        # value, so the sentinel is the last consecutive member of that chain present.
+        """Recover the sentinel category chosen by ``_missing_sentinel`` at fit time.
+
+        Fit picks the first of ``__missing__``, ``__missing__1__``, ... that is not a
+        real value, so the sentinel is the last consecutive member of that chain present.
+        """
         present = set(categories)
         sentinel = "__missing__"
         suffix = 1
@@ -222,10 +233,12 @@ class BuiltinEncoder:
 
     @staticmethod
     def _category_sort_key(value: Any) -> tuple[str, str]:
+        """Return a deterministic, type-stable sort key for a mixed-type category value."""
         return (type(value).__name__, repr(value))
 
     @staticmethod
     def _is_missing(value: Any) -> bool:
+        """Return whether ``value`` is a missing value per ``pandas.isna`` semantics."""
         try:
             return bool(pd.isna(value))
         except (TypeError, ValueError):
@@ -233,7 +246,7 @@ class BuiltinEncoder:
 
     @staticmethod
     def _safe_val(v: Any) -> Any:
-        # Ensure JSON-safe primitive ordering for snapshot determinism
+        """Normalize ``v`` to a JSON-safe primitive for deterministic snapshot ordering."""
         if v is None:
             return "__none__"
         if isinstance(v, (int, float, str, bool)):

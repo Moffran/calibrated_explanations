@@ -1022,6 +1022,7 @@ class WrapCalibratedExplainer:
 
     # ------ Internal helpers (reduce duplication) ------
     def _assert_fitted(self, message: str | None = None) -> WrapCalibratedExplainer:
+        """Raise ``NotFittedError`` unless the wrapper has been fitted."""
         if not self.fitted:
             raise NotFittedError(
                 message or "The WrapCalibratedExplainer must be fitted before this operation."
@@ -1029,6 +1030,7 @@ class WrapCalibratedExplainer:
         return self
 
     def _assert_calibrated(self, message: str | None = None) -> WrapCalibratedExplainer:
+        """Raise ``NotFittedError`` unless the wrapper has been calibrated."""
         if not self.calibrated:
             raise NotFittedError(
                 message or "The WrapCalibratedExplainer must be calibrated before this operation."
