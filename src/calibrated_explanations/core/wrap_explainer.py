@@ -276,41 +276,57 @@ class WrapCalibratedExplainer:
             ``threshold`` and ``low_high_percentiles`` are stored on the config
             and forwarded to ``explain_factual`` / ``explore_alternatives`` via
             ``kwargs.setdefault()``.
+
+        Raises
+        ------
+        ConfigurationError
+            If an explicitly requested performance cache or parallel executor
+            cannot be initialized. ``details`` name the ``capability``, the
+            ``source`` that failed and the underlying ``cause``.
         """
+        # lazy import to avoid import cycles
+        from calibrated_explanations.api.config import (
+            _build_perf_factory,
+            _perf_initialization_error,
+        )
+
         w = cls(cfg.model)
         # Stash config on the instance for later optional use (private attr)
         w._cfg = cfg  # type: ignore[attr-defined]
-        # Wire perf factory (opt-in). When flags are disabled, factory returns
-        # harmless defaults (None cache / sequential backend) and does not alter
-        # runtime behavior.
-        try:
-            perf_factory = None
-            if getattr(cfg, "_perf_factory", None) is not None:
-                perf_factory = cfg._perf_factory
-            else:
-                # lazy import to avoid import cycles
-                from calibrated_explanations.api.config import _build_perf_factory
-
-                perf_factory = _build_perf_factory(cfg)
-            # stash created primitives for downstream use; keep None when disabled
-            if perf_factory is not None:
+        # Wire perf primitives (opt-in, ADR-003/ADR-004). With both flags off the
+        # factory yields a disabled cache and a disabled executor, so runtime
+        # behaviour is unchanged. Any failure means an explicitly requested
+        # capability cannot be honoured, so it fails closed instead of degrading.
+        perf_factory = getattr(cfg, "_perf_factory", None)
+        if perf_factory is None:
+            perf_factory = _build_perf_factory(cfg)
+        if perf_factory is not None:
+            activation = getattr(perf_factory, "activation", {})
+            try:
                 cache = perf_factory.make_cache()
-                w.perf_cache = cache  # type: ignore[attr-defined]
-                w._perf_parallel = perf_factory.make_parallel_executor(cache)  # type: ignore[attr-defined]
-                # Public-facing attribute expected by tests
-                w.perf_parallel = w._perf_parallel  # type: ignore[attr-defined]
-            else:
-                w.perf_cache = None
-                w._perf_parallel = None
-                # Expose public attribute for tests that expect it to exist
-                w.perf_parallel = None  # type: ignore[attr-defined]
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
-            exc = sys.exc_info()[1]
-            w.perf_cache = None
-            w._perf_parallel = None
-            w._logger.debug("Failed to initialize perf primitives from config: %s", exc)
+            except Exception as exc:  # adr002_allow: re-raised as ConfigurationError
+                raise _perf_initialization_error(
+                    "cache", "factory", exc, requested_by=activation.get("cache")
+                ) from exc
+            try:
+                executor = perf_factory.make_parallel_executor(cache)
+            except Exception as exc:  # adr002_allow: re-raised as ConfigurationError
+                raise _perf_initialization_error(
+                    "parallel", "factory", exc, requested_by=activation.get("parallel")
+                ) from exc
+            if any(activation.values()):
+                w._logger.info(
+                    "Performance primitives from config: cache=%s, parallel=%s",
+                    activation.get("cache") or "off",
+                    activation.get("parallel") or "off",
+                )
+        else:
+            cache = None
+            executor = None
+        w.perf_cache = cache  # type: ignore[attr-defined]
+        w._perf_parallel = executor  # type: ignore[attr-defined]
+        # Public-facing attribute expected by tests
+        w.perf_parallel = executor  # type: ignore[attr-defined]
         # Wire internal feature filter config (FAST-based) when present
         try:
             from .explain._feature_filter import (  # pylint: disable=import-outside-toplevel

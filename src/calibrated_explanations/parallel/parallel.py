@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import time
+import warnings
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
@@ -41,6 +42,18 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 R = TypeVar("R")
+
+
+def _parse_env_int(token: str) -> int:
+    """Parse the integer value of a ``CE_PARALLEL`` ``key=value`` directive."""
+    raw = token.split("=", 1)[1]
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ConfigurationError(
+            f"CE_PARALLEL directive {token!r} requires an integer value.",
+            details={"env_var": "CE_PARALLEL", "token": token, "cause": str(exc)},
+        ) from exc
 
 
 class ParallelBackend(Protocol):
@@ -138,7 +151,14 @@ class ParallelConfig:
         *,
         config_manager: ConfigManager | None = None,
     ) -> "ParallelConfig":
-        """Merge ``CE_PARALLEL`` overrides with an optional ``base`` configuration."""
+        """Merge ``CE_PARALLEL`` overrides with an optional ``base`` configuration.
+
+        Raises
+        ------
+        ConfigurationError
+            If a numeric directive (for example ``workers=``) does not carry an
+            integer, or ``granularity=feature`` is requested.
+        """
         mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = ParallelConfig(**(base.__dict__ if base is not None else {}))
         raw = mgr.env("CE_PARALLEL")
@@ -157,25 +177,25 @@ class ParallelConfig:
                 cfg.strategy = lowered  # type: ignore[assignment]
                 continue
             if token.startswith("workers="):
-                cfg.max_workers = max(1, int(token.split("=", 1)[1]))
+                cfg.max_workers = max(1, _parse_env_int(token))
                 continue
             if token.startswith("min_batch="):
-                cfg.min_batch_size = max(1, int(token.split("=", 1)[1]))
+                cfg.min_batch_size = max(1, _parse_env_int(token))
                 continue
             if token.startswith("min_instances="):
-                cfg.min_instances_for_parallel = max(1, int(token.split("=", 1)[1]))
+                cfg.min_instances_for_parallel = max(1, _parse_env_int(token))
                 continue
             if token.startswith("tiny="):
-                cfg.tiny_workload_threshold = max(1, int(token.split("=", 1)[1]))
+                cfg.tiny_workload_threshold = max(1, _parse_env_int(token))
                 continue
             if token.startswith("instance_chunk="):
-                cfg.instance_chunk_size = max(1, int(token.split("=", 1)[1]))
+                cfg.instance_chunk_size = max(1, _parse_env_int(token))
                 continue
             if token.startswith("feature_chunk="):
-                cfg.feature_chunk_size = max(1, int(token.split("=", 1)[1]))
+                cfg.feature_chunk_size = max(1, _parse_env_int(token))
                 continue
             if token.startswith("task_bytes="):
-                cfg.task_size_hint_bytes = max(0, int(token.split("=", 1)[1]))
+                cfg.task_size_hint_bytes = max(0, _parse_env_int(token))
                 continue
             if token.startswith("force_serial="):
                 val = token.split("=", 1)[1].lower()
@@ -219,6 +239,7 @@ class ParallelExecutor:
         self.active_strategy_name: str | None = None
         self._warned_min_batch: bool = False
         self._warned_tiny_workload: bool = False
+        self._warned_joblib_unavailable: bool = False
         self._config_manager = (
             config_manager if config_manager is not None else get_process_config_manager()
         )
@@ -267,7 +288,20 @@ class ParallelExecutor:
             exc = sys.exc_info()[1]
             if not isinstance(exc, Exception):
                 raise
-            logger.warning("Failed to initialize parallel pool: %s. Falling back to serial.", exc)
+            # ADR-004 graceful degradation: the requested strategy could not start,
+            # so run sequentially and make the downgrade visible (UserWarning + INFO).
+            cause = (strategy_name, type(exc).__name__, exc)
+            logger.info(
+                "Failed to initialize parallel pool for strategy %r (%s: %s); "
+                "falling back to sequential execution.",
+                *cause,
+            )
+            warnings.warn(
+                "Failed to initialize parallel pool for strategy %r (%s: %s); "
+                "falling back to sequential execution." % cause,
+                UserWarning,
+                stacklevel=2,
+            )
             self.pool = None
             self.active_strategy_name = "sequential"
 
@@ -414,12 +448,16 @@ class ParallelExecutor:
             self.metrics.fallbacks += 1
             self._emit("parallel_fallback", {"error": repr(exc)})
             if self.config.force_serial_on_failure:
-                # Emit a UserWarning only when parallel fallbacks are enabled
-                # via the testing fixture (the autouse disable sets
-                # `CE_PARALLEL_MIN_BATCH_SIZE` to a large value; enabling
-                # fallbacks removes that env var). Otherwise log info.
-                logger.warning(
-                    "Parallel execution failed (%s); falling back to sequential execution.", exc
+                # The caller opted into serial recovery (force_serial); the
+                # retained fallback must still be visible (UserWarning + INFO).
+                logger.info(
+                    "Parallel execution failed (%r); falling back to sequential execution.", exc
+                )
+                warnings.warn(
+                    "Parallel execution failed (%r); falling back to sequential execution."
+                    % (exc,),
+                    UserWarning,
+                    stacklevel=2,
                 )
                 results = [fn(item) for item in items_list]
             else:
@@ -720,9 +758,16 @@ class ParallelExecutor:
     ) -> List[R]:
         """Dispatch work through joblib's Parallel abstraction when available."""
         if _JoblibParallel is None:
-            logger.warning(
-                "Joblib is not available; falling back to thread-based parallel execution."
-            )
+            if not getattr(self, "_warned_joblib_unavailable", False):
+                self._warned_joblib_unavailable = True
+                logger.info(
+                    "Joblib is not available; falling back to thread-based parallel execution."
+                )
+                warnings.warn(
+                    "Joblib is not available; falling back to thread-based parallel execution.",
+                    UserWarning,
+                    stacklevel=2,
+                )
             return self.thread_strategy(fn, items, workers=workers, chunksize=chunksize)
 
         # joblib uses 'batch_size' instead of 'chunksize'

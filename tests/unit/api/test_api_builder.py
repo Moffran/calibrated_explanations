@@ -154,14 +154,92 @@ def test_explainer_builder_rejects_removed_feature_parallel_granularity():
 
 def test_explainer_builder_perf_factory_failure(monkeypatch: pytest.MonkeyPatch):
     model = RandomForestClassifier()
-    builder = ExplainerBuilder(model)
+    builder = ExplainerBuilder(model).perf_cache(True)
 
     def boom(cfg):
         raise RuntimeError("perf factory broke")
 
     monkeypatch.setattr("calibrated_explanations.api.config._perf_from_config", boom)
-    cfg = builder.build_config()
-    assert cfg.perf_factory is None
+    with pytest.raises(ConfigurationError, match="perf factory broke") as excinfo:
+        builder.build_config()
+
+    assert excinfo.value.details == {
+        "capability": "perf_primitives",
+        "source": "factory",
+        "cause": "RuntimeError: perf factory broke",
+    }
+    assert isinstance(excinfo.value.__cause__, RuntimeError)
+
+
+@pytest.mark.parametrize(
+    ("env_var", "env_value", "enable", "capability", "token"),
+    [
+        ("CE_CACHE", "enable,max_items=abc", "perf_cache", "cache", "max_items=abc"),
+        ("CE_CACHE", "ttl=soon", "perf_cache", "cache", "ttl=soon"),
+        ("CE_PARALLEL", "enable,threads,workers=two", "perf_parallel", "parallel", "workers=two"),
+    ],
+)
+def test_build_config_should_fail_closed_when_requested_perf_env_is_malformed(
+    monkeypatch: pytest.MonkeyPatch, env_var, env_value, enable, capability, token
+):
+    monkeypatch.setenv(env_var, env_value)
+    builder = ExplainerBuilder(RandomForestClassifier())
+    getattr(builder, enable)(True)
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        builder.build_config()
+
+    details = excinfo.value.details
+    assert details["capability"] == capability
+    assert details["source"] == env_var
+    assert token in details["cause"]
+    assert excinfo.value.__cause__.details["env_var"] == env_var
+    assert excinfo.value.__cause__.details["token"] == token
+
+
+@pytest.mark.parametrize(
+    ("builder_cache", "builder_parallel", "env", "expected"),
+    [
+        (False, False, {}, {"cache": None, "parallel": None}),
+        (True, True, {}, {"cache": "config", "parallel": "config"}),
+        (False, False, {"CE_CACHE": "on"}, {"cache": "env", "parallel": None}),
+        (False, False, {"CE_PARALLEL": "enable,threads"}, {"cache": None, "parallel": "env"}),
+        (
+            True,
+            True,
+            {"CE_CACHE": "off", "CE_PARALLEL": "off"},
+            {"cache": "disabled_by_env", "parallel": "disabled_by_env"},
+        ),
+    ],
+)
+def test_from_config_should_apply_env_over_builder_and_record_activation(
+    monkeypatch: pytest.MonkeyPatch, caplog, builder_cache, builder_parallel, env, expected
+):
+    import logging
+    import warnings
+
+    # Start from a clean perf environment; other suites may leave these set.
+    monkeypatch.delenv("CE_CACHE", raising=False)
+    monkeypatch.delenv("CE_PARALLEL", raising=False)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    builder = ExplainerBuilder(RandomForestClassifier()).perf_cache(builder_cache)
+    builder.perf_parallel(builder_parallel, backend="threads")
+
+    with (
+        warnings.catch_warnings(record=True) as recorded,
+        caplog.at_level(logging.INFO, logger="calibrated_explanations"),
+    ):
+        warnings.simplefilter("always")
+        cfg = builder.build_config()
+        wrapper = WrapCalibratedExplainer.from_config(cfg)
+
+    assert cfg.perf_factory.activation == expected
+    assert wrapper.perf_cache.enabled is (expected["cache"] in {"config", "env"})
+    assert wrapper.parallel_executor.config.enabled is (expected["parallel"] in {"config", "env"})
+    assert not [w for w in recorded if issubclass(w.category, UserWarning)]
+    activation_logs = [r for r in caplog.records if "Performance primitives" in r.getMessage()]
+    assert bool(activation_logs) is any(expected.values())
 
 
 def test_perf_factory_make_parallel_backend_alias():

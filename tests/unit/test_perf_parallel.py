@@ -107,11 +107,15 @@ class TestParallelExecutor:
         with (
             patch("calibrated_explanations.parallel.parallel._JoblibParallel", None),
             patch.object(executor, "thread_strategy") as mock_thread,
-            caplog.at_level(logging.WARNING, logger="calibrated_explanations"),
+            caplog.at_level(logging.INFO, logger="calibrated_explanations"),
+            pytest.warns(UserWarning, match="Joblib is not available"),
         ):
             executor.joblib_strategy(lambda x: x, [1])
             mock_thread.assert_called_once()
-        assert any("Joblib" in r.message and "fall" in r.message for r in caplog.records)
+        assert any(
+            "Joblib" in r.message and "fall" in r.message and r.levelno == logging.INFO
+            for r in caplog.records
+        )
 
     def test_metrics_tracking_with_failures(self):
         """Test that metrics track failures correctly when strategy raises."""

@@ -1,14 +1,17 @@
 import pickle
 
 import numpy as np
+import pytest
 
 from calibrated_explanations.cache.cache import (
     CacheConfig,
     CacheMetrics,
+    CalibratorCache,
     LRUCache,
     default_size_estimator,
 )
 from calibrated_explanations.core.config_manager import ConfigManager
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 def test_pickle_and_restore_cache_config_and_metrics():
@@ -87,3 +90,35 @@ def test_parse_cache_config_from_env(monkeypatch):
     assert cfg2.max_items == 3
     assert cfg2.max_bytes == 1024
     assert cfg2.ttl_seconds == 5.0
+
+
+@pytest.mark.parametrize("token", ["max_items=abc", "max_bytes=1MB", "ttl=soon"])
+def test_parse_cache_config_from_env_should_reject_non_numeric_values(monkeypatch, token):
+    monkeypatch.setenv("CE_CACHE", f"enable,{token}")
+    with pytest.raises(ConfigurationError, match="CE_CACHE") as excinfo:
+        CacheConfig.from_env(None, config_manager=ConfigManager.from_sources())
+
+    assert excinfo.value.details["env_var"] == "CE_CACHE"
+    assert excinfo.value.details["token"] == token
+
+
+def test_minimal_backend_notice_should_log_once_and_only_for_enabled_cache(monkeypatch, caplog):
+    import logging
+    import sys
+
+    # Resolve the module that defines CalibratorCache: test_cache_fallback re-imports
+    # cache.cache, which can leave the package attribute pointing at another copy.
+    cache_module = sys.modules[CalibratorCache.__module__]
+    monkeypatch.setattr(cache_module, "_HAVE_CACHETOOLS", False)
+    monkeypatch.setattr(cache_module, "_MINIMAL_BACKEND_NOTIFIED", False)
+
+    with caplog.at_level(logging.WARNING, logger="calibrated_explanations"):
+        CalibratorCache(CacheConfig(enabled=False))
+        assert not caplog.records, "a cache that was not requested must stay silent"
+        CalibratorCache(CacheConfig(enabled=True))
+        CalibratorCache(CacheConfig(enabled=True))
+
+    notices = [r for r in caplog.records if "cachetools not available" in r.getMessage()]
+    assert len(notices) == 1
+    assert notices[0].levelno == logging.WARNING
+    assert "calibrated-explanations[perf]" in notices[0].getMessage()

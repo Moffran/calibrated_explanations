@@ -71,3 +71,20 @@ class TestCalibratedExplainerParallelEnv:
         )
         cfg_off = ParallelConfig.from_env(config_manager=mgr_off)
         assert cfg_off.enabled is False, "Absent CE_PARALLEL must default to disabled"
+
+    def test_should_fail_closed_when_env_requested_parallel_is_malformed(
+        self, simple_learner_and_data, monkeypatch
+    ):
+        """A malformed CE_PARALLEL request must raise, not silently run sequentially."""
+        from calibrated_explanations import WrapCalibratedExplainer
+        from calibrated_explanations.utils.exceptions import ConfigurationError
+
+        learner, x, y = simple_learner_and_data
+        monkeypatch.setenv("CE_PARALLEL", "enable,threads,workers=two")
+        wrapper = WrapCalibratedExplainer(learner)
+        wrapper.fit(x, y)
+
+        with pytest.raises(ConfigurationError, match="workers=two") as excinfo:
+            wrapper.calibrate(x, y)
+
+        assert excinfo.value.details["env_var"] == "CE_PARALLEL"

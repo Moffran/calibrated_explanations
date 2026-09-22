@@ -63,7 +63,9 @@ class TestParallelLifecycle:
 
         assert executor.pool is None
 
-    def test_force_serial_on_failure(self):
+    def test_force_serial_on_failure(self, caplog, enable_fallbacks):
+        import logging
+
         config = ParallelConfig(
             enabled=True,
             strategy="threads",
@@ -73,25 +75,21 @@ class TestParallelLifecycle:
         )
         executor = ParallelExecutor(config)
 
-        # Inject a failure in strategy resolution to trigger fallback
-        # We can mock _resolve_strategy or just rely on the fact that if we pass invalid strategy it might fail?
-        # But ParallelConfig validates strategy enum? No, it's a string.
-
-        # Let's mock resolve_strategy
-        original_resolve = executor.resolve_strategy
-
+        # Inject a failure in strategy resolution to trigger the serial fallback.
         def failing_resolve(*args, **kwargs):
-            print("Failing resolve called")
             raise RuntimeError("Simulated failure")
 
         executor.resolve_strategy = failing_resolve
 
-        print("Calling map")
-        results = executor.map(square, range(5))
-        print(f"Results: {results}")
-        print(f"Metrics: {executor.metrics}")
+        with (
+            caplog.at_level(logging.INFO, logger="calibrated_explanations"),
+            pytest.warns(UserWarning, match=r"Simulated failure.*falling back to sequential"),
+        ):
+            results = executor.map(square, range(5))
 
         assert results == [x * x for x in range(5)]
         assert executor.metrics.fallbacks == 1
-
-        executor.resolve_strategy = original_resolve
+        assert any(
+            "Parallel execution failed" in r.getMessage() and r.levelno == logging.INFO
+            for r in caplog.records
+        )

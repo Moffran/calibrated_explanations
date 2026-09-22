@@ -29,7 +29,6 @@ FALLBACK_LOG_RECORDS: list[logging.LogRecord] = []
 
 FALLBACK_RUNTIME_PATTERNS = (
     r"fall(?:ing)? back",
-    r"failed to initialize perf primitives from config",
     r"feature filter enforcement skipped",
     r"using fallback feature_filter_config",
 )

@@ -57,8 +57,8 @@ def test_should_<behavior>_when_<condition>(fixtures):
 
 | Fallback | Warning contains |
 |---|---|
-| Parallel → sequential | "fallback" / "sequential" |
-| Cache backend | "Cache backend fallback" |
+| Parallel → sequential | "falling back to sequential" |
+| Joblib missing → threads | "Joblib is not available" |
 | Visualization simplified | "Visualization fallback" |
 | Plugin execution error | "legacy" / "fallback" |
 

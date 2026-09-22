@@ -46,8 +46,9 @@ def test_should_<succeed_via_fallback>_when_<trigger_condition>(enable_fallbacks
 
 | Fallback | Match fragment |
 |---|---|
-| Parallel → sequential execution | `"fallback"` or `"sequential"` |
-| Cache backend → minimal LRU | `"Cache backend fallback"` |
+| Parallel pool start-up failure → sequential | `"Failed to initialize parallel pool"` |
+| Parallel `force_serial` recovery → sequential | `"Parallel execution failed"` |
+| Joblib requested but missing → threads | `"Joblib is not available"` |
 | Visualization → simplified bar | `"Visualization fallback"` |
 | Plugin execution error → legacy path | `"legacy"` or `"fallback"` |
 | Perturbation fallback | `"perturbation"` |
@@ -101,23 +102,15 @@ def test_should_explain_factual_when_parallel_backend_unavailable(
         assert exp.prediction['predict'] <= exp.prediction['high']
 ```
 
-## Full Example: Cache Backend Fallback
+## Not a UserWarning: cache backend and failed explicit requests
 
-```python
-def test_should_use_minimal_cache_when_primary_backend_unavailable(
-    enable_fallbacks, monkeypatch
-):
-    """Cache backend failure falls back to in-package LRU and emits UserWarning."""
-    import calibrated_explanations.cache as cache_mod
-
-    # Arrange: corrupt the primary backend
-    monkeypatch.setattr(cache_mod, "_primary_backend", None)
-
-    with pytest.warns(UserWarning, match="Cache backend fallback"):
-        explanations = explainer.explain_factual(X_query)
-
-    assert explanations is not None
-```
+- The minimal in-package cache backend (used when `cachetools` is not
+  installed) is a registered warning-policy exemption. It logs one WARNING per
+  process when an enabled cache is built and emits no `UserWarning`, so assert
+  it with `caplog`, not `pytest.warns`.
+- An explicitly requested cache or parallel executor that cannot be configured
+  raises `ConfigurationError` (fail closed) instead of falling back. Test it with
+  `pytest.raises(ConfigurationError)` and assert `details["capability"]`.
 
 ## What NOT to Do
 

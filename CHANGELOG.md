@@ -16,6 +16,21 @@
   encoding categorical columns deterministically, supports explicit
   categorical feature overrides, and exposes a configurable missing-value
   policy for categorical inputs.
+- **Explicitly requested cache and parallel execution no longer degrade
+  silently (#209):** `ExplainerBuilder.build_config()` and
+  `WrapCalibratedExplainer.from_config()` now raise `ConfigurationError` when an
+  enabled cache or parallel executor cannot be initialized. Previously both were
+  dropped with only a DEBUG log. Error `details` name the `capability`, the
+  failing `source` (configuration values, `CE_CACHE`/`CE_PARALLEL`, or primitive
+  construction) and the underlying `cause`. Non-numeric `CE_CACHE`/`CE_PARALLEL`
+  values such as `workers=two` now raise `ConfigurationError` that names the
+  variable and token, on both the builder and the plain constructor paths. The
+  retained sequential fallbacks (parallel pool start-up failure,
+  `force_serial` recovery, and joblib requested but not installed) now emit a
+  `UserWarning` plus an INFO log. The minimal cache-backend notice is logged
+  once, only when an enabled cache is built, rather than whenever the cache
+  module is imported without `cachetools`. Sequential, no-cache defaults are
+  unchanged.
 
 ### Documentation / Governance
 

@@ -117,6 +117,53 @@ Set ``CE_PARALLEL=off`` to fall back to single-threaded execution without
 touching code. The executor resets the calibrator cache after forking, so cached
 payloads remain process safe.
 
+## What is guaranteed and what is a hint
+
+The cache and the parallel backend are opt-in. CE never turns them on for you,
+so enabling either one is always an explicit request. Some parts of that request
+are guaranteed; others are hints that CE applies when it can.
+
+**Guarantees**
+
+- **Off by default.** Without ``perf_cache(True)``, ``perf_parallel(True)``,
+  ``CE_CACHE`` or ``CE_PARALLEL``, no cache is built, work runs sequentially and
+  CE emits no warnings about either feature.
+- **A broken request fails closed.** If an enabled cache or parallel executor
+  cannot be configured, ``build_config()``, ``WrapCalibratedExplainer.from_config()``
+  or ``calibrate()`` raises ``ConfigurationError``. Invalid configuration values,
+  a malformed ``CE_CACHE``/``CE_PARALLEL`` value such as ``workers=two``, and a
+  failure while building the primitives all count. The error ``details`` name the
+  ``capability`` (``cache`` or ``parallel``), the ``source`` that failed and the
+  underlying ``cause``. CE does not quietly continue without the feature.
+- **Precedence.** A ``perf_cache=``/``perf_parallel=`` argument to
+  ``calibrate()`` wins over the environment, and ``CE_CACHE``/``CE_PARALLEL`` win
+  over builder values. ``CE_CACHE=off`` or ``CE_PARALLEL=off`` therefore switches
+  off a builder request without a warning; the INFO log records it as
+  ``disabled_by_env``.
+- **Same results.** Enabling the cache or the parallel backend changes timing,
+  not explanation output or its ordering.
+
+**Best-effort hints**
+
+- ``workers``, ``min_batch``, ``min_instances`` and ``tiny_workload`` are
+  thresholds and caps. Workloads below the thresholds run sequentially, which is
+  logged once per executor.
+- If the requested worker pool cannot start, for example because of operating
+  system limits, CE runs sequentially and emits a ``UserWarning`` plus an INFO
+  log.
+- If ``backend="joblib"`` is requested but joblib is not installed, CE uses
+  threads and emits a ``UserWarning`` plus an INFO log once per executor.
+- ``force_serial=1`` in ``CE_PARALLEL`` retries a failed parallel batch
+  sequentially and emits a ``UserWarning`` plus an INFO log.
+- Without ``cachetools`` (install ``calibrated-explanations[perf]``), an enabled
+  cache uses an in-package LRU/TTL backend with the same semantics and logs one
+  warning per process.
+- ``CE_CACHE`` is read when the configuration is built with
+  ``ExplainerBuilder``/``ExplainerConfig``; a plain
+  ``WrapCalibratedExplainer(model)`` does not read it.
+- Speed-ups and cache hit rates are not guaranteed. Measure them with the
+  telemetry callback before relying on them.
+
 ## Use vectorised perturbations via FAST explanations
 
 Vectorised perturbations now ship in the core explainer. ``explain_factual`` and

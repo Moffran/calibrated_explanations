@@ -36,7 +36,6 @@ VISIBLE_FALLBACK_POLICY: Final[str] = (
 FALLBACK_MESSAGE_PATTERNS: Final[tuple[str, ...]] = (
     r"fall(?:ing)? back",
     r"fallback",
-    r"failed to initialize perf primitives from config",
     r"feature filter enforcement skipped",
     r"using fallback feature_filter_config",
     r"drops the configured mondrian categorizer",
@@ -61,16 +60,52 @@ class FallbackSiteSpec:
 
 FALLBACK_SITE_REGISTRY: Final[tuple[FallbackSiteSpec, ...]] = (
     FallbackSiteSpec(
-        site_id="wrap_from_config_perf_primitives",
-        rel_path="core/wrap_explainer.py",
-        context="from_config",
-        message_pattern=r"Failed to initialize perf primitives from config",
-        disposition="exempt",
-        required_log_level="DEBUG",
+        site_id="parallel_pool_init_sequential_fallback",
+        rel_path="parallel/parallel.py",
+        context="ParallelExecutor.__enter__",
+        message_pattern=r"Failed to initialize parallel pool.*falling back to sequential",
+        disposition="user_visible",
+        required_warning=True,
         reason=(
-            "Optional perf primitives degrade to cache=None and sequential execution at "
-            "construction time. The reduced behavior is recorded as an internal "
-            "observability exemption pending a future public-surface redesign."
+            "ADR-004 graceful degradation: an explicitly requested pool that cannot "
+            "start runs sequentially, so the downgrade must be user-visible."
+        ),
+    ),
+    FallbackSiteSpec(
+        site_id="parallel_map_force_serial_fallback",
+        rel_path="parallel/parallel.py",
+        context="ParallelExecutor.map",
+        message_pattern=r"Parallel execution failed.*falling back to sequential",
+        disposition="user_visible",
+        required_warning=True,
+        reason=(
+            "force_serial_on_failure opts into serial recovery after a parallel "
+            "failure; the retained fallback must still be user-visible."
+        ),
+    ),
+    FallbackSiteSpec(
+        site_id="parallel_joblib_unavailable_thread_fallback",
+        rel_path="parallel/parallel.py",
+        context="ParallelExecutor.joblib_strategy",
+        message_pattern=r"Joblib is not available; falling back to thread-based",
+        disposition="user_visible",
+        required_warning=True,
+        reason=(
+            "An explicitly requested joblib strategy runs on threads when joblib is "
+            "not installed, so the substitution must be user-visible."
+        ),
+    ),
+    FallbackSiteSpec(
+        site_id="cache_backend_minimal_lru_fallback",
+        rel_path="cache/cache.py",
+        context="_notify_minimal_cache_backend",
+        message_pattern=r"Cache backend fallback: cachetools not available",
+        disposition="exempt",
+        required_log_level="WARNING",
+        reason=(
+            "The requested cache is still honoured: the in-package backend implements "
+            "the same LRU/TTL semantics as cachetools (an optional 'perf' extra). The "
+            "notice is logged once per process, only when an enabled cache is built."
         ),
     ),
     FallbackSiteSpec(
@@ -204,6 +239,13 @@ def _extract_message_snippet(node: ast.Call) -> str:
     if not node.args:
         return ""
     first = node.args[0]
+    # ``"template %s" % args`` keeps its literal template as the snippet.
+    if (
+        isinstance(first, ast.BinOp)
+        and isinstance(first.op, ast.Mod)
+        and isinstance(first.left, ast.Constant)
+    ):
+        first = first.left
     if isinstance(first, ast.Constant):
         return str(first.value)[:160]
     if isinstance(first, ast.JoinedStr):

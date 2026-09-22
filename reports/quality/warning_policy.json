@@ -1,16 +1,16 @@
 {
   "policy": "Retained user-visible fallbacks must emit UserWarning plus an INFO log. Internal best-effort fallbacks may remain exempt only when this registry records a reason and the available logger signal.",
   "warnings": {
-    "total": 110,
+    "total": 113,
     "by_category": {
       "USER_CONTRACT": 95,
-      "FALLBACK_VISIBLE": 10,
+      "FALLBACK_VISIBLE": 13,
       "DEPRECATION": 5
     },
     "sites": [
       {
         "file": "api/config.py",
-        "line": 265,
+        "line": 298,
         "context": "ExplainerBuilder.build_config",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
@@ -562,6 +562,27 @@
         "category": "USER_CONTRACT"
       },
       {
+        "file": "parallel/parallel.py",
+        "line": 299,
+        "context": "ParallelExecutor.__enter__",
+        "message_snippet": "Failed to initialize parallel pool for strategy %r (%s: %s); falling back to sequential execution.",
+        "category": "FALLBACK_VISIBLE"
+      },
+      {
+        "file": "parallel/parallel.py",
+        "line": 456,
+        "context": "ParallelExecutor.map",
+        "message_snippet": "Parallel execution failed (%r); falling back to sequential execution.",
+        "category": "FALLBACK_VISIBLE"
+      },
+      {
+        "file": "parallel/parallel.py",
+        "line": 766,
+        "context": "ParallelExecutor.joblib_strategy",
+        "message_snippet": "Joblib is not available; falling back to thread-based parallel execution.",
+        "category": "FALLBACK_VISIBLE"
+      },
+      {
         "file": "plotting.py",
         "line": 285,
         "context": "_warn_and_log_plotspec_fallback",
@@ -570,14 +591,14 @@
       },
       {
         "file": "plotting.py",
-        "line": 327,
+        "line": 372,
         "context": "_reject_unconsumed_plot_kwargs",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "plotting.py",
-        "line": 884,
+        "line": 929,
         "context": "_setup_plot_style",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
@@ -614,21 +635,21 @@
         "file": "plugins/registry.py",
         "line": 204,
         "context": "_warn_untrusted_plugin",
-        "message_snippet": "",
+        "message_snippet": "Skipping untrusted plugin '%s' from %s discovered via %s. Set CE_TRUST_PLUGIN, add it to [tool.calibrated_explanations.plugins].trusted, or register the plugin ",
         "category": "USER_CONTRACT"
       },
       {
         "file": "plugins/registry.py",
         "line": 287,
         "context": "_verify_plugin_checksum",
-        "message_snippet": "",
+        "message_snippet": "Cannot verify checksum for plugin '%s'; module file missing.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "plugins/registry.py",
         "line": 298,
         "context": "_verify_plugin_checksum",
-        "message_snippet": "",
+        "message_snippet": "Cannot read module for checksum verification for plugin '%s'.",
         "category": "USER_CONTRACT"
       },
       {
@@ -745,14 +766,14 @@
       },
       {
         "file": "viz/matplotlib_adapter.py",
-        "line": 1373,
+        "line": 1461,
         "context": "render._render_body",
         "message_snippet": "Visualization fallback: alternative bar simplified due to drawing error",
         "category": "FALLBACK_VISIBLE"
       },
       {
         "file": "viz/matplotlib_adapter.py",
-        "line": 2033,
+        "line": 2144,
         "context": "render",
         "message_snippet": "Visualization fallback: raw primitives used when normalization yielded no entries",
         "category": "FALLBACK_VISIBLE"
@@ -781,18 +802,57 @@
     ]
   },
   "fallback_registry": {
-    "total": 7,
+    "total": 10,
     "failures": 0,
     "sites": [
       {
-        "site_id": "wrap_from_config_perf_primitives",
-        "rel_path": "core/wrap_explainer.py",
-        "context": "from_config",
+        "site_id": "parallel_pool_init_sequential_fallback",
+        "rel_path": "parallel/parallel.py",
+        "context": "ParallelExecutor.__enter__",
+        "disposition": "user_visible",
+        "required_log_level": "INFO",
+        "matched_warning": true,
+        "matched_log": true,
+        "reason": "ADR-004 graceful degradation: an explicitly requested pool that cannot start runs sequentially, so the downgrade must be user-visible.",
+        "notes": "",
+        "status": "pass",
+        "violations": []
+      },
+      {
+        "site_id": "parallel_map_force_serial_fallback",
+        "rel_path": "parallel/parallel.py",
+        "context": "ParallelExecutor.map",
+        "disposition": "user_visible",
+        "required_log_level": "INFO",
+        "matched_warning": true,
+        "matched_log": true,
+        "reason": "force_serial_on_failure opts into serial recovery after a parallel failure; the retained fallback must still be user-visible.",
+        "notes": "",
+        "status": "pass",
+        "violations": []
+      },
+      {
+        "site_id": "parallel_joblib_unavailable_thread_fallback",
+        "rel_path": "parallel/parallel.py",
+        "context": "ParallelExecutor.joblib_strategy",
+        "disposition": "user_visible",
+        "required_log_level": "INFO",
+        "matched_warning": true,
+        "matched_log": true,
+        "reason": "An explicitly requested joblib strategy runs on threads when joblib is not installed, so the substitution must be user-visible.",
+        "notes": "",
+        "status": "pass",
+        "violations": []
+      },
+      {
+        "site_id": "cache_backend_minimal_lru_fallback",
+        "rel_path": "cache/cache.py",
+        "context": "_notify_minimal_cache_backend",
         "disposition": "exempt",
-        "required_log_level": "DEBUG",
+        "required_log_level": "WARNING",
         "matched_warning": false,
         "matched_log": true,
-        "reason": "Optional perf primitives degrade to cache=None and sequential execution at construction time. The reduced behavior is recorded as an internal observability exemption pending a future public-surface redesign.",
+        "reason": "The requested cache is still honoured: the in-package backend implements the same LRU/TTL semantics as cachetools (an optional 'perf' extra). The notice is logged once per process, only when an enabled cache is built.",
         "notes": "",
         "status": "pass",
         "violations": []

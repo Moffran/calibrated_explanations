@@ -287,6 +287,64 @@ def test_from_config_sets_perf_primitives_to_none_when_disabled(
     assert getattr(wrapper, "cfg", None) is cfg
 
 
+@pytest.mark.parametrize("failing_capability", ["cache", "parallel"])
+def test_from_config_should_fail_closed_when_requested_perf_primitive_fails(
+    failing_capability: str,
+) -> None:
+    class BrokenPerfFactory:
+        activation = {"cache": "config", "parallel": "config"}
+
+        def make_cache(self) -> object:
+            if failing_capability == "cache":
+                raise OSError("no memory budget")
+            return object()
+
+        def make_parallel_executor(self, cache: object) -> object:
+            raise OSError("no memory budget")
+
+    cfg = SimpleNamespace(
+        model=PredictOnlyLearner(),
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        preprocessor=None,
+        auto_encode="auto",
+        unseen_category_policy="error",
+        _perf_factory=BrokenPerfFactory(),
+    )
+
+    with pytest.raises(ConfigurationError, match="no memory budget") as excinfo:
+        WrapCalibratedExplainer.from_config(cfg)
+
+    assert excinfo.value.details == {
+        "capability": failing_capability,
+        "source": "factory",
+        "cause": "OSError: no memory budget",
+        "requested_by": "config",
+    }
+
+
+def test_calibrate_call_site_perf_parallel_should_override_config_executor() -> None:
+    from sklearn.linear_model import LogisticRegression
+
+    from calibrated_explanations.api.config import ExplainerBuilder
+    from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
+
+    rng = np.random.default_rng(0)
+    x = rng.standard_normal((20, 2))
+    y = (x[:, 0] > 0).astype(int)
+    cfg = ExplainerBuilder(LogisticRegression()).perf_parallel(True, backend="threads")
+    wrapper = WrapCalibratedExplainer.from_config(cfg.build_config())
+    wrapper.fit(x, y)
+    call_site_executor = ParallelExecutor(ParallelConfig(enabled=True, strategy="threads"))
+
+    wrapper.calibrate(x, y)
+    config_executor = wrapper.explainer.parallel_executor
+    wrapper.calibrate(x, y, perf_parallel=call_site_executor)
+
+    assert config_executor is wrapper.parallel_executor
+    assert wrapper.explainer.parallel_executor is call_site_executor
+
+
 def test_should_raise_attribute_error_when_explain_lime_removed(
     wrapper: WrapCalibratedExplainer,
 ) -> None:

@@ -44,11 +44,9 @@ except:  # noqa: E722
         raise
     cachetools = None  # type: ignore
     _HAVE_CACHETOOLS = False
-    # Visible notification: cachetools missing, falling back to minimal backend
-    _logger = logging.getLogger("calibrated_explanations.core.cache")
-    _logger.warning(
-        "Cache backend fallback: cachetools not available; using minimal in-package LRU/TTL implementation"
-    )
+    # The backend notice is deferred to the first enabled cache (see
+    # ``_notify_minimal_cache_backend``) so importing the module without
+    # requesting a cache stays silent.
     # Provide a tiny, well-tested fallback for environments where
     # `cachetools` is not installed (CI minimal images). The fallback
     # implements the minimal API used by this module: `LRUCache` and
@@ -190,6 +188,35 @@ except:  # noqa: E722
 import numpy as np
 
 logger = logging.getLogger("calibrated_explanations.core.cache")
+
+_MINIMAL_BACKEND_NOTIFIED = False
+
+
+def _notify_minimal_cache_backend() -> None:
+    """Log once per process that an enabled cache uses the in-package backend."""
+    global _MINIMAL_BACKEND_NOTIFIED
+    if _HAVE_CACHETOOLS or _MINIMAL_BACKEND_NOTIFIED:
+        return
+    _MINIMAL_BACKEND_NOTIFIED = True
+    logger.warning(
+        "Cache backend fallback: cachetools not available; using minimal in-package "
+        "LRU/TTL implementation. Install calibrated-explanations[perf] to use cachetools."
+    )
+
+
+def _parse_env_number(token: str, cast: Callable[[str], Any]) -> Any:
+    """Parse the numeric value of a ``CE_CACHE`` ``key=value`` directive."""
+    from ..utils.exceptions import ConfigurationError
+
+    raw = token.split("=", 1)[1]
+    try:
+        return cast(raw)
+    except ValueError as exc:
+        raise ConfigurationError(
+            f"CE_CACHE directive {token!r} requires a numeric value.",
+            details={"env_var": "CE_CACHE", "token": token, "cause": str(exc)},
+        ) from exc
+
 
 # Export monotonic to support legacy shims/tests that reference
 # `calibrated_explanations.cache.cache.monotonic`.
@@ -369,7 +396,14 @@ class CacheConfig:
         *,
         config_manager: ConfigManager | None = None,
     ) -> "CacheConfig":
-        """Merge ``CE_CACHE`` overrides with ``base`` defaults."""
+        """Merge ``CE_CACHE`` overrides with ``base`` defaults.
+
+        Raises
+        ------
+        ConfigurationError
+            If a numeric directive (``max_items=``, ``max_bytes=``, ``ttl=``)
+            does not carry a number.
+        """
         mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = CacheConfig(**(base.__dict__ if base is not None else {}))
         raw = mgr.env("CE_CACHE")
@@ -392,13 +426,13 @@ class CacheConfig:
                 cfg.version = token.split("=", 1)[1]
                 continue
             if token.startswith("max_items="):
-                cfg.max_items = max(1, int(token.split("=", 1)[1]))
+                cfg.max_items = max(1, _parse_env_number(token, int))
                 continue
             if token.startswith("max_bytes="):
-                cfg.max_bytes = max(1, int(token.split("=", 1)[1]))
+                cfg.max_bytes = max(1, _parse_env_number(token, int))
                 continue
             if token.startswith("ttl="):
-                cfg.ttl_seconds = max(0.0, float(token.split("=", 1)[1]))
+                cfg.ttl_seconds = max(0.0, _parse_env_number(token, float))
                 continue
             if token in enabled_labels:  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
@@ -467,6 +501,7 @@ class LRUCache(Generic[K, V]):
         self._size_estimator = size_estimator
         self._telemetry = telemetry
 
+        _notify_minimal_cache_backend()
         # Use cachetools.TTLCache if TTL is specified, otherwise LRUCache
         if ttl_seconds is not None:
             self._store: cachetools.Cache[K, V] = cachetools.TTLCache(

@@ -222,7 +222,10 @@ def test_process_strategy(monkeypatch):
     assert recorded["max_workers"] == 3
 
 
-def test_joblib_strategy(monkeypatch):
+def test_joblib_strategy(monkeypatch, caplog, enable_fallbacks):
+    import logging
+    import warnings
+
     config = ParallelConfig(enabled=True, strategy="joblib", min_batch_size=1)
     executor = ParallelExecutor(config)
 
@@ -236,8 +239,20 @@ def test_joblib_strategy(monkeypatch):
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
-    assert executor.joblib_strategy(echo, [1, 2]) == [1, 2]
+    with (
+        caplog.at_level(logging.INFO, logger="calibrated_explanations"),
+        pytest.warns(UserWarning, match="Joblib is not available"),
+    ):
+        assert executor.joblib_strategy(echo, [1, 2]) == [1, 2]
     assert calls["thread"]
+    assert any(
+        "Joblib is not available" in r.getMessage() and r.levelno == logging.INFO
+        for r in caplog.records
+    )
+    with warnings.catch_warnings(record=True) as repeated:
+        warnings.simplefilter("always")
+        assert executor.joblib_strategy(echo, [3]) == [3]
+    assert not repeated, "joblib substitution should be announced once per executor"
 
     class FakeParallel:
         def __init__(self, *, n_jobs, prefer, batch_size="auto"):
@@ -280,7 +295,9 @@ def test_emit_with_telemetry(monkeypatch):
     executor.emit("test", {"value": 2})  # should not raise
 
 
-def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, caplog):
+def test_parallel_executor_context_manager_handles_init_failure(
+    monkeypatch, caplog, enable_fallbacks
+):
     import logging
 
     class ExplodingPool:
@@ -294,13 +311,29 @@ def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, cap
     )
     cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
     executor = ParallelExecutor(cfg)
-    with caplog.at_level(logging.WARNING, logger="calibrated_explanations"), executor as ctx:
+    with (
+        caplog.at_level(logging.INFO, logger="calibrated_explanations"),
+        pytest.warns(UserWarning, match=r"'threads' \(RuntimeError: boom\).*sequential"),
+        executor as ctx,
+    ):
         assert ctx.active_strategy_name == "sequential"
         assert ctx.pool is None
     assert any(
-        "Failed to initialize parallel pool" in r.message and r.levelno == logging.WARNING
+        "Failed to initialize parallel pool" in r.getMessage() and r.levelno == logging.INFO
         for r in caplog.records
-    ), f"Expected WARNING log about pool init failure; got: {[r.message for r in caplog.records]}"
+    ), f"Expected INFO log about pool init failure; got: {[r.message for r in caplog.records]}"
+
+
+@pytest.mark.parametrize("token", ["workers=two", "min_batch=", "tiny=1.5"])
+def test_parallel_config_from_env_should_reject_non_integer_values(monkeypatch, token):
+    from calibrated_explanations.utils.exceptions import ConfigurationError
+
+    monkeypatch.setenv("CE_PARALLEL", f"enable,threads,{token}")
+    with pytest.raises(ConfigurationError, match="CE_PARALLEL") as excinfo:
+        ParallelConfig.from_env(config_manager=ConfigManager.from_sources())
+
+    assert excinfo.value.details["env_var"] == "CE_PARALLEL"
+    assert excinfo.value.details["token"] == token
 
 
 def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):

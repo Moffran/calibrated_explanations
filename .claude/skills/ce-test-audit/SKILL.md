@@ -120,8 +120,8 @@ clearly.
 Any test triggering a fallback warning (`UserWarning`) that does NOT use
 `enable_fallbacks` is a violation. Symptoms in CI:
 - `"Execution plugin error; legacy sequential fallback engaged"`
-- `"Parallel failure; forced serial fallback engaged"`
-- `"Cache backend fallback: using minimal in-package LRU/TTL implementation"`
+- `"Failed to initialize parallel pool ...; falling back to sequential execution."`
+- `"Parallel execution failed (...); falling back to sequential execution."`
 
 **Fix:** either fix the underlying condition (preferred) or explicitly mark the
 test with `enable_fallbacks` and add `pytest.warns(UserWarning)`.

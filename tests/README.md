@@ -83,8 +83,8 @@ When CI workflows are extended or new checks are added under `.github/workflows/
 
 5. **How to Check:** If you see warnings like:
    - `"Execution plugin error; legacy sequential fallback engaged"`
-   - `"Parallel failure; forced serial fallback engaged"`
-   - `"Cache backend fallback: using minimal in-package LRU/TTL implementation"`
+   - `"Failed to initialize parallel pool for strategy 'threads' (...); falling back to sequential execution."`
+   - `"Parallel execution failed (...); falling back to sequential execution."`
    - `"Visualization fallback: alternative bar simplified due to drawing error"`
 
    Your test is triggering a fallback and will fail in CI. Either fix the underlying issue or explicitly opt in with `enable_fallbacks`.
@@ -813,8 +813,9 @@ If your test fails with one of these warnings, it's triggering a fallback:
 
 ```
 UserWarning: Execution plugin error; legacy sequential fallback engaged
-UserWarning: Parallel failure; forced serial fallback engaged
-UserWarning: Cache backend fallback: using minimal in-package LRU/TTL implementation
+UserWarning: Failed to initialize parallel pool for strategy 'threads' (...); falling back to sequential execution.
+UserWarning: Parallel execution failed (...); falling back to sequential execution.
+UserWarning: Joblib is not available; falling back to thread-based parallel execution.
 UserWarning: Visualization fallback: alternative bar simplified due to drawing error
 UserWarning: Perturbation fallback: deterministic swap applied due to degenerate RNG state
 UserWarning: Narrative template fallback: default template used because provided path was missing
