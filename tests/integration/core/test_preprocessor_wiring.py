@@ -6,16 +6,21 @@ user-supplied preprocessor is provided via ExplainerConfig, it's used to:
 - fit/transform (or transform) calibration data before CalibratedExplainer
 - transform inference data before explain_* calls
 
-When no preprocessor is provided, behavior is unchanged (covered by existing tests).
+When no preprocessor is provided, the default ``auto_encode='auto'`` path must
+encode mixed-type input end to end through the public API (issue #202), while
+all-numeric input reaches the learner unchanged.
 """
 
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import pytest
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
 from calibrated_explanations.core import wrap_explainer as we
+from calibrated_explanations.utils.exceptions import ValidationError
 
 pytestmark = pytest.mark.integration
 
@@ -128,3 +133,87 @@ def test_preprocessor_metadata_exposed_in_telemetry():
     assert wrapper.explainer is not None
     runtime_meta = wrapper.explainer.runtime_telemetry.get("preprocessor")
     assert runtime_meta == meta
+
+
+def _mixed_frame(n: int = 240) -> tuple[pd.DataFrame, np.ndarray]:
+    rng = np.random.default_rng(0)
+    frame = pd.DataFrame(
+        {
+            "num": rng.normal(size=n),
+            "color": rng.choice(["red", "green", "blue"], n),
+            "size": pd.Categorical(rng.choice(["S", "M", "L"], n)),
+            "age": rng.integers(18, 80, n),
+        }
+    )
+    y = ((frame["num"] > 0) ^ (frame["color"] == "green")).astype(int).to_numpy()
+    return frame, y
+
+
+@pytest.mark.parametrize(
+    "learner, regression",
+    [
+        (RandomForestClassifier(n_estimators=10, random_state=0), False),
+        (RandomForestRegressor(n_estimators=10, random_state=0), True),
+    ],
+)
+def test_default_wrapper_should_fit_calibrate_and_explain_mixed_dataframe(learner, regression):
+    # Arrange
+    x, y = _mixed_frame()
+    target = x["num"].to_numpy() * 2.0 + y if regression else y
+    wrapper = we.WrapCalibratedExplainer(learner)
+    assert wrapper.auto_encode == "auto"
+
+    # Act
+    wrapper.fit(x.iloc[:120], target[:120])
+    wrapper.calibrate(x.iloc[120:200], target[120:200])
+    explanation = wrapper.explain_factual(x.iloc[200:205])
+    predictions = wrapper.predict(x.iloc[200:205])
+
+    # Assert
+    assert len(explanation) == 5
+    assert len(predictions) == 5
+    snapshot = wrapper.export_preprocessor_mapping()
+    assert snapshot is not None
+    assert set(snapshot) == {"col_1", "col_2"}
+    assert snapshot["col_1"] == ["blue", "green", "red"]
+
+
+def test_default_wrapper_should_pass_all_numeric_dataframe_through_unchanged():
+    # Arrange
+    x, y = _mixed_frame()
+    numeric = x[["num", "age"]]
+    learner = RandomForestClassifier(n_estimators=10, random_state=0)
+    wrapper = we.WrapCalibratedExplainer(learner)
+
+    # Act
+    wrapper.fit(numeric.iloc[:120], y[:120])
+    wrapper.calibrate(numeric.iloc[120:200], y[120:200])
+
+    # Assert
+    assert wrapper.export_preprocessor_mapping() is None
+    assert list(learner.feature_names_in_) == ["num", "age"]
+
+
+def test_default_wrapper_should_reject_unseen_category_at_inference():
+    # Arrange
+    x, y = _mixed_frame()
+    wrapper = we.WrapCalibratedExplainer(RandomForestClassifier(n_estimators=10, random_state=0))
+    wrapper.fit(x.iloc[:120], y[:120])
+    wrapper.calibrate(x.iloc[120:200], y[120:200])
+    unseen = x.iloc[200:201].copy()
+    unseen["color"] = "purple"
+
+    # Act / Assert
+    with pytest.raises(ValidationError):
+        wrapper.predict(unseen)
+
+
+def test_disabled_auto_encode_should_raise_validation_error_on_mixed_dataframe():
+    # Arrange
+    x, y = _mixed_frame()
+    wrapper = we.WrapCalibratedExplainer(RandomForestClassifier(n_estimators=10, random_state=0))
+    wrapper.auto_encode = False
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match="auto_encode='auto'"):
+        wrapper.fit(x.iloc[:120], y[:120])

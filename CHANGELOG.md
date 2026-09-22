@@ -16,6 +16,14 @@
   encoding categorical columns deterministically, supports explicit
   categorical feature overrides, and exposes a configurable missing-value
   policy for categorical inputs.
+- **Default `WrapCalibratedExplainer` now auto-encodes mixed-type input (#202):**
+  `fit()` and `calibrate()` only reached the preprocessing path when a user
+  preprocessor was supplied, so with default settings the built-in encoder
+  never ran and `fit()` on a DataFrame with string columns failed with
+  `ValueError: could not convert string to float`. The built-in path now
+  engages whenever the input has non-numeric columns or `categorical_features`
+  is configured; with `auto_encode=False` such input raises an actionable
+  `ValidationError`. All-numeric input still reaches the learner unchanged.
 - **Built-in encoder missing-value sentinel no longer collides with real
   values:** when a categorical column contained the literal string
   `"__missing__"` together with missing values, `transform()` encoded the

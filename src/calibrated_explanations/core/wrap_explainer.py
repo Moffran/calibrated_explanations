@@ -403,7 +403,7 @@ class WrapCalibratedExplainer:
         # before invalidating fitted/calibrated state so a rejected
         # preprocessing call leaves the prior lifecycle state untouched.
         x_train_local = x_proper_train
-        if self._preprocessor is not None:
+        if self._should_pre_fit_preprocess(x_train_local):
             x_train_local = self._pre_fit_preprocess(x_train_local)
         self.fitted = False
         self.calibrated = False
@@ -503,7 +503,7 @@ class WrapCalibratedExplainer:
             stage = "preprocessor_fit_transform"
             # Optional preprocessing: ensure preprocessor is fitted (fit here if needed), then transform
             x_cal_local = x_calibration
-            if self._preprocessor is not None:
+            if self._should_pre_fit_preprocess(x_cal_local):
                 if not self._pre_fitted:
                     self._logger.info("Fitting preprocessor on calibration data")
                     x_cal_local = self._pre_fit_preprocess(x_cal_local)
@@ -1179,6 +1179,28 @@ class WrapCalibratedExplainer:
                 f"Non-numeric input detected during {stage} while preprocessing is disabled. "
                 "Set auto_encode='auto' or provide a preprocessor capable of handling categorical values."
             )
+
+    def _should_pre_fit_preprocess(self, x: Any) -> bool:
+        """Return whether ``x`` must be routed through :meth:`_pre_fit_preprocess`.
+
+        A user-supplied (or previously attached built-in) preprocessor always
+        applies. Without one, the ADR-009 built-in path is entered only when it
+        has work to do: the input carries non-numeric columns (encoded under
+        ``auto_encode='auto'``, rejected with a ``ValidationError`` otherwise)
+        or explicit ``categorical_features`` were configured. All-numeric input
+        reaches the learner unchanged.
+        """
+        if self._preprocessor is not None:
+            return True
+        if self._builtin_categorical_features:
+            return True
+        numeric_kinds = {"b", "i", "u", "f", "c"}
+        if hasattr(x, "columns") and hasattr(x, "dtypes"):
+            return any(getattr(dtype, "kind", "O") not in numeric_kinds for dtype in x.dtypes)
+        dtype = getattr(x, "dtype", None)
+        if dtype is None:
+            dtype = np.asarray(x).dtype
+        return dtype.kind not in numeric_kinds
 
     def _pre_fit_preprocess(self, x: Any) -> Any:
         """Fit the configured preprocessor and return transformed x.
