@@ -16,6 +16,11 @@
   encoding categorical columns deterministically, supports explicit
   categorical feature overrides, and exposes a configurable missing-value
   policy for categorical inputs.
+- **Built-in encoder missing-value sentinel no longer collides with real
+  values:** when a categorical column contained the literal string
+  `"__missing__"` together with missing values, `transform()` encoded the
+  missing values with the literal's code instead of the separate sentinel
+  category learned at fit time.
 - **Explicitly requested cache and parallel execution no longer degrade
   silently (#209):** `ExplainerBuilder.build_config()` and
   `WrapCalibratedExplainer.from_config()` now raise `ConfigurationError` when an

@@ -416,18 +416,15 @@ def _build_perf_factory(cfg: Any) -> _ConfigPerfFactory:
     from ..parallel import ParallelConfig
 
     cache_requested = bool(getattr(cfg, "perf_cache_enabled", False))
-    try:
-        cache_cfg = CacheConfig(
-            enabled=cache_requested,
-            namespace=getattr(cfg, "perf_cache_namespace", "calibrator"),
-            version=getattr(cfg, "perf_cache_version", "v1"),
-            max_items=getattr(cfg, "perf_cache_max_items", 512),
-            max_bytes=getattr(cfg, "perf_cache_max_bytes", 32 * 1024 * 1024),
-            ttl_seconds=getattr(cfg, "perf_cache_ttl", None),
-            telemetry=getattr(cfg, "perf_telemetry", None),
-        )
-    except Exception as exc:  # adr002_allow: re-raised as ConfigurationError
-        raise _perf_initialization_error("cache", "config", exc) from exc
+    cache_cfg = CacheConfig(
+        enabled=cache_requested,
+        namespace=getattr(cfg, "perf_cache_namespace", "calibrator"),
+        version=getattr(cfg, "perf_cache_version", "v1"),
+        max_items=getattr(cfg, "perf_cache_max_items", 512),
+        max_bytes=getattr(cfg, "perf_cache_max_bytes", 32 * 1024 * 1024),
+        ttl_seconds=getattr(cfg, "perf_cache_ttl", None),
+        telemetry=getattr(cfg, "perf_telemetry", None),
+    )
     try:
         cache_cfg = CacheConfig.from_env(cache_cfg)
     except Exception as exc:  # adr002_allow: re-raised as ConfigurationError

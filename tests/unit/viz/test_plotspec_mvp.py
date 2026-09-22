@@ -73,14 +73,21 @@ def testplot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
     """
 
     render_calls: list[dict] = []
+    saved_paths: list[str] = []
+
+    class FakeFigure:
+        def savefig(self, path, **kwargs):
+            saved_paths.append(path)
 
     def fake_render(spec, **kwargs):  # pragma: no cover - spy helper
         render_calls.append({"show": kwargs.get("show"), "save_path": kwargs.get("save_path")})
+        return FakeFigure() if kwargs.get("return_fig") else None
 
     monkeypatch.setattr(
         "calibrated_explanations.viz.matplotlib_adapter.render",
         fake_render,
     )
+    monkeypatch.setattr(plotting, "plt", types.SimpleNamespace(close=lambda fig: None))
 
     explanation = types.SimpleNamespace(y_minmax=(0.0, 1.0))
     plotting.plot_regression(
@@ -100,11 +107,10 @@ def testplot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
         use_legacy=False,
     )
 
-    # Verify first call has show=True and no save_path (initial render)
-    assert render_calls[0] == {"show": True, "save_path": None}
+    # The figure is rendered once (shown, not saved by the adapter) ...
+    assert render_calls == [{"show": True, "save_path": None}]
 
-    # Semantic assertions on saved paths (format-independent)
-    saved_paths = [call["save_path"] for call in render_calls[1:]]
+    # ... and every default format is saved from that figure (format-independent)
     assert len(saved_paths) >= 3, "Should save in at least 3 formats"
 
     # Verify all saved paths exist and contain expected format indicators

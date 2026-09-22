@@ -197,6 +197,22 @@ def test_build_config_should_fail_closed_when_requested_perf_env_is_malformed(
     assert excinfo.value.__cause__.details["token"] == token
 
 
+def test_from_config_should_fail_closed_for_hand_built_invalid_parallel_config():
+    """A hand-built ExplainerConfig bypasses builder validation but still fails closed."""
+    cfg = ExplainerConfig(
+        model=RandomForestClassifier(),
+        perf_parallel_enabled=True,
+        perf_parallel_granularity="feature",  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(ConfigurationError, match="parallel executor") as excinfo:
+        WrapCalibratedExplainer.from_config(cfg)
+
+    assert excinfo.value.details["capability"] == "parallel"
+    assert excinfo.value.details["source"] == "config"
+    assert "granularity" in excinfo.value.details["cause"]
+
+
 @pytest.mark.parametrize(
     ("builder_cache", "builder_parallel", "env", "expected"),
     [

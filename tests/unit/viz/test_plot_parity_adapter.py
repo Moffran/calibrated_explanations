@@ -390,15 +390,30 @@ def test_adapter_returns_normalized_and_legacy_for_plotspec():
 
 def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
     """Ensure `plot_triangular` delegates to builder+adapter and handles save_ext."""
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from calibrated_explanations import plotting
     from calibrated_explanations.viz import plots as _plots
 
     calls = []
 
-    def fake_render(spec, *, show=False, save_path=None, **kwargs):
+    class FakeFigure:
+        def __init__(self):
+            self.saved = []
+
+        def savefig(self, path, **kwargs):
+            self.saved.append(path)
+
+    fake_figure = FakeFigure()
+
+    def fake_render(spec, *, show=False, save_path=None, return_fig=False, **kwargs):
         calls.append({"spec": spec, "show": show, "save_path": save_path})
-        return {}
+        return fake_figure if return_fig else None
 
     monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)
+    closed = []
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace(close=closed.append))
 
     # prepare simple numeric arrays for triangular plot
     proba = [0.2]
@@ -437,8 +452,10 @@ def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
         save_ext=["png"],
         use_legacy=False,
     )  # noqa: E501
-    # adapter.render should be invoked for initial render + each save ext
-    assert len(calls) >= 2
+    # The adapter renders once; each save extension is written from that figure.
+    assert len(calls) == 1
+    assert [Path(saved) for saved in fake_figure.saved] == [tmp_path / "tpng"]
+    assert closed == [fake_figure]
 
 
 # ---------------------------------------------------------------------------

@@ -210,10 +210,15 @@ class BuiltinEncoder:
 
     @staticmethod
     def _resolve_missing_sentinel(categories: Sequence[Any]) -> str:
-        for value in categories:
-            if isinstance(value, str) and value.startswith("__missing__"):
-                return value
-        return "__missing__"
+        # Fit picks the first of __missing__, __missing__1__, ... that is not a real
+        # value, so the sentinel is the last consecutive member of that chain present.
+        present = set(categories)
+        sentinel = "__missing__"
+        suffix = 1
+        while f"__missing__{suffix}__" in present:
+            sentinel = f"__missing__{suffix}__"
+            suffix += 1
+        return sentinel
 
     @staticmethod
     def _category_sort_key(value: Any) -> tuple[str, str]:
