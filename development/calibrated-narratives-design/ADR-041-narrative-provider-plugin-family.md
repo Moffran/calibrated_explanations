@@ -304,8 +304,8 @@ Rejected as the target architecture. CE would neither define nor invoke the cont
 so the result is middleware around CE rather than a CE plugin. It would also duplicate
 the public API and let each provider reinterpret interval semantics.
 
-Retained as a staging prototype: the contract may be prototyped externally before CE
-adopts it. See `implementation-plan.md` Stage 0.
+The contract may still be prototyped externally before CE adopts it, but no external
+prototype gates this decision.
 
 ### D. Let providers consume explanation objects directly
 
@@ -344,15 +344,13 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-1. Prototype the contract externally against the current public API (Stage 0). Do not
-   change CE.
-2. Land `metadata.narrative_context` as an additive ADR-005 extension with schema docs.
-3. Add passive contracts, deterministic builders, and typed errors.
-4. Add the narrative family to the registry with trust and discovery.
-5. Re-express the built-in template generator as `core.narrative.template`.
-6. Add `NarrativeProviderSpec` / `NarrativeOptions` and `output_format="result"`.
-7. Extend the ADR-040 chain: claims, requirements, TIF, evidence.
-8. Publish the external provider against the released contract.
+1. Land `metadata.narrative_context` as an additive ADR-005 extension with schema docs.
+2. Add passive contracts, deterministic builders, and typed errors.
+3. Add the narrative family to the registry with trust and discovery.
+4. Re-express the built-in template generator as `core.narrative.template`.
+5. Add `NarrativeProviderSpec` / `NarrativeOptions` and `output_format="result"`.
+6. Extend the ADR-040 chain: claims, requirements, TIF, evidence.
+7. Publish the external provider against the released contract.
 
 This work targets a milestone after v1.0.1. The active v1.0.1 plan explicitly excludes
 new public API and plugin categories.

@@ -106,7 +106,7 @@ A QA pass against the actual repository found six blocking conflicts.
 Soundness fixes: placeholder binding replaces an overclaiming `verified` status; per-fact
 payload schemas replace `additionalProperties: true`; `TaskDescriptor` keeps both
 `task_type` and `problem_type`; `spec_id` defined as a content hash; `NarrativePolicy`
-split per ADR-038; Stage 0 gates the whole thing on a faithfulness experiment.
+split per ADR-038.
 
 The companion-repo plan was rewritten against the real monorepo: fixed families,
 hatchling, `[tool.ce_plugin_repo]`, the plugins repo's ADR-P001 lifecycle policy, the plugin-intake path, and
@@ -133,7 +133,8 @@ research assets in `…-studies`.
 3. Refactor `registry.py` to a generic kind abstraction before adding the sixth family?
 4. Emit `metadata.narrative_context` from `to_json()` always, or only on request?
 
-## Prerequisite
+## Release targeting
 
-Stage 0 must pass before any CE change. If structured, bound narration is not measurably
-more faithful than direct prompting, ADR-041 is not written.
+ADR-041 acceptance and the full implementation (Stages 1-3) are scheduled for the
+v1.1.0 milestone. Faithfulness evaluation against direct prompting remains a research
+question for `calibrated-explanations-studies`; it does not gate this work.

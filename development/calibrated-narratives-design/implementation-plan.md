@@ -4,27 +4,12 @@ Design only. No code is committed, pushed, or published from this package.
 
 ## Release targeting
 
-`development/current-work/v1.0.1_plan.md` excludes "New public API or plugin categories"
-and broad plugin architecture redesign, so this targets a later milestone. Planning is
+v1.0.1 shipped on 2026-09-22 and its plan is archived under
+`development/finished-work/v1.0.1_plan.md`. The active
+`development/current-work/v1.0.2_plan.md` is a patch release that also excludes new
+public API and plugin categories, so this work targets v1.1.0 and later. Planning is
 issue- and milestone-based since v1.0.1 T1, so the entry point is a GitHub milestone;
 `ce-release-planner` produces the `vX.Y.Z_plan.md`.
-
-## Stage 0 — external prototype, no CE change
-
-Find out whether structured, host-verified narration is measurably more faithful than
-direct prompting, **before** CE commits to a contract. Runs entirely in the companion
-repositories.
-
-1. Build a `NarrativeSpec` equivalent outside CE from `explanation.to_json()` plus a
-   side-channel for problem type, class labels, threshold, and reject state.
-2. Implement placeholder binding and the host checks as library code.
-3. Run the faithfulness comparison in `calibrated-explanations-studies`.
-
-**Exit criterion:** structured, bound narration beats direct explanation-to-LLM prompting
-on fact precision/recall, numeric exactness, and uncertainty-qualification recall. If it
-does not, stop — ADR-041 is not written and CE keeps template-only narration.
-
-This is the staging prototype ADR-041 Alternative C retains.
 
 ## Stage 1 — CE foundations
 
@@ -211,7 +196,7 @@ binder is broken, not that the model is imprecise.
 ## Falsifying criteria
 
 The design fails if, after reasonable engineering: structured bound narration is no more
-faithful than direct prompting (the Stage 0 exit criterion); mandatory uncertainty
+faithful than direct prompting; mandatory uncertainty
 planning does not improve comprehension or appropriate reliance; host verification
 accepts materially misleading paraphrases too often; expertise level changes epistemic
 content; users become more confident without deciding better; or maintaining the contract
@@ -228,7 +213,6 @@ requires a major `NarrativeSpec` version and migration guidance.
 
 ## Completion checklist
 
-- [ ] Stage 0 falsification experiment run and passed.
 - [ ] ADR-041 accepted with a release-plan entry.
 - [ ] `metadata.narrative_context` documented as additive; no v2 schema cycle.
 - [ ] Existing narration tests and `CE-TIF-NARR-001` pass unchanged.
