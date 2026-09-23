@@ -1,45 +1,45 @@
 {
-  "generated_at": "2026-07-21T12:58:50.670514+00:00",
+  "generated_at": "2026-09-22T20:44:48.318042+00:00",
   "platform": "Windows",
   "python_version": "3.11.9",
   "schema_version": 1,
   "steps": [
     {
       "command": "python scripts/anti-pattern-analysis/scan_private_usage.py tests --check",
-      "elapsed_seconds": 1.157,
+      "elapsed_seconds": 0.984,
       "exit_code": 0,
       "name": "Private-member scan"
     },
     {
       "command": "python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --tests-dir tests --check --output reports/anti-pattern-analysis/test_anti_pattern_report.csv --report reports/anti-pattern-analysis/test_quality_report.json --baseline .github/test-quality-baseline.json",
-      "elapsed_seconds": 2.672,
+      "elapsed_seconds": 2.313,
       "exit_code": 0,
       "name": "ADR-030 anti-pattern detector"
     },
     {
       "command": "python scripts/quality/check_no_test_helper_exports.py --root src/calibrated_explanations --report reports/anti-pattern-analysis/test_helper_wrapper_report.json",
-      "elapsed_seconds": 0.875,
+      "elapsed_seconds": 0.828,
       "exit_code": 0,
       "name": "ADR-030 test-helper export guard"
     },
     {
       "command": "python scripts/quality/check_marker_hygiene.py --check --report reports/marker-hygiene/marker_hygiene_report.json --baseline .github/marker-hygiene-baseline.json",
-      "elapsed_seconds": 1.312,
+      "elapsed_seconds": 1.125,
       "exit_code": 0,
       "name": "ADR-030 marker hygiene"
     },
     {
       "command": "python scripts/quality/check_no_local_paths_in_reports.py --check --report reports/quality/no_local_paths_report.json",
-      "elapsed_seconds": 3.094,
+      "elapsed_seconds": 2.719,
       "exit_code": 0,
       "name": "Generated report local-path guard"
     },
     {
       "command": "python scripts/quality/check_class_surface_allowlist.py --check --report reports/quality/class_surface_allowlist_report.json",
-      "elapsed_seconds": 3.266,
+      "elapsed_seconds": 2.765,
       "exit_code": 0,
       "name": "Class-surface allowlist gate"
     }
   ],
-  "total_elapsed_seconds": 12.438
+  "total_elapsed_seconds": 10.796
 }

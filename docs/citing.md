@@ -437,13 +437,16 @@ Hanna, A. (2025).
 
 ## Software
 
+To cite this software, use the following BibTeX entry:
+
 ```bibtex
 @software{lofstrom2026ce_repository,
   author  = {Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
   title   = {Calibrated Explanations},
   license = {BSD-3-Clause},
   url     = {https://github.com/Moffran/calibrated_explanations},
-  version = {v1.0.0},
+  version = {v1.0.1},
+  month   = {September},
   year    = {2026}
 }
 ```

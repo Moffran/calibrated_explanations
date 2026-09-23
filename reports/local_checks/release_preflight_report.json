@@ -14,16 +14,38 @@
   "branch": "main",
   "changed_release_files": [],
   "exit_status": 0,
-  "generated_at": "2026-07-21T13:01:34.713465+00:00",
-  "git_status_porcelain": "M  CHANGELOG.md\nM  CITATION.cff\nM  METADATA.json\nM  development/current-work/RELEASE_PLAN_v1.md\nM  notebooks/advanced/demo_conditional.ipynb\nM  notebooks/advanced/demo_config_management.ipynb\nM  notebooks/advanced/demo_narrative_explanations.ipynb\nM  notebooks/advanced/demo_plugin_wiring.ipynb\nM  notebooks/advanced/demo_reject.ipynb\nM  notebooks/advanced/demo_under_the_hood.ipynb\nM  notebooks/advanced/fast_feature_filtering_demo.ipynb\nM  notebooks/core_demos/demo_binary_classification.ipynb\nM  notebooks/core_demos/demo_multiclass_glass.ipynb\nM  notebooks/core_demos/demo_probabilistic_regression.ipynb\nM  notebooks/core_demos/demo_regression.ipynb\nM  notebooks/miscellaneous/demo_speeddating.ipynb\nM  notebooks/miscellaneous/imbalanced_wrap.ipynb\nM  notebooks/miscellaneous/support_xgboost_lightgbm_catboost_issue_92.ipynb\nM  notebooks/paper_based/ensured.ipynb\nM  notebooks/quickstart.ipynb\nM  notebooks/quickstart_guarded.ipynb\nM  notebooks/quickstart_tiny.ipynb\nM  pyproject.toml\nMM reports/anti-pattern-analysis/adr030_ratification_timing.json\nMM reports/anti-pattern-analysis/test_helper_wrapper_report.json\nMM reports/anti-pattern-analysis/test_quality_report.json\nMM reports/config_manager_usage_report.json\nMM reports/deprecations/active_deprecations_check.json\nMM reports/deprecations/deprecation_closure_timing.json\nMM reports/local_checks/release_preflight_report.json\nMM reports/marker-hygiene/marker_hygiene_report.json\nMM reports/over_testing/block_coverage_counts.csv\nMM reports/over_testing/line_coverage_counts.csv\nMM reports/over_testing/metadata.json\nMM reports/over_testing/redundant_tests.csv\nMM reports/over_testing/summary.json\nM  reports/packaging/license_artifact_check.json\nM  reports/quality/config_manager_usage_report.json\nM  reports/quality/logging_domain_report.json\nMM reports/quality/no_local_paths_report.json\nM  reports/trust_mutation_inventory.json\nAM reports/verification/CE-EVID-EXPL-001-20260721.json\nAM reports/verification/CE-EVID-EXPL-CONJ-001-20260721.json\nAM reports/verification/CE-EVID-FILTER-001-20260721.json\nAM reports/verification/CE-EVID-GUARD-001-20260721.json\nAM reports/verification/CE-EVID-MOND-001-20260721.json\nAM reports/verification/CE-EVID-NARR-001-20260721.json\nAM reports/verification/CE-EVID-PRED-001-20260721.json\nAM reports/verification/CE-EVID-PRED-CLASS-001-20260721.json\nAM reports/verification/CE-EVID-PRED-PROB-001-20260721.json\nAM reports/verification/CE-EVID-REJECT-001-20260721.json\nAM reports/verification/CE-EVID-VIZ-001-20260721.json\nA  scripts/tests/benchmarks/api_public_20260721_084804.txt\nA  scripts/tests/benchmarks/api_public_20260721_105919.txt\nM  src/calibrated_explanations/__init__.py\n?? scripts/tests/benchmarks/api_public_20260721_125922.txt",
-  "head_sha": "1baab4557330ca78687cf3912be960f77f9c3f96",
+  "generated_at": "2026-09-22T20:47:10.363007+00:00",
+  "git_status_porcelain": "M  CHANGELOG.md\nM  CITATION.cff\nM  METADATA.json\nM  development/current-work/v1.0.1_plan.md\nM  docs/citing.md\nM  docs/conf.py\nMM notebooks/advanced/demo_conditional.ipynb\nMM notebooks/advanced/demo_config_management.ipynb\nMM notebooks/advanced/demo_narrative_explanations.ipynb\nMM notebooks/advanced/demo_plugin_wiring.ipynb\nMM notebooks/advanced/demo_reject.ipynb\nMM notebooks/advanced/demo_under_the_hood.ipynb\nMM notebooks/advanced/fast_feature_filtering_demo.ipynb\nMM notebooks/core_demos/demo_binary_classification.ipynb\nMM notebooks/core_demos/demo_multiclass_glass.ipynb\nMM notebooks/core_demos/demo_probabilistic_regression.ipynb\nMM notebooks/core_demos/demo_regression.ipynb\nMM notebooks/miscellaneous/demo_speeddating.ipynb\nMM notebooks/miscellaneous/imbalanced_wrap.ipynb\nMM notebooks/miscellaneous/support_xgboost_lightgbm_catboost_issue_92.ipynb\nMM notebooks/paper_based/ensured.ipynb\nMM notebooks/quickstart.ipynb\nMM notebooks/quickstart_guarded.ipynb\nMM notebooks/quickstart_tiny.ipynb\nM  pyproject.toml\n M reports/anti-pattern-analysis/adr030_ratification_timing.json\nMM reports/anti-pattern-analysis/test_helper_wrapper_report.json\nMM reports/anti-pattern-analysis/test_quality_report.json\nMM reports/config_manager_usage_report.json\nMM reports/deprecations/active_deprecations_check.json\n M reports/deprecations/deprecation_closure_timing.json\nMM reports/local_checks/release_preflight_report.json\nMM reports/marker-hygiene/marker_hygiene_report.json\nMM reports/over_testing/block_coverage_counts.csv\nMM reports/over_testing/line_coverage_counts.csv\nMM reports/over_testing/metadata.json\nMM reports/over_testing/redundant_tests.csv\nMM reports/over_testing/summary.json\n M reports/packaging/license_artifact_check.json\nMM reports/quality/config_manager_usage_report.json\nMM reports/quality/logging_domain_report.json\nMM reports/quality/no_local_paths_report.json\nMM reports/trust_mutation_inventory.json\nM  src/calibrated_explanations/__init__.py\n?? reports/verification/CE-EVID-EXPL-001-20260922.json\n?? reports/verification/CE-EVID-EXPL-CONJ-001-20260922.json\n?? reports/verification/CE-EVID-FILTER-001-20260922.json\n?? reports/verification/CE-EVID-GUARD-001-20260922.json\n?? reports/verification/CE-EVID-MOND-001-20260922.json\n?? reports/verification/CE-EVID-NARR-001-20260922.json\n?? reports/verification/CE-EVID-PRED-001-20260922.json\n?? reports/verification/CE-EVID-PRED-CLASS-001-20260922.json\n?? reports/verification/CE-EVID-PRED-PROB-001-20260922.json\n?? reports/verification/CE-EVID-REJECT-001-20260922.json\n?? reports/verification/CE-EVID-VIZ-001-20260922.json\n?? scripts/tests/benchmarks/api_public_20260922_204513.txt",
+  "head_sha": "a80463fa9e5683479990ca87d785be2a61a759e4",
+  "included_work": [
+    {
+      "id": "T1",
+      "status": "Done"
+    },
+    {
+      "id": "T2",
+      "status": "Done"
+    },
+    {
+      "id": "T3",
+      "status": "Done"
+    },
+    {
+      "id": "T4",
+      "status": "Done"
+    },
+    {
+      "id": "T5",
+      "status": "Done"
+    }
+  ],
   "manual_release_steps": [
     11,
     12,
     13
   ],
   "parse_errors": [],
-  "plan_path": "development/current-work/v1.0.0_plan.md",
+  "plan_path": "development/current-work/v1.0.1_plan.md",
   "platform": "Windows",
   "postcommit_release_steps": [
     14,
@@ -38,173 +60,134 @@
     "CITATION.cff",
     "docs/citing.md",
     "METADATA.json",
-    "CHANGELOG.md",
-    "development/current-work/RELEASE_PLAN_v1.md"
+    "CHANGELOG.md"
   ],
-  "pyproject_version": "1.0.0",
+  "pyproject_version": "1.0.1",
   "python_version": "3.11.9",
-  "release_version": "1.0.0",
+  "release_version": "1.0.1",
   "schema_version": 1,
   "steps": [
     {
-      "command": "parse development/current-work/v1.0.0_plan.md release gate summary",
-      "elapsed_seconds": 0.094,
+      "command": "parse development/current-work/v1.0.1_plan.md release gate summary",
+      "elapsed_seconds": 0.125,
       "exit_code": 0,
       "name": "Release readiness guard"
     },
     {
-      "command": "prepare release.md files for v1.0.0 (2026-07-21)",
-      "elapsed_seconds": 0.031,
+      "command": "prepare release.md files for v1.0.1 (2026-09-22)",
+      "elapsed_seconds": 0.015,
       "exit_code": 0,
       "name": "Release file preparation"
     },
     {
       "command": "python -m pytest -q",
-      "elapsed_seconds": 394.844,
+      "elapsed_seconds": 414.688,
       "exit_code": 0,
       "name": "Full pytest suite"
     },
     {
       "command": "python -m pip install -e .[dev]",
-      "elapsed_seconds": 14.109,
+      "elapsed_seconds": 28.375,
       "exit_code": 0,
       "name": "Editable install (release tree)"
     },
     {
       "command": "python -c import calibrated_explanations as ce; print(ce.__version__)",
-      "elapsed_seconds": 0.281,
+      "elapsed_seconds": 0.515,
       "exit_code": 0,
       "name": "Editable install version smoke"
     },
     {
       "command": "python -m jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=600 notebooks/quickstart.ipynb notebooks/quickstart_guarded.ipynb notebooks/quickstart_tiny.ipynb notebooks/core_demos/demo_binary_classification.ipynb notebooks/core_demos/demo_multiclass_glass.ipynb notebooks/core_demos/demo_probabilistic_regression.ipynb notebooks/core_demos/demo_regression.ipynb notebooks/miscellaneous/demo_speeddating.ipynb notebooks/miscellaneous/imbalanced_wrap.ipynb notebooks/miscellaneous/support_xgboost_lightgbm_catboost_issue_92.ipynb notebooks/paper_based/ensured.ipynb notebooks/advanced/demo_conditional.ipynb notebooks/advanced/demo_config_management.ipynb notebooks/advanced/demo_narrative_explanations.ipynb notebooks/advanced/demo_plugin_wiring.ipynb notebooks/advanced/demo_reject.ipynb notebooks/advanced/demo_under_the_hood.ipynb",
-      "elapsed_seconds": 898.156,
+      "elapsed_seconds": 577.36,
       "exit_code": 0,
       "name": "Release notebooks (saved in-place)"
     },
     {
       "command": "python -m jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=5400 notebooks/advanced/fast_feature_filtering_demo.ipynb",
-      "elapsed_seconds": 720.61,
+      "elapsed_seconds": 580.86,
       "exit_code": 0,
       "name": "Release slow notebook (saved in-place)"
     },
     {
       "command": "python scripts/local_checks.py --profile release",
-      "elapsed_seconds": 2638.375,
+      "elapsed_seconds": 2266.687,
       "exit_code": 0,
       "name": "Release profile"
     },
     {
       "command": "python -m twine check dist/*",
-      "elapsed_seconds": 0.859,
+      "elapsed_seconds": 0.86,
       "exit_code": 0,
       "name": "Release artifact validation"
     },
     {
       "command": "create temp venv; install calibrated_explanations from dist; import version",
-      "elapsed_seconds": 128.688,
+      "elapsed_seconds": 112.703,
       "exit_code": 0,
       "name": "Release wheel smoke"
     }
   ],
-  "task_checklist_state": {
-    "1": {
-      "all_items_checked": true,
-      "checked_items": 4,
-      "title": "Staging validation carry-forward and deprecation ledger re-confirmation",
-      "total_items": 4
-    },
-    "2": {
-      "all_items_checked": true,
-      "checked_items": 4,
-      "title": "Standard-001/Standard-002 guardrails and post-release maintenance cadence",
-      "total_items": 4
-    },
-    "3": {
-      "all_items_checked": true,
-      "checked_items": 4,
-      "title": "Stable-contract announcement and compatibility statement",
-      "total_items": 4
-    },
-    "4": {
-      "all_items_checked": true,
-      "checked_items": 6,
-      "title": "Documentation hubs current for v1.0.0 API state",
-      "total_items": 6
-    },
-    "5": {
-      "all_items_checked": true,
-      "checked_items": 4,
-      "title": "Packaging classifier promotion to Production/Stable",
-      "total_items": 4
-    },
-    "6": {
-      "all_items_checked": false,
-      "checked_items": 0,
-      "title": "Release preparation",
-      "total_items": 12
-    }
-  },
-  "total_elapsed_seconds": 4805.156,
+  "total_elapsed_seconds": 3996.25,
   "verified_release_files": [
     "docs/conf.py",
-    "development/current-work/v1.0.0_plan.md"
+    "development/current-work/v1.0.1_plan.md"
   ],
   "worktree_changed_files": {
-    "CHANGELOG.md": "5a6bae979f1ef20b3a9d488552bf81f81f74c3599d4cf10317c96a9510a3de8b",
-    "CITATION.cff": "021cf87356acd7c1ceeba54b94582176273ee27b3be3d8b4d70a661d07501bb2",
-    "METADATA.json": "4a340b2c412321aa33c197ff3be216cd9b9b68506ef62b09f8b552440fdcf989",
-    "development/current-work/RELEASE_PLAN_v1.md": "efb5f07d0e42c748aa22b7ddb33542da6d9fe7b4c233e976d96bdb8159fb05f8",
-    "notebooks/advanced/demo_conditional.ipynb": "e2e6ccbb59e4114b54aab26397bafb70180996f4b6de42619db789a0ac0d3f4b",
-    "notebooks/advanced/demo_config_management.ipynb": "ca0d278563ecbebdf64c2c3bda2d695a8ea091a9838b9bbf57e07b386b3a2e65",
-    "notebooks/advanced/demo_narrative_explanations.ipynb": "8ce6023483f093cc41f939165a62c70054aa315829171de019dd8d84840115d0",
-    "notebooks/advanced/demo_plugin_wiring.ipynb": "18ce903b53bcf03725df8594a8566e609df71e6af7b185f0ea4a4b3c0ef39501",
-    "notebooks/advanced/demo_reject.ipynb": "14d4112191ab571ee24f0c7a401f6aa7f713aaf50df9c01f535656945610b20b",
-    "notebooks/advanced/demo_under_the_hood.ipynb": "dee61741596a9f80cf755699cc1f383454cc7a806d2382af5009bb76638a4ec3",
-    "notebooks/advanced/fast_feature_filtering_demo.ipynb": "57027407510684865bf78672de3520e7d0dbed6ad5165e99f5a858a40b0ae97b",
-    "notebooks/core_demos/demo_binary_classification.ipynb": "b687cf0aa93a0bb34a608fde5d96fa7160a3561bdc83690db7981b0ad9a5a463",
-    "notebooks/core_demos/demo_multiclass_glass.ipynb": "678bcb63410ee56200a140536f13ba41f6cbc26d99725c7aa2f180c474af46b6",
-    "notebooks/core_demos/demo_probabilistic_regression.ipynb": "d3d2c8cc1373da57f037162cad8e093f533f62a59519e0ddca4f85d8a79641ed",
-    "notebooks/core_demos/demo_regression.ipynb": "012e0e0d4937fee969de49b848b6c1336af000e6f664fbaa0860062271df0edf",
-    "notebooks/miscellaneous/demo_speeddating.ipynb": "7ef5c322700489ab6bb614a588fe84c99ad184323110f70e33f6a4355484505b",
-    "notebooks/miscellaneous/imbalanced_wrap.ipynb": "dfdd74be424152714e371930843c8582726d7c3fd3e7be2386678f636ffbfe50",
-    "notebooks/miscellaneous/support_xgboost_lightgbm_catboost_issue_92.ipynb": "fa607296f8971bd114d1848c98cc281e0736ccd9196197060448e803b6e3b4fb",
-    "notebooks/paper_based/ensured.ipynb": "ef1427a7031192dd354f991ae98919e0e9c7793ae0e8af452af33701e83a075c",
-    "notebooks/quickstart.ipynb": "926990cdb923cfcdbc04a64bb3cef1d7a10a74801bd9ad6fb503fc7ff366b24a",
-    "notebooks/quickstart_guarded.ipynb": "241351bddbf2c05a0a0c51552709bf5962cda034b959e4b85e9e256f47f411ca",
-    "notebooks/quickstart_tiny.ipynb": "8335a0808b1a1666e6b6a67037c34f99c9d570e0563fb5630a72c6e3e6ca17e9",
-    "pyproject.toml": "0ce1aa5713b69424cd2cb5d306ec5922e916141c5aa4d398b6343da6bf21adf8",
-    "reports/anti-pattern-analysis/adr030_ratification_timing.json": "3736a892014e672310131069828d33e2b72faf34ec7ef74e399997c1b37aa1b8",
-    "reports/anti-pattern-analysis/test_helper_wrapper_report.json": "d15a41c03982565676264c2430d80440d65cdd91724d7b7e9ad34ce9fddca18f",
-    "reports/anti-pattern-analysis/test_quality_report.json": "2c49bc0d375bdc73e3ccd0b68b1d0abfa46a763148d1734607502047a764b224",
-    "reports/config_manager_usage_report.json": "ea5e23f31e322b8af7518c45dc948c93c8ef5bbc33a880f125581018694d705b",
-    "reports/deprecations/active_deprecations_check.json": "d550cb8e3ca87148afddc3ee4ac3dc1bcb9650b8cfa62945da2566914d8c85ba",
-    "reports/deprecations/deprecation_closure_timing.json": "4dcaa042e847c6549d9aa1f330dcd97c7b05eec4e4fa34f669ae7b433bdd35ca",
-    "reports/marker-hygiene/marker_hygiene_report.json": "e099aac749e81bd6529047283feea761904732790a6f93db463cf8230e566d72",
-    "reports/over_testing/block_coverage_counts.csv": "9d6a192ddfb102d1b9fea46719de37a0aa3fe708f9ba10cc9d75a0e1c70db7a8",
-    "reports/over_testing/line_coverage_counts.csv": "5bcad0c4edf296ebad4f39a4fbfcd34bddf00d2708d1860e8aed026f7ac8f2e6",
-    "reports/over_testing/metadata.json": "bff84e68873d85739a0fab38ac7fe3f5cd9e8856a530f5443ad3433b3933251c",
-    "reports/over_testing/redundant_tests.csv": "1dc1d17bc86c73196ef6ef7196c18bc3bbdbe011040ce0de50d65abb1ed77982",
-    "reports/over_testing/summary.json": "3922b87f3291e4d4ff809718f04920261cbfb92ce8b1bb8cf5b1f6c937a67bf5",
-    "reports/packaging/license_artifact_check.json": "e94a1385941e62b221e967b270acb763bf6ed87c82f6ea8b552b371bce1113a7",
-    "reports/quality/config_manager_usage_report.json": "31e1c5565f06f28ec61612b43898a9e34d56de8d0d235b537a7aaef234218046",
-    "reports/quality/logging_domain_report.json": "2f127aefdc20731bfa1f4fbeca96255254ec197da4d920fdf230cee991cfde9b",
-    "reports/quality/no_local_paths_report.json": "050b80db4a62bb57134f459fcf574b79f2be5649f6833675131cfb67b9e43317",
-    "reports/trust_mutation_inventory.json": "f9efa04ace054f5972edd1b4b676bc4c1ee376f169faa5846f8cd4f1bbe2610d",
-    "reports/verification/CE-EVID-EXPL-001-20260721.json": "ccb3b7b77dc8e5b6c39a4a0f6b973552f0823e6aa23b6e11453c3c495d0f2127",
-    "reports/verification/CE-EVID-EXPL-CONJ-001-20260721.json": "4b136523cfbfef0aeb41fae856a82a3c7bacd791eae453cd48d4921fcf7d5963",
-    "reports/verification/CE-EVID-FILTER-001-20260721.json": "aaa0413d993b3b72184a392645f296f1e63081344d5dfcbf4f67f1b9a9adddfb",
-    "reports/verification/CE-EVID-GUARD-001-20260721.json": "d02ef3926d7a111b04d10527fd53cfcb7e2d3e5d33b089f7e8e427d9e3c4f24a",
-    "reports/verification/CE-EVID-MOND-001-20260721.json": "ff6a3ae91e80c12884d13c6b4b7a9ecf71473017eed5d24c2e2fb28d66d53d7f",
-    "reports/verification/CE-EVID-NARR-001-20260721.json": "7300ab82a5ca6fdd9066335f6f1fb6fed74d549bdcb95ea068de12470a4dd038",
-    "reports/verification/CE-EVID-PRED-001-20260721.json": "1c2c1c2b7af635b1f73674b4e7c80f4b1f941effc55beba5bfe84ddb344a8963",
-    "reports/verification/CE-EVID-PRED-CLASS-001-20260721.json": "fea7c9d313a9c3b6e845c8fbdbfec52889613adf206bbbaa1ed3c2cec7f0bd30",
-    "reports/verification/CE-EVID-PRED-PROB-001-20260721.json": "cca1e24c312283496ef842d463d4e09f0ebd98ef8649465d642cf2ae330f648f",
-    "reports/verification/CE-EVID-REJECT-001-20260721.json": "880392999d99a2b21e244f3146dc97a4017c82561684d89c487bbcb15f0fa286",
-    "reports/verification/CE-EVID-VIZ-001-20260721.json": "0bb9c447cf1a0ae3671ebda29db76c934af95dd5a64f1d4ad9e60b65fe8d33fc",
-    "scripts/tests/benchmarks/api_public_20260721_084804.txt": "6c01030b46ff90ee3e29f7a8bd68284777e5c5f4a2609c4252b3eac5999c9671",
-    "scripts/tests/benchmarks/api_public_20260721_105919.txt": "6dd9ed2c7e46a84e6291d3cbe6faacf8da6e203c923ce6292c0b59991c9debaf",
-    "scripts/tests/benchmarks/api_public_20260721_125922.txt": "55fcd01a999c6baebc93d7d9426067339e654f97d61ae18c2ace875f681386ff",
-    "src/calibrated_explanations/__init__.py": "ebbcf3827751695974f85f3b67a239f59479f7cf1c06ff9863f64f3653f3837a"
+    "CHANGELOG.md": "2add9053ff84b249490b874309abcb01e5b720c8e14f3da2bcadcd30e5e29005",
+    "CITATION.cff": "f9289d9b0b656f5b0d8fecdf50d6ac08ee4e33697078c79433693e5cbd33c6b1",
+    "METADATA.json": "d59964222e0a349c0a48932df30625d54824827d13ed7a04e43302e035b6d5f9",
+    "development/current-work/v1.0.1_plan.md": "49903f6f50bbfb5cfc212fd8a88d11b608be7ef7352c374072c0dfa81dd74e4f",
+    "docs/citing.md": "b92a3c8df79d54ae1bce8abc76f3aaa3e7153aa848e452d8a61261d59c214740",
+    "docs/conf.py": "cdbb8c19d81ba48dfba87d2e586c2e59f6d077918baeedb1df0c00aaae3a0740",
+    "notebooks/advanced/demo_conditional.ipynb": "18f1a182925838c1c490c63cda0c18d4275d283bcc5b1029cbc611d054d7e3dd",
+    "notebooks/advanced/demo_config_management.ipynb": "5781ecf2af2b1ab158edb25ad0c6e820639bbdb5f8e3de312adf1c9a456555e4",
+    "notebooks/advanced/demo_narrative_explanations.ipynb": "a988bd2aebb8c579c52108478482b2bbeb2d018b37e3fb7d1ea61ad901168e3d",
+    "notebooks/advanced/demo_plugin_wiring.ipynb": "3e049d83f5aedc6cee838fb3965659a6ebd55e2fcd394a2cbea939e430c13cfa",
+    "notebooks/advanced/demo_reject.ipynb": "0c2af78eceae8117319949342010b7dc29c5fb9ddf6e8c975b3c7b73c35061ef",
+    "notebooks/advanced/demo_under_the_hood.ipynb": "c187179880a088ef1ac3585ef252d33f08ff87a604e83c7c681a91a0cbe968f3",
+    "notebooks/advanced/fast_feature_filtering_demo.ipynb": "1efabb9cd8e628af6415b5dcca151f42d7c77b8aab62994011fed91908508ba2",
+    "notebooks/core_demos/demo_binary_classification.ipynb": "714be7a0cbb3d8f111e42591dc3c2a7fe01870d3f5cf797d393a0a7738441fc1",
+    "notebooks/core_demos/demo_multiclass_glass.ipynb": "4a3d647cd0eb1f170e81e7e533619497604d3498f1d958bbc6479d1d54b6ee93",
+    "notebooks/core_demos/demo_probabilistic_regression.ipynb": "3b37cc173c41bf506a935a57535f0a6178a4329a5ca1d43462ace67c63777ad2",
+    "notebooks/core_demos/demo_regression.ipynb": "086ae64e866c85d9288e2e5f2722dc3ac40a1315e092a5104d79cffbfe163bcb",
+    "notebooks/miscellaneous/demo_speeddating.ipynb": "e300d1f1d0699e7a15e6dc2df24cce7951c7748226512b44d8c51b6f5c312f69",
+    "notebooks/miscellaneous/imbalanced_wrap.ipynb": "e23c17503971302ff07f3b2a17a22838d5197db58db5654a10183d17c3a0ab55",
+    "notebooks/miscellaneous/support_xgboost_lightgbm_catboost_issue_92.ipynb": "c96e99223dfd5560584f3193e449b1b1a930204e0298c23b39c1512fc69aa3de",
+    "notebooks/paper_based/ensured.ipynb": "c16418ff54a928d1f24363e2e209253258e334556513cee046412f18467806e3",
+    "notebooks/quickstart.ipynb": "02af776f59ae3c105e2d59aa01af96ec31db7becd19f2e6d28e86ce921337fce",
+    "notebooks/quickstart_guarded.ipynb": "a80f0a68420b8f2fd5dd34436e073c25c9be67fb2377aefd5f1f7a8f67aee66b",
+    "notebooks/quickstart_tiny.ipynb": "5fa1cb4baa03358e636ee726d61aba2609a53706e85f3588c1d382db84e104ab",
+    "pyproject.toml": "48cab2d976f93916eb6f69cab7ba0c3b0f4de7251e666f2ceb5a0c1743458e70",
+    "reports/anti-pattern-analysis/adr030_ratification_timing.json": "04548b6a1fd13f2449754d1c9e049703eadaf4ad0b79e390b30b742f76b53307",
+    "reports/anti-pattern-analysis/test_helper_wrapper_report.json": "d9cb95f2380006a5a6b8dd1d824ad777bfd86d2be781478e6d67a4ba0b2843e3",
+    "reports/anti-pattern-analysis/test_quality_report.json": "1d9faf27cbdd796fd6e0be05a0b0d8fdc5750ea10ad13c14c9d63336b19f7c06",
+    "reports/config_manager_usage_report.json": "3a4de01d9444c2b7833751a52c9420109e181795705ed84fdb2a8e6e7eab8292",
+    "reports/deprecations/active_deprecations_check.json": "4ecb4cd74cd951aa256b042dfe9e5b5441c138045658d37d7e53c0e299003458",
+    "reports/deprecations/deprecation_closure_timing.json": "7e438f07c05a189f5b4551fd19e7e06aced82b2d999f5c51e44ee45f7d8adb21",
+    "reports/marker-hygiene/marker_hygiene_report.json": "196f4c977b5bb690c031125f25ddc2a0b9f586d75d4eccaa4f2c898c6f02e2a4",
+    "reports/over_testing/block_coverage_counts.csv": "1e5ea0a90db0b2e9175d2cc8f97d9da498c687f9905fef82bdc8800c38b761db",
+    "reports/over_testing/line_coverage_counts.csv": "54f6569961b96688490a4a14a65720b40ff0843ce440425b75ae1ad659b57969",
+    "reports/over_testing/metadata.json": "dae4349674c4d26b3a5e042d2b982087112d5d8239b2fc95e6994445d67099d5",
+    "reports/over_testing/redundant_tests.csv": "001a409f76c51fa498b5401f41f11faa564ac69455ec0410ea59717b8bef2777",
+    "reports/over_testing/summary.json": "e5eef6f9ee5ce139811ee04cb5b6289eb0656129f2546015726fd01dc2f017c9",
+    "reports/packaging/license_artifact_check.json": "f274038110664ca36ea069432a612f0e9b534a81facdf31c04273a501c23bffc",
+    "reports/quality/config_manager_usage_report.json": "5d081593377b5c695309b1172ca0e2a3ddc901c3db91b219ecccd842911e6976",
+    "reports/quality/logging_domain_report.json": "de6b702f2dd1a54463c4d9c1f6ab75648168d1af6ab97d3ccbe0b26a352c4e67",
+    "reports/quality/no_local_paths_report.json": "e0b873140f1310b06d6b9641cfdbc482e338513f8be4ab24c28a05720b04c901",
+    "reports/trust_mutation_inventory.json": "60483408a7ae81fa4f8fd52883b25534503305a4112d3bf28ecbfe7e32312048",
+    "reports/verification/CE-EVID-EXPL-001-20260922.json": "1c0c51ef8de8fcc1cab56475d0895a66622a11dde591bdc9ad7e26b1e17cc466",
+    "reports/verification/CE-EVID-EXPL-CONJ-001-20260922.json": "ad94270d5ec3c0bd93836a4b9486109f8b0a39e40d0ac227d7482347de9fdbb6",
+    "reports/verification/CE-EVID-FILTER-001-20260922.json": "1cd053d24341f8ed50328d46c29cc5b0e9e2bbbf0c8a621f378443cf931914d0",
+    "reports/verification/CE-EVID-GUARD-001-20260922.json": "2e659d814c2bef84d00c2b2bd70d2921c9789baf9a1d62776d8003ea4d056657",
+    "reports/verification/CE-EVID-MOND-001-20260922.json": "84c5b05f95533427cca9f59d12d02b787ec76c2589139591ad11788bea4a4355",
+    "reports/verification/CE-EVID-NARR-001-20260922.json": "de00f038dd890f6c10e7acede39efec1bcff838384335ab310a05507e44139ac",
+    "reports/verification/CE-EVID-PRED-001-20260922.json": "6915f77410ad4b51d336a440ad6db146d1f90c2771b889f640e90aa9d6aa4cf4",
+    "reports/verification/CE-EVID-PRED-CLASS-001-20260922.json": "c4d40bd1748328a35a3569eb5ee329c5b38ba61776ed75e578b0006e4add3ac1",
+    "reports/verification/CE-EVID-PRED-PROB-001-20260922.json": "8b5b34acbf848ec96c4266eb4c065e184f85a18835d2096b11d9fc36c1ec606e",
+    "reports/verification/CE-EVID-REJECT-001-20260922.json": "06d4c1266182e0868dd91abb9bad7eac14e40d77f0cfe5a150d96106e6e76b04",
+    "reports/verification/CE-EVID-VIZ-001-20260922.json": "cb16bd625ff20ca1e89ce9ea0b283b3006116e0702b61326fdf19bd8fc8700c4",
+    "scripts/tests/benchmarks/api_public_20260922_204513.txt": "19809277f2d6b91b4c1e19b908741b18e6658ddb038d4ca3709e10553db64960",
+    "src/calibrated_explanations/__init__.py": "7261d7625cf241a034d87f298e303e6220b18943a9e1b17faf9cb61fc8ce217e"
   }
 }

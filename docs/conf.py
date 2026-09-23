@@ -148,6 +148,10 @@ linkcheck_ignore = [
     # External academic portals can be flaky / time out from CI linkcheck runners
     # Ignore diva-portal host to avoid transient timeouts causing CI failures.
     r"https://www.diva-portal.org/.*",
+    # royalsocietypublishing.org returns 403 Forbidden to the linkcheck runner's
+    # non-browser User-Agent (bot-blocking), not because the DOI is broken.
+    # Ignore this specific DOI so a false positive does not block release gates.
+    r"https://doi\.org/10\.1098/rsta\.2025\.0079",
 ]
 
 # Pygments style for syntax highlighting

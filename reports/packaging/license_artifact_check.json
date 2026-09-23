@@ -1,11 +1,11 @@
 {
-  "wheel_path": "dist\\calibrated_explanations-1.0.0-py3-none-any.whl",
-  "sdist_path": "dist\\calibrated_explanations-1.0.0.tar.gz",
+  "wheel_path": "dist\\calibrated_explanations-1.0.1-py3-none-any.whl",
+  "sdist_path": "dist\\calibrated_explanations-1.0.1.tar.gz",
   "wheel_license_members": [
-    "calibrated_explanations-1.0.0.dist-info/licenses/LICENSE"
+    "calibrated_explanations-1.0.1.dist-info/licenses/LICENSE"
   ],
   "sdist_license_members": [
-    "calibrated_explanations-1.0.0/LICENSE"
+    "calibrated_explanations-1.0.1/LICENSE"
   ],
   "wheel_license_metadata": [
     "LICENSE"
@@ -178,7 +178,10 @@
     "calibrated_explanations"
   ],
   "unexpected_top_level_packages": [],
-  "stale_artifacts_removed": [],
+  "stale_artifacts_removed": [
+    "calibrated_explanations-1.0.0-py3-none-any.whl",
+    "calibrated_explanations-1.0.0.tar.gz"
+  ],
   "status": "pass",
   "errors": []
 }

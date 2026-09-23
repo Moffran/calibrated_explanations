@@ -1,0 +1,344 @@
+{
+  "evidence_id": "CE-EVID-EXPL-CONJ-001-20260922",
+  "claim_ids": [
+    "CE-CAP-EXPL-CONJ-001"
+  ],
+  "requirement_ids": [
+    "CE-REQ-EXPL-CONJ-API-001",
+    "CE-REQ-EXPL-CONJ-RETURN-001",
+    "CE-REQ-EXPL-CONJ-RULE-001",
+    "CE-REQ-EXPL-CONJ-PARAM-001"
+  ],
+  "adr_refs": [
+    "ADR-008"
+  ],
+  "standard_refs": [],
+  "tif_ids": [
+    "CE-TIF-EXPL-CONJ-001"
+  ],
+  "verification_type": "behavioral_contract",
+  "result": "pass",
+  "timestamp": "2026-09-22T20:45:08.838289+00:00",
+  "commit_sha": "a80463fa9e5683479990ca87d785be2a61a759e4",
+  "package_version": "1.0.1",
+  "python_version": "3.11.9",
+  "platform": "win32",
+  "dataset_id": "sklearn make_classification n_samples=120 n_features=4 n_informative=3 n_redundant=1 random_seed=42",
+  "random_seed": 42,
+  "configuration": {},
+  "scenarios": [
+    {
+      "scenario_id": "api_factual_collection",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": 3,
+        "result_type_name": "CalibratedExplanations",
+        "any_has_conjunctive_rules": true,
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "factual"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-API-001",
+          "field": "exception_raised",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "factual",
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "api_factual_individual",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": null,
+        "result_type_name": "FactualExplanation",
+        "any_has_conjunctive_rules": true,
+        "object_level": "individual",
+        "max_rule_size": 2,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "factual"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-API-001",
+          "field": "exception_raised",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "factual",
+        "object_level": "individual",
+        "max_rule_size": 2,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "api_alternative_collection",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": 3,
+        "result_type_name": "AlternativeExplanations",
+        "any_has_conjunctive_rules": true,
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "alternative"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-API-001",
+          "field": "exception_raised",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "alternative",
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "api_alternative_individual",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": null,
+        "result_type_name": "AlternativeExplanation",
+        "any_has_conjunctive_rules": true,
+        "object_level": "individual",
+        "max_rule_size": 2,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "alternative"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-API-001",
+          "field": "exception_raised",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "alternative",
+        "object_level": "individual",
+        "max_rule_size": 2,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "return_factual_collection",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": 3,
+        "result_type_name": "CalibratedExplanations",
+        "any_has_conjunctive_rules": true,
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "factual"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-RETURN-001",
+          "field": "result_is_none",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        },
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-RETURN-001",
+          "field": "result_len == n_instances",
+          "expected": true,
+          "observed": true,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "factual",
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "return_alternative_collection",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": 3,
+        "result_type_name": "AlternativeExplanations",
+        "any_has_conjunctive_rules": true,
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "alternative"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-RETURN-001",
+          "field": "result_is_none",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        },
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-RETURN-001",
+          "field": "result_len == n_instances",
+          "expected": true,
+          "observed": true,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "alternative",
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "rule_factual_collection_max_rule_size_2",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": 3,
+        "result_type_name": "CalibratedExplanations",
+        "any_has_conjunctive_rules": true,
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "factual"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-RULE-001",
+          "field": "any_has_conjunctive_rules",
+          "expected": true,
+          "observed": true,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "factual",
+        "object_level": "collection",
+        "max_rule_size": 2,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "rule_factual_collection_max_rule_size_3",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": 3,
+        "result_type_name": "CalibratedExplanations",
+        "any_has_conjunctive_rules": true,
+        "object_level": "collection",
+        "max_rule_size": 3,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "factual"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-RULE-001",
+          "field": "any_has_conjunctive_rules",
+          "expected": true,
+          "observed": true,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "factual",
+        "object_level": "collection",
+        "max_rule_size": 3,
+        "n_top_features": 5
+      }
+    },
+    {
+      "scenario_id": "param_factual_collection_max_rule_size_1",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "result_is_none": false,
+        "result_len": 3,
+        "result_type_name": "CalibratedExplanations",
+        "any_has_conjunctive_rules": false,
+        "object_level": "collection",
+        "max_rule_size": 1,
+        "n_top_features": 5,
+        "n_instances": 3,
+        "explanation_mode": "factual"
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-PARAM-001",
+          "field": "any_has_conjunctive_rules",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        },
+        {
+          "criterion_ref": "CE-REQ-EXPL-CONJ-PARAM-001",
+          "field": "exception_raised",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        }
+      ],
+      "parameters": {
+        "explanation_mode": "factual",
+        "object_level": "collection",
+        "max_rule_size": 1,
+        "n_top_features": 5
+      }
+    }
+  ],
+  "artifacts": {
+    "logs": null,
+    "raw_output": null
+  }
+}
