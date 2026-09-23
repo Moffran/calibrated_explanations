@@ -118,7 +118,7 @@ def test_explainer_builder_api_correctness():
     config2 = (
         ExplainerBuilder(model)
         .perf_cache(True, max_items=256)
-        .perf_parallel(True, workers=2, min_batch=8)
+        .perf_parallel(True, backend="threads", workers=2, min_batch=8)
         .build_config()
     )
     wrapper2 = WrapCalibratedExplainer.from_config(config2)

@@ -222,8 +222,17 @@ class ExplainerBuilder:
         ----------
         enabled : bool
             Whether parallel primitives should be created.
-        backend : {"auto", "sequential", "joblib"}, optional
-            Explicit backend selection overriding the default when provided.
+        backend : {"sequential", "threads", "processes", "joblib"}, optional
+            Explicit backend selection. Required when ``enabled`` is true: the
+            default ``"auto"`` strategy is only valid while parallel execution
+            stays disabled (ADR-004).
+
+        Raises
+        ------
+        ConfigurationError
+            Raised by ``build_config()`` (not by this setter) when parallel
+            execution ends up enabled, by ``enabled`` or ``CE_PARALLEL``, while
+            the strategy is still ``"auto"``.
 
         Notes
         -----
@@ -414,6 +423,7 @@ def _build_perf_factory(cfg: Any) -> _ConfigPerfFactory:
     """
     from ..cache import CacheConfig
     from ..parallel import ParallelConfig
+    from ..parallel.parallel import _require_explicit_strategy
 
     cache_requested = bool(getattr(cfg, "perf_cache_enabled", False))
     cache_cfg = CacheConfig(
@@ -448,6 +458,13 @@ def _build_perf_factory(cfg: Any) -> _ConfigPerfFactory:
         parallel_cfg = ParallelConfig.from_env(parallel_cfg)
     except Exception as exc:  # adr002_allow: re-raised as ConfigurationError
         raise _perf_initialization_error("parallel", "CE_PARALLEL", exc) from exc
+    # ADR-004: an enabled executor needs an explicit strategy; the builder
+    # default ("auto") is only valid while parallel execution stays disabled.
+    parallel_source = "CE_PARALLEL" if parallel_cfg.enabled and not parallel_requested else "config"
+    try:
+        _require_explicit_strategy(parallel_cfg, source=parallel_source)
+    except ConfigurationError as exc:
+        raise _perf_initialization_error("parallel", parallel_source, exc) from exc
 
     activation = {
         "cache": _activation_source(cache_requested, cache_cfg.enabled),

@@ -95,8 +95,11 @@ explainer_parallel = WrapCalibratedExplainer.from_config(config_parallel)
 ```
 
 - ``backend`` accepts ``"threads"``, ``"processes"``, ``"joblib"``, or
-  ``"sequential"``. v1 requires an explicit strategy; the former ``"auto"``
-  strategy is no longer valid when parallel execution is enabled.
+  ``"sequential"``. v1 requires an explicit strategy: ``perf_parallel(True)``
+  without ``backend=``, or ``CE_PARALLEL=1`` without a strategy token, leaves
+  the removed ``"auto"`` strategy selected and ``build_config()``,
+  ``WrapCalibratedExplainer.from_config()`` or ``calibrate()`` raises
+  ``ConfigurationError``.
 - ``workers`` caps the worker pool; omit it to use all logical CPUs.
 - ``min_batch`` skips the executor for very small workloads so sequential
   execution stays cheaper.

@@ -16,6 +16,21 @@
   unset; failures warn rather than fail the release. Standalone retry via
   `make conda-feedstock-update`.
 
+### Fixed
+
+- **Enabled parallel with the `auto` strategy now fails fast (#218):**
+  `perf_parallel(True)` without `backend=`, or `CE_PARALLEL=1`/`on`/`enable`
+  without a strategy token, left the removed `auto` strategy selected, and the
+  executor silently picked a backend when entered (`joblib` locally,
+  `sequential` in CI), contradicting ADR-004. `build_config()`,
+  `WrapCalibratedExplainer.from_config()` and `calibrate()` now raise
+  `ConfigurationError`, and entering an enabled `ParallelExecutor` with
+  `strategy="auto"` raises instead of auto-selecting. The executor the explain
+  runtime creates for itself, and the pool from
+  `CalibratedExplainer.initialize_pool()` / `with explainer:`, now use
+  `sequential` when `CE_PARALLEL` names no strategy, so default `explain_*`
+  calls are unaffected and no longer start a worker pool.
+
 ## [v1.0.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.1) - 2026-09-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.0...v1.0.1)

@@ -88,3 +88,37 @@ class TestCalibratedExplainerParallelEnv:
             wrapper.calibrate(x, y)
 
         assert excinfo.value.details["env_var"] == "CE_PARALLEL"
+
+
+@pytest.mark.parametrize("env_value", ["1", "on", "enable,workers=2"])
+def test_calibrate_should_fail_fast_when_ce_parallel_enables_auto_strategy(
+    simple_learner_and_data, monkeypatch, env_value
+):
+    """ADR-004: CE_PARALLEL without an explicit strategy fails at initialization."""
+    from calibrated_explanations import WrapCalibratedExplainer
+    from calibrated_explanations.utils.exceptions import ConfigurationError
+
+    learner, x, y = simple_learner_and_data
+    monkeypatch.setenv("CE_PARALLEL", env_value)
+    wrapper = WrapCalibratedExplainer(learner)
+    wrapper.fit(x, y)
+
+    with pytest.raises(ConfigurationError, match="strategy='auto'") as excinfo:
+        wrapper.calibrate(x, y)
+
+    assert excinfo.value.details["source"] == "CE_PARALLEL"
+
+
+def test_initialize_pool_should_use_sequential_when_ce_parallel_names_no_strategy(
+    simple_learner_and_data, monkeypatch
+):
+    """The explainer-managed pool never falls back on the removed 'auto' strategy."""
+    learner, x, y = simple_learner_and_data
+    monkeypatch.delenv("CE_PARALLEL", raising=False)
+    explainer = CalibratedExplainer(learner, x, y)
+
+    with explainer:
+        executor = explainer.parallel_executor
+        assert executor.config.enabled is True
+        assert executor.config.strategy == "sequential"
+        assert executor.active_strategy_name == "sequential"

@@ -36,8 +36,12 @@ with `ExplainerBuilder.perf_telemetry(...)`, `CacheConfig.telemetry`, or
 `ParallelConfig.telemetry` when staging evidence is needed.
 
 Parallel execution in v1 requires an explicit strategy. `CE_PARALLEL=1` enables
-parallelism but leaves the removed `auto` strategy selected, so work dispatch
-fails fast with `ConfigurationError`. Use an explicit value such as:
+parallelism but leaves the removed `auto` strategy selected, so configuration
+fails fast with `ConfigurationError`: `build_config()` and
+`WrapCalibratedExplainer.from_config()` raise on the builder path, and
+`calibrate()` raises on the plain `WrapCalibratedExplainer` path. The same
+applies to `perf_parallel(True)` without a `backend=`. Use an explicit value
+such as:
 
 ```bash
 CE_PARALLEL="enable,threads,workers=2,min_batch=1,min_instances=1,tiny=1" python serve.py

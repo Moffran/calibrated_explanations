@@ -116,6 +116,11 @@ class ExplainParallelRuntime:
             # Enable by default so executor-dependent strategies consider
             # the executor available; map() may still choose sequential.
             cfg.enabled = True
+            # ADR-004: this executor was not requested by the caller, so it must
+            # not depend on the removed "auto" strategy. Without an explicit
+            # CE_PARALLEL strategy it stays sequential (no pool is started).
+            if cfg.strategy == "auto":
+                cfg.strategy = "sequential"
             executor = ParallelExecutor(cfg)
             auto_created_executor = True
 

@@ -724,14 +724,23 @@ class CalibratedExplainer:
         return self.resolve_parallel_executor(explicit_executor)
 
     def resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
-        """Resolve the parallel executor honoring overrides and environment config."""
+        """Resolve the parallel executor honoring overrides and environment config.
+
+        Raises
+        ------
+        ConfigurationError
+            If ``CE_PARALLEL`` enables parallel execution without naming an
+            explicit strategy (ADR-004 forbids the removed ``auto`` strategy).
+        """
         from ..parallel import ParallelConfig, ParallelExecutor
+        from ..parallel.parallel import _require_explicit_strategy
 
         if explicit_executor is not None:
             return explicit_executor
 
         env_config = ParallelConfig.from_env()
         if env_config.enabled:
+            _require_explicit_strategy(env_config, source="CE_PARALLEL")
             return ParallelExecutor(env_config)
 
         return None
@@ -750,6 +759,12 @@ class CalibratedExplainer:
             If True, enter the pool immediately so worker processes are
             spawned at initialization time (useful for warm-up and
             initializer-based harness installation).
+
+        Notes
+        -----
+        The strategy comes from ``CE_PARALLEL``. When it names no strategy the
+        pool runs ``"sequential"``; the removed ``"auto"`` strategy is never
+        used (ADR-004).
         """
         from ..parallel import ParallelConfig, ParallelExecutor
 
@@ -758,6 +773,10 @@ class CalibratedExplainer:
 
         cfg = ParallelConfig.from_env()
         cfg.enabled = True
+        # ADR-004: never rely on the removed "auto" strategy. Without an explicit
+        # CE_PARALLEL strategy the explainer-managed pool stays sequential.
+        if cfg.strategy == "auto":
+            cfg.strategy = "sequential"
         if n_workers is not None:
             cfg.max_workers = n_workers
 

@@ -265,3 +265,53 @@ def test_perf_factory_make_parallel_backend_alias():
     cache = factory.make_cache()
     backend = factory.make_parallel_backend(cache)
     assert backend is not None
+
+
+@pytest.mark.parametrize(
+    ("builder_parallel", "env", "source"),
+    [
+        (True, {}, "config"),
+        (False, {"CE_PARALLEL": "1"}, "CE_PARALLEL"),
+        (False, {"CE_PARALLEL": "enable,workers=2"}, "CE_PARALLEL"),
+        (True, {"CE_PARALLEL": "auto"}, "config"),
+    ],
+)
+def test_build_config_should_fail_fast_when_parallel_enabled_with_auto_strategy(
+    monkeypatch: pytest.MonkeyPatch, builder_parallel, env, source
+):
+    """ADR-004: enabling parallel without an explicit backend fails at build time."""
+    monkeypatch.delenv("CE_PARALLEL", raising=False)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    builder = ExplainerBuilder(RandomForestClassifier()).perf_parallel(builder_parallel)
+
+    with pytest.raises(ConfigurationError, match="strategy='auto'") as excinfo:
+        builder.build_config()
+
+    assert excinfo.value.details["capability"] == "parallel"
+    assert excinfo.value.details["source"] == source
+    assert excinfo.value.__cause__.details["received"] == "auto"
+
+
+def test_from_config_should_fail_fast_for_hand_built_enabled_auto_parallel_config(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A hand-built config with parallel enabled and the default backend is rejected."""
+    monkeypatch.delenv("CE_PARALLEL", raising=False)
+    cfg = ExplainerConfig(model=RandomForestClassifier(), perf_parallel_enabled=True)
+
+    with pytest.raises(ConfigurationError, match="strategy='auto'"):
+        WrapCalibratedExplainer.from_config(cfg)
+
+
+def test_build_config_should_accept_auto_default_while_parallel_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """The default "auto" backend stays valid as long as parallel execution is off."""
+    monkeypatch.delenv("CE_PARALLEL", raising=False)
+
+    cfg = ExplainerBuilder(RandomForestClassifier()).perf_parallel(False).build_config()
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
+
+    assert cfg.perf_parallel_backend == "auto"
+    assert wrapper.parallel_executor.config.enabled is False

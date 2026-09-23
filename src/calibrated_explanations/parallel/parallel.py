@@ -56,6 +56,33 @@ def _parse_env_int(token: str) -> int:
         ) from exc
 
 
+def _require_explicit_strategy(config: "ParallelConfig", *, source: str) -> None:
+    """Fail fast when parallel execution is enabled with the removed ``auto`` strategy.
+
+    ADR-004 forbids automatic strategy selection for an enabled executor, so an
+    explicit request (builder, ``CE_PARALLEL`` or a caller-built executor) that
+    leaves ``strategy="auto"`` is rejected instead of being silently resolved.
+
+    Raises
+    ------
+    ConfigurationError
+        If ``config.enabled`` is true and ``config.strategy`` is ``"auto"``.
+    """
+    if config.enabled and config.strategy == "auto":
+        raise ConfigurationError(
+            "ParallelConfig(strategy='auto') with enabled=True is not supported in v1. "
+            "Set an explicit strategy: 'sequential', 'threads', 'processes', or 'joblib' "
+            "(for example perf_parallel(True, backend='threads') or "
+            "CE_PARALLEL='enable,threads').",
+            details={
+                "param": "strategy",
+                "received": "auto",
+                "allowed": ["sequential", "threads", "processes", "joblib"],
+                "source": source,
+            },
+        )
+
+
 class ParallelBackend(Protocol):
     """Protocol describing a simple map-style parallel backend."""
 
@@ -260,9 +287,9 @@ class ParallelExecutor:
         if not self.config.enabled:
             return self
 
+        # ADR-004: an enabled executor never auto-selects a backend.
+        _require_explicit_strategy(self.config, source="executor")
         strategy_name = self.config.strategy
-        if strategy_name == "auto":
-            strategy_name = self.auto_strategy()
 
         self.active_strategy_name = strategy_name
 
@@ -513,13 +540,8 @@ class ParallelExecutor:
     ) -> Callable[[Callable[[T], R], Sequence[T], Any], List[R]]:
         """Return a concrete execution strategy based on configuration."""
         strategy = self.active_strategy_name or self.config.strategy
-        if strategy == "auto" and self.config.enabled:
-            raise ConfigurationError(
-                "ParallelConfig(strategy='auto') with enabled=True is not supported in v1.0.0. "
-                "Set an explicit strategy: 'sequential', 'threads', 'processes', or 'joblib'.",
-                details={"strategy": "auto"},
-            )
         if strategy == "auto":
+            _require_explicit_strategy(self.config, source="executor")
             strategy = self._auto_strategy(work_items=work_items)
         if strategy == "threads":
             return partial(self.thread_strategy)
