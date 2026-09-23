@@ -22,7 +22,7 @@ def _resolve_package_version() -> str:
             return importlib_metadata.version(distribution_name)
         except importlib_metadata.PackageNotFoundError:
             continue
-    return "1.0.1"
+    return "1.0.2.dev0"
 
 
 __version__ = _resolve_package_version()
