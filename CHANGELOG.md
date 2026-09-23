@@ -5,6 +5,17 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.1...main)
 
+### Added
+
+- **Optional conda-forge feedstock auto-update:** `make release-postcommit` now
+  ends with a best-effort `scripts/update_conda_feedstock.py` step that, when
+  `CE_CONDA_FEEDSTOCK_DIR` points at a local clone of the
+  `calibrated-explanations-feedstock` fork, bumps `recipe/meta.yaml` to the
+  just-published PyPI version and opens a PR against
+  `conda-forge/calibrated-explanations-feedstock`. No-op when the env var is
+  unset; failures warn rather than fail the release. Standalone retry via
+  `make conda-feedstock-update`.
+
 ## [v1.0.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.1) - 2026-09-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.0...v1.0.1)

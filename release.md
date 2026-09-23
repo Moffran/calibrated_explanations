@@ -189,6 +189,40 @@ bump — that is a maintainer decision made through a GitHub milestone.
 `make release-postcommit` refuses to run while the project version is still a
 development version, and it never performs steps 11-13.
 
+### Optional: conda-forge feedstock auto-update
+
+`release-postcommit` ends with a best-effort, non-blocking call to
+`scripts/update_conda_feedstock.py`. When the `CE_CONDA_FEEDSTOCK_DIR`
+environment variable points at a local clone of
+[`tuvelofstrom/calibrated-explanations-feedstock`](https://github.com/tuvelofstrom/calibrated-explanations-feedstock)
+(a fork of `conda-forge/calibrated-explanations-feedstock`), it runs that
+clone's `update_meta.py`, which:
+
+- fetches the latest version and sdist sha256 from PyPI;
+- if the feedstock recipe is already current, does nothing;
+- otherwise branches from `upstream/main`, updates `recipe/meta.yaml`
+  (version, sha256, build number reset to 0), commits, pushes the branch to
+  the fork, and opens (or reuses) a PR against
+  `conda-forge/calibrated-explanations-feedstock` via the `gh` CLI. The fork's
+  own default branch is never touched.
+
+This step is unset (skipped) by default and is unrelated to steps 14-17 above
+— it never blocks or fails `release-postcommit`. Set the variable once per
+machine to enable it:
+
+```powershell
+setx CE_CONDA_FEEDSTOCK_DIR "C:\path\to\calibrated-explanations-feedstock"
+```
+
+To retry after a failure without rerunning the rest of postcommit:
+
+```bash
+make conda-feedstock-update
+```
+
+Requires `gh` authenticated with push access to the fork and PR permission on
+the upstream feedstock.
+
 ## Known environment caveats
 
 - **Windows/Jupyter kernel drift (step 5, notebook execution).** On some

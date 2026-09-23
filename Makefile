@@ -153,6 +153,15 @@ release-finalize:
 .PHONY: release-postcommit
 release-postcommit:
 	python scripts/local_checks.py --release-postcommit $(if $(NEXT_VERSION),--next-version $(NEXT_VERSION),) $(if $(RELEASE_DATE),--release-date $(RELEASE_DATE),)
+	python scripts/update_conda_feedstock.py
+
+# Optional, best-effort: bump the conda-forge feedstock recipe to the latest
+# PyPI release and open a PR. Runs automatically at the end of
+# release-postcommit; exposed standalone to retry after a failure. No-op
+# unless CE_CONDA_FEEDSTOCK_DIR points at a local feedstock clone.
+.PHONY: conda-feedstock-update
+conda-feedstock-update:
+	python scripts/update_conda_feedstock.py
 
 # Validate the capability verification chain without executing TIF scenarios.
 # Safe to run on every PR - does not mutate any files.
