@@ -76,7 +76,8 @@ The format accepts comma-separated directives:
 CE_CACHE="enable,max_items=1024,ttl=900" python serve.py
 ```
 
-Valid tokens include ``enable``/``on``/``off`` as well as ``namespace=``,
+Valid tokens are the enable/disable labels listed in
+[Accepted environment tokens](#accepted-environment-tokens) plus ``namespace=``,
 ``version=``, ``max_items=``, ``max_bytes=``, and ``ttl=``. To roll back, rebuild
 the configuration with ``perf_cache(False)`` or export ``CE_CACHE=off``.
 
@@ -119,6 +120,34 @@ CE_PARALLEL="enable,threads,workers=8,min_batch=4,min_instances=8,tiny=12" pytho
 Set ``CE_PARALLEL=off`` to fall back to single-threaded execution without
 touching code. The executor resets the calibrator cache after forking, so cached
 payloads remain process safe.
+
+## Accepted environment tokens
+
+``CE_CACHE`` and ``CE_PARALLEL`` take a comma-separated list of tokens.
+Whitespace around a token is ignored.
+
+| Token | ``CE_CACHE`` | ``CE_PARALLEL`` |
+|---|---|---|
+| Enable: ``1``, ``true``, ``on``, ``yes``, ``enable`` | yes | yes |
+| Disable: ``0``, ``false``, ``off``, ``no``, ``disable`` | yes | yes |
+| ``namespace=``, ``version=`` | yes | — |
+| ``max_items=``, ``max_bytes=``, ``ttl=`` (numbers) | yes | — |
+| Strategy: ``threads``, ``processes``, ``joblib``, ``sequential`` | — | yes |
+| ``workers=``, ``min_batch=``, ``min_instances=``, ``tiny=``, ``instance_chunk=``, ``feature_chunk=``, ``task_bytes=`` (integers) | — | yes |
+| ``force_serial=`` followed by an enable or disable label | — | yes |
+| ``granularity=instance`` | — | yes |
+
+Enable/disable labels and strategy names are case-insensitive and count in any
+position, so ``CE_PARALLEL=threads,1`` and ``CE_PARALLEL=1,threads`` are
+equivalent. When a list holds more than one enable/disable label, the last one
+wins.
+
+A token that matches none of these, for example the typo in
+``CE_PARALLEL=enable,thread``, is ignored and CE emits a ``UserWarning`` plus an
+INFO log naming the variable and the token. From v1.1.0 such tokens raise
+``ConfigurationError``. A ``key=value`` directive whose value is not a number,
+such as ``workers=two``, and ``granularity=feature`` already raise
+``ConfigurationError``.
 
 ## What is guaranteed and what is a hint
 

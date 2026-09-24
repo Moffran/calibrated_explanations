@@ -106,6 +106,33 @@ _DEFAULT_RESOLUTION_SPEC: dict[str, tuple[str | None, str | None, Any]] = {
 }
 
 
+# Enable/disable labels shared by the ``CE_CACHE`` and ``CE_PARALLEL`` directive
+# parsers. Matching is case-insensitive and a label is honoured in any position of
+# the comma-separated list; the last enable/disable label wins.
+ENV_ENABLE_LABELS: frozenset[str] = frozenset({"1", "true", "on", "yes", "enable"})
+ENV_DISABLE_LABELS: frozenset[str] = frozenset({"0", "false", "off", "no", "disable"})
+
+
+def warn_unrecognised_env_token(env_var: str, token: str) -> None:
+    """Surface an ignored ``CE_CACHE``/``CE_PARALLEL`` token (UserWarning + INFO).
+
+    The token is ignored in v1.0.x; v1.1.0 escalates it to ``ConfigurationError``
+    (#225).
+    """
+    args = (env_var, token)
+    _LOGGER.info(
+        "%s contains unrecognised token %r; it is ignored. "
+        "From v1.1.0 unrecognised tokens raise ConfigurationError.",
+        *args,
+    )
+    warnings.warn(
+        "%s contains unrecognised token %r; it is ignored. "
+        "From v1.1.0 unrecognised tokens raise ConfigurationError." % args,
+        UserWarning,
+        stacklevel=3,
+    )
+
+
 @dataclass(frozen=True)
 class ResolvedConfigSnapshot:
     """Frozen snapshot of effective configuration values and source attribution."""

@@ -83,6 +83,11 @@ programmatic-only for this release cycle.
 Unknown `CE_*` variables emit a `UserWarning` rather than aborting, because
 environment namespaces can contain stale or mistyped settings.
 
+Unrecognised *tokens inside* `CE_CACHE` or `CE_PARALLEL` are ignored and emit a
+`UserWarning` plus an INFO log naming the variable and the token; from v1.1.0
+they raise `ConfigurationError`. The accepted tokens are listed in
+{doc}`tune_runtime_performance`.
+
 ## pyproject.toml sections
 
 Persistent project-level configuration lives under

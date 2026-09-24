@@ -33,7 +33,13 @@ from typing import (
     TypeVar,
 )
 
-from ..core.config_manager import ConfigManager, get_process_config_manager
+from ..core.config_manager import (
+    ENV_DISABLE_LABELS,
+    ENV_ENABLE_LABELS,
+    ConfigManager,
+    get_process_config_manager,
+    warn_unrecognised_env_token,
+)
 
 try:  # pragma: no cover - behaviour varies by environment
     import cachetools
@@ -403,6 +409,12 @@ class CacheConfig:
         ConfigurationError
             If a numeric directive (``max_items=``, ``max_bytes=``, ``ttl=``)
             does not carry a number.
+
+        Warns
+        -----
+        UserWarning
+            For each token that is not a recognised CE_CACHE directive; the token is
+            ignored. From v1.1.0 such tokens raise ``ConfigurationError``.
         """
         mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = CacheConfig(**(base.__dict__ if base is not None else {}))
@@ -410,13 +422,12 @@ class CacheConfig:
         if not raw:
             return cfg
         tokens = [segment.strip() for segment in raw.split(",") if segment.strip()]
-        # ``CE_CACHE=1`` or ``on`` enables the cache with defaults
-        enabled_labels = {"1", "true", "on", "yes", "enable"}
-        if len(tokens) == 1 and tokens[0].lower() in enabled_labels:
-            cfg.enabled = True
-            return cfg
         for token in tokens:
-            if token.lower() in {"0", "off", "false", "no"}:
+            lowered = token.lower()
+            if lowered in ENV_ENABLE_LABELS:
+                cfg.enabled = True
+                continue
+            if lowered in ENV_DISABLE_LABELS:
                 cfg.enabled = False
                 continue
             if token.startswith("namespace="):
@@ -434,8 +445,7 @@ class CacheConfig:
             if token.startswith("ttl="):
                 cfg.ttl_seconds = max(0.0, _parse_env_number(token, float))
                 continue
-            if token in enabled_labels:  # noqa: S105  # nosec B105 - configuration toggle keyword
-                cfg.enabled = True
+            warn_unrecognised_env_token("CE_CACHE", token)
         return cfg
 
     def __reduce__(self):

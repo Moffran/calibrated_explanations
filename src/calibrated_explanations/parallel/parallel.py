@@ -35,7 +35,13 @@ except BaseException:  # pragma: no cover - joblib remains optional
     _joblib_delayed = None  # type: ignore[assignment]
 
 from ..cache import CalibratorCache, TelemetryCallback
-from ..core.config_manager import ConfigManager, get_process_config_manager
+from ..core.config_manager import (
+    ENV_DISABLE_LABELS,
+    ENV_ENABLE_LABELS,
+    ConfigManager,
+    get_process_config_manager,
+    warn_unrecognised_env_token,
+)
 from ..utils.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
@@ -185,6 +191,12 @@ class ParallelConfig:
         ConfigurationError
             If a numeric directive (for example ``workers=``) does not carry an
             integer, or ``granularity=feature`` is requested.
+
+        Warns
+        -----
+        UserWarning
+            For each token that is not a recognised CE_PARALLEL directive; the token is
+            ignored. From v1.1.0 such tokens raise ``ConfigurationError``.
         """
         mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = ParallelConfig(**(base.__dict__ if base is not None else {}))
@@ -192,12 +204,12 @@ class ParallelConfig:
         if not raw:
             return cfg
         tokens = [segment.strip() for segment in raw.split(",") if segment.strip()]
-        if len(tokens) == 1 and tokens[0].lower() in {"1", "true", "on"}:
-            cfg.enabled = True
-            return cfg
         for token in tokens:
             lowered = token.lower()
-            if lowered in {"0", "off", "false"}:
+            if lowered in ENV_ENABLE_LABELS:
+                cfg.enabled = True
+                continue
+            if lowered in ENV_DISABLE_LABELS:
                 cfg.enabled = False
                 continue
             if lowered in {"threads", "processes", "joblib", "sequential", "auto"}:
@@ -225,11 +237,13 @@ class ParallelConfig:
                 cfg.task_size_hint_bytes = max(0, _parse_env_int(token))
                 continue
             if token.startswith("force_serial="):
-                val = token.split("=", 1)[1].lower()
-                cfg.force_serial_on_failure = val in {"1", "true", "on"}
-                continue
-            if token == "enable":  # noqa: S105  # nosec B105 - configuration toggle keyword
-                cfg.enabled = True
+                val = token.split("=", 1)[1].strip().lower()
+                if val in ENV_ENABLE_LABELS:
+                    cfg.force_serial_on_failure = True
+                elif val in ENV_DISABLE_LABELS:
+                    cfg.force_serial_on_failure = False
+                else:
+                    warn_unrecognised_env_token("CE_PARALLEL", token)
                 continue
             if token.startswith("granularity="):
                 value = token.split("=", 1)[1].strip().lower()
@@ -245,6 +259,10 @@ class ParallelConfig:
                     )
                 if value == "instance":
                     cfg.granularity = "instance"
+                else:
+                    warn_unrecognised_env_token("CE_PARALLEL", token)
+                continue
+            warn_unrecognised_env_token("CE_PARALLEL", token)
         return cfg
 
 

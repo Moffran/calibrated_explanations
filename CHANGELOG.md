@@ -30,6 +30,17 @@
   `CalibratedExplainer.initialize_pool()` / `with explainer:`, now use
   `sequential` when `CE_PARALLEL` names no strategy, so default `explain_*`
   calls are unaffected and no longer start a worker pool.
+- **Unrecognised `CE_PARALLEL` / `CE_CACHE` tokens are surfaced (#219):** a
+  token neither parser understands (for example the typo in
+  `CE_PARALLEL=enable,thread`, an unknown `granularity=` value or a
+  non-boolean `force_serial=` value) used to be dropped silently. It is still
+  ignored, but now emits a `UserWarning` plus an INFO log naming the variable
+  and the token; from v1.1.0 it raises `ConfigurationError` (#225). Both
+  parsers now accept the same case-insensitive enable labels
+  (`1`/`true`/`on`/`yes`/`enable`) and disable labels
+  (`0`/`false`/`off`/`no`/`disable`) in any position, so
+  `CE_PARALLEL=1,threads` now enables parallel execution instead of ignoring
+  the `1`.
 
 ## [v1.0.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.1) - 2026-09-22
 
