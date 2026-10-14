@@ -14,8 +14,8 @@ claim_text: >
 atomic_rationale: >
   This claim maps to one requirement because the verifiable public-API outcome at
   the api_contract level is that to_narrative() returns non-None output. Format-
-  specific contracts (DataFrame, HTML, dict variants) each require pandas or Jinja2
-  and are not verified at the api_contract level; they are documented assumption
+  specific contracts (DataFrame, HTML, dict variants) and the PyYAML-backed default
+  template are not verified at the api_contract level; they are documented assumption
   boundaries. Narrative quality and regulatory suitability are explicitly out of
   scope for automated testing. No additional requirements are warranted for this
   verification pass beyond CE-REQ-NARR-API-001.
@@ -44,8 +44,11 @@ assumptions:
   - Narrative quality (fluency, domain correctness, regulatory suitability) is NOT
     verified by this claim. This claim asserts only that to_narrative() returns a
     non-None result.
-  - Template-based narratives depend on Jinja2 being available in the runtime environment.
-    If Jinja2 is absent, to_narrative() falls back to a default template or raises ImportError.
+  - Narrative templates are YAML (or JSON) files loaded with PyYAML and filled by plain
+    string substitution; PyYAML is declared by the optional `narrative` extra. If PyYAML
+    is absent, loading a YAML template, including the packaged default
+    explain_template.yaml, raises SerializationError (not ImportError) with no fallback;
+    only a caller-supplied .json template_path works without PyYAML.
   - The output format is determined by the output_format parameter ('dataframe', 'text',
     'html', 'dict', 'markdown'). Default is 'dataframe' which requires pandas.
 

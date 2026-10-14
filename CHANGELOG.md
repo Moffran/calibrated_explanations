@@ -67,6 +67,12 @@
   cell content is now passed through `html.escape` before the newline-to-`<br>`
   conversion. The `text`, `markdown`, `dict` and `dataframe` formats are
   unchanged.
+- **Narrative capability claim names the real template dependency (#223):**
+  `CE-CAP-NARR-001` said template narration depended on Jinja2 and fell back
+  or raised `ImportError` without it. Narration uses PyYAML (the `narrative`
+  extra); the claim now records that without PyYAML a YAML template, including
+  the packaged default, raises `SerializationError` with no fallback, and only
+  a caller-supplied `.json` `template_path` works. No code change.
 
 ## [v1.0.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.1) - 2026-09-22
 
