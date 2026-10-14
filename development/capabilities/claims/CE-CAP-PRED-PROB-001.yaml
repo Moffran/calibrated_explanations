@@ -20,12 +20,14 @@ task_types:
 requirements:
   - CE-REQ-PRED-PROB-API-001
   - CE-REQ-PRED-PROB-BOUNDS-001
+  - CE-REQ-PRED-PROB-INSTANCE-001
 
 verification:
   proves:
     - api_contract
     - probability_bounds
     - output_shape
+    - instance_wise_determinism
   verification_type: automated
 
 assumptions:

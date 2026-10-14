@@ -3,6 +3,8 @@
 Requirements verified:
   CE-REQ-PRED-PROB-API-001 — Probabilistic regression threshold query API contract
                               (CE-CAP-PRED-PROB-001)
+  CE-REQ-PRED-PROB-INSTANCE-001 — Instance-wise (batch-invariant) outputs
+                              (CE-CAP-PRED-PROB-001)
 
 These tests verify the observable public-API behavior stated in those requirements.
 They do not prove CPS coverage guarantees or frequency-calibration of P(Y > threshold | X).
@@ -19,6 +21,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+
+# conftest.py adds development/capabilities/verification/tif/ to sys.path.
+from tif_prob_regression_instance import run_prob_regression_instance_tif_scenario
 
 _RNG_SEED = 42
 _N_SAMPLES = 120
@@ -112,3 +117,27 @@ def test_should_return_event_probability_in_column_one_when_regression_threshold
     np.testing.assert_allclose(probabilities[:, 0] + probabilities[:, 1], 1.0, atol=1e-9)
     assert np.isscalar(probabilities[0, 1])
     assert low[0] <= probabilities[0, 1] <= high[0]
+
+
+# ---------------------------------------------------------------------------
+# CE-REQ-PRED-PROB-INSTANCE-001 — Instance-wise probabilistic regression contract
+# ---------------------------------------------------------------------------
+
+
+def test_should_return_batch_invariant_probabilities_when_regression_threshold_query():
+    """Verify CE-REQ-PRED-PROB-INSTANCE-001: outputs do not depend on batch composition.
+
+    Acceptance criteria (from CE-REQ-PRED-PROB-INSTANCE-001):
+    - Batched outputs equal one-at-a-time outputs exactly (point, low, high).
+    - Reversed-batch outputs, mapped back, equal one-at-a-time outputs exactly.
+    """
+    obs = run_prob_regression_instance_tif_scenario(threshold=0.0)
+
+    assert obs.max_abs_batch_deviation == 0.0, (
+        "CE-REQ-PRED-PROB-INSTANCE-001: batched output differs from one-at-a-time "
+        f"output by {obs.max_abs_batch_deviation}"
+    )
+    assert obs.max_abs_permutation_deviation == 0.0, (
+        "CE-REQ-PRED-PROB-INSTANCE-001: reversed-batch output differs from one-at-a-time "
+        f"output by {obs.max_abs_permutation_deviation}"
+    )

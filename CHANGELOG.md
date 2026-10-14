@@ -18,6 +18,27 @@
 
 ### Fixed
 
+- **Thresholded regression is now instance-wise (batch-invariant):**
+  `predict_proba(x, threshold=...)`, `predict(..., threshold=...)` and
+  thresholded explanations could give the same object a different calibrated
+  probability and Venn-Abers interval depending on which other rows shared the
+  batch, their order and the batch size (differences up to 0.18 observed).
+  crepes' smoothed conformal p-values draw their random term per *row index*
+  after reseeding, so an object's Venn-Abers input score depended on its batch
+  position. Scalar thresholds were affected; tuple thresholds were affected only
+  under exact ties, because the random term cancels in the difference. Test
+  scores also came from a CPS fitted on all calibration data, while the
+  Venn-Abers calibration scores came from the split CPS. The score is now the
+  deterministic (unsmoothed) CPD value of the split CPS, on both the calibration
+  and the test side: the standard inductive Venn-Abers construction, with one
+  score function. **Numerical outputs of thresholded regression change**:
+  across the evaluated datasets, Brier score and ECE show no significant
+  degradation (unconditional and normalized calibration improve slightly).
+  Venn-Abers intervals are slightly wider, most visibly under Mondrian
+  calibration. Individual probabilities can shift noticeably when the
+  calibration set is small. New requirement `CE-REQ-PRED-PROB-INSTANCE-001` (TIF
+  `CE-TIF-PRED-PROB-002`) pins the contract.
+
 - **Unknown `CE_*` environment-variable warning no longer repeats:** the
   `UserWarning` from `ConfigManager.from_sources()` fired on every explainer
   construction, so a single stray `CE_*` variable could flood experiment

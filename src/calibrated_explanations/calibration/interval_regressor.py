@@ -325,21 +325,44 @@ class IntervalRegressor:
             positive class is ``P(y <= threshold)``. For tuple thresholds the positive class is
             ``P(low < y <= high)``. The first column represents ``1 - proba`` and the second
             column represents ``proba``.
+
+        Notes
+        -----
+        These are the uncalibrated Venn-Abers input scores. Each row depends only on
+        that row's input and the frozen calibration state, never on other rows.
         """
         y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
         sigma_test = self.ce.get_sigma_test(x=x)
+        # Venn-Abers scores must come from one deterministic function shared with
+        # compute_proba_cal: the split CPS (fitted on parts[0], not on the Venn-Abers
+        # calibration part) evaluated without smoothing. crepes draws the smoothing
+        # variable per *row* after reseeding, so smoothing=True would make an object's
+        # calibrated probability depend on its position in the batch.
+        cps = self.split["cps"]
         if isinstance(self.current_y_threshold, tuple):
-            proba_lower = self.cps.predict(
-                y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[0], bins=bins
+            proba_lower = cps.predict(
+                y_hat=y_test_hat,
+                sigmas=sigma_test,
+                y=self.current_y_threshold[0],
+                bins=bins,
+                smoothing=False,
             )
-            proba_upper = self.cps.predict(
-                y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[1], bins=bins
+            proba_upper = cps.predict(
+                y_hat=y_test_hat,
+                sigmas=sigma_test,
+                y=self.current_y_threshold[1],
+                bins=bins,
+                smoothing=False,
             )
             proba = proba_upper - proba_lower
         else:
-            proba = self.cps.predict(
-                y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins
+            proba = cps.predict(
+                y_hat=y_test_hat,
+                sigmas=sigma_test,
+                y=self.current_y_threshold,
+                bins=bins,
+                smoothing=False,
             )
         return np.array([[1 - proba[i], proba[i]] for i in range(len(proba))])
 
@@ -392,6 +415,10 @@ class IntervalRegressor:
     def _(self, y_threshold: numbers.Real):
         """Compute the probability calibration for a scalar threshold.
 
+        Calibration scores use the deterministic (unsmoothed) CPD value of the split
+        CPS, the same score function :meth:`predict_proba` applies to test objects, so
+        the Venn-Abers output for an object is independent of the rest of its batch.
+
         Parameters
         ----------
             y_threshold : float
@@ -400,7 +427,11 @@ class IntervalRegressor:
         cal_va = self.split["parts"][1]
         bins = None if self.bins is None else self.bins[cal_va]
         proba = self.split["cps"].predict(
-            y_hat=self.y_cal_hat[cal_va], y=y_threshold, sigmas=self.sigma_cal[cal_va], bins=bins
+            y_hat=self.y_cal_hat[cal_va],
+            y=y_threshold,
+            sigmas=self.sigma_cal[cal_va],
+            bins=bins,
+            smoothing=False,
         )
         self.split["proba"] = np.array([[1 - proba[i], proba[i]] for i in range(len(proba))])
         self.split["va"] = VennAbers(
@@ -424,10 +455,18 @@ class IntervalRegressor:
         cal_va = self.split["parts"][1]
         bins = None if self.bins is None else self.bins[cal_va]
         proba_lower = self.split["cps"].predict(
-            y_hat=self.y_cal_hat[cal_va], y=y_threshold[0], sigmas=self.sigma_cal[cal_va], bins=bins
+            y_hat=self.y_cal_hat[cal_va],
+            y=y_threshold[0],
+            sigmas=self.sigma_cal[cal_va],
+            bins=bins,
+            smoothing=False,
         )
         proba_upper = self.split["cps"].predict(
-            y_hat=self.y_cal_hat[cal_va], y=y_threshold[1], sigmas=self.sigma_cal[cal_va], bins=bins
+            y_hat=self.y_cal_hat[cal_va],
+            y=y_threshold[1],
+            sigmas=self.sigma_cal[cal_va],
+            bins=bins,
+            smoothing=False,
         )
         proba = proba_upper - proba_lower
         self.split["proba"] = np.array([[1 - proba[i], proba[i]] for i in range(len(proba))])
