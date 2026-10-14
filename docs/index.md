@@ -22,6 +22,17 @@ these contracts going forward. Install with
 [release notes](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md).
 ```
 
+```{admonition} Open source, demo, and commercial solutions
+:class: note
+
+Calibrated Explanations is an independent, BSD-licensed open-source project.
+For optional commercial integration, operational deployment or pilot discussions,
+[visit Grejna AB](https://grejna.ai/?utm_source=ce_docs&utm_medium=referral&utm_campaign=ce_ecosystem).
+These services are separate from the open-source library and its license.
+
+For simulated learning scenarios, [explore Decision Labs](https://games.grejna.ai/).
+```
+
 ```{admonition} Try Calibrated Explanations in your browser
 :class: tip
 
