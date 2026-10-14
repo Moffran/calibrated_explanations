@@ -41,6 +41,18 @@
   (`0`/`false`/`off`/`no`/`disable`) in any position, so
   `CE_PARALLEL=1,threads` now enables parallel execution instead of ignoring
   the `1`.
+- **`CE_CACHE` is honoured by a plain `WrapCalibratedExplainer` (#220):**
+  `CE_CACHE` used to be read only by `ExplainerBuilder`/`ExplainerConfig`, so
+  `CE_CACHE=on` had no effect on `WrapCalibratedExplainer(model)` or
+  `CalibratedExplainer(...)` and nothing reported it. Both now provision a
+  calibrator cache from `CE_CACHE`, like `CE_PARALLEL` already did; a
+  `perf_cache=` argument (including a builder-provided cache) still takes
+  precedence, and nothing changes when `CE_CACHE` is unset.
+- **An enabled calibrator cache no longer breaks `predict` (#220):** cache keys
+  kept arrays nested inside tuples unhashed, and cache hits compared stored
+  prediction tuples with `==`, so any enabled cache raised `TypeError` or
+  `ValueError` on the first prediction. Nested arrays are now hashed and cached
+  results are returned unchanged.
 
 ## [v1.0.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.1) - 2026-09-22
 

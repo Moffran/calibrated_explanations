@@ -510,7 +510,8 @@ class CalibratedExplainer:
         # Initialize interval learner after orchestrators are ready
         self.prediction_orchestrator.interval_registry.initialize()
 
-        self.perf_cache: CalibratorCache[Any] | None = perf_cache
+        # Initialize calibrator cache (ADR-003: Honor CE_CACHE overrides)
+        self.perf_cache: CalibratorCache[Any] | None = self._resolve_perf_cache(perf_cache)
 
         # Initialize parallel executor (ADR-004: Honor CE_PARALLEL overrides)
         self._perf_parallel: Any | None = self._resolve_parallel_executor(perf_parallel)
@@ -718,6 +719,30 @@ class CalibratedExplainer:
                 exc,
                 exc_info=True,
             )
+
+    def _resolve_perf_cache(self, explicit_cache: Any | None) -> Any | None:
+        """Resolve the calibrator cache honoring overrides and environment config.
+
+        An explicit ``perf_cache`` always wins. Otherwise ``CE_CACHE`` provisions
+        a :class:`~calibrated_explanations.cache.CalibratorCache` when it enables
+        caching; the cache stays off when ``CE_CACHE`` is unset (ADR-003).
+
+        Raises
+        ------
+        ConfigurationError
+            If a numeric ``CE_CACHE`` directive does not carry a number.
+        """
+        from ..cache import CacheConfig, CalibratorCache
+
+        if explicit_cache is not None:
+            return explicit_cache
+
+        env_config = CacheConfig.from_env()
+        if env_config.enabled:
+            logging.getLogger(__name__).info("Calibrator cache enabled from CE_CACHE")
+            return CalibratorCache(env_config)
+
+        return None
 
     def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
         """Resolve the parallel executor honoring overrides and environment config."""

@@ -190,9 +190,10 @@ are guaranteed; others are hints that CE applies when it can.
 - Without ``cachetools`` (install ``calibrated-explanations[perf]``), an enabled
   cache uses an in-package LRU/TTL backend with the same semantics and logs one
   warning per process.
-- ``CE_CACHE`` is read when the configuration is built with
-  ``ExplainerBuilder``/``ExplainerConfig``; a plain
-  ``WrapCalibratedExplainer(model)`` does not read it.
+- ``CE_CACHE`` and ``CE_PARALLEL`` apply to a plain
+  ``WrapCalibratedExplainer(model)`` as well as to configurations built with
+  ``ExplainerBuilder``/``ExplainerConfig``. A cache passed as ``perf_cache=``,
+  or built from a configuration, is used as-is.
 - Speed-ups and cache hit rates are not guaranteed. Measure them with the
   telemetry callback before relying on them.
 

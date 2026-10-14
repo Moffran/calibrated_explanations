@@ -159,6 +159,16 @@ def test_hash_part_covers_nested_structures__should_produce_hashable_representat
     assert hash(hashed_sentinel) is not None, "Hashed sentinel must be hashable"
 
 
+def test_hash_part_should_hash_arrays_nested_in_tuples():
+    """Arrays inside (label, value) key pairs must be hashed, not passed through (#220)."""
+    first = hash_part(("x", np.arange(4.0)))
+    second = hash_part(("x", np.arange(4.0)))
+
+    assert hash(first) == hash(second)
+    assert first != hash_part(("x", np.arange(1.0, 5.0)))
+    assert hash_part(("mode", "classification")) == ("mode", "classification")
+
+
 def test_cache_config_from_env_parses_tokens(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(
         "CE_CACHE",

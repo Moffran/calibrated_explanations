@@ -290,8 +290,11 @@ def hash_part(part: Any) -> Hashable:
     """
     if part is None:
         return None
-    if isinstance(part, (str, bytes, int, float, bool, tuple)):
+    if isinstance(part, (str, bytes, int, float, bool)):
         return part
+    if isinstance(part, tuple):
+        # Recurse so arrays nested in (label, value) pairs become hashable.
+        return tuple(hash_part(item) for item in part)
     if isinstance(part, np.ndarray):
         # Use blake2b to hash array content for stable keys
         digest = blake2b(part.view(np.uint8), digest_size=16).hexdigest()
@@ -547,7 +550,9 @@ class LRUCache(Generic[K, V]):
                     self._emit("cache_miss", {"key": key})
                     return default
                 # Unwrap None values
-                if value is None or (isinstance(value, tuple) and value == (_NONE_SENTINEL,)):
+                if value is None or (
+                    isinstance(value, tuple) and len(value) == 1 and value[0] is _NONE_SENTINEL
+                ):
                     unwrapped = None
                 else:
                     unwrapped = value
