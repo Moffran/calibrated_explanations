@@ -1,12 +1,23 @@
 # calibrated-explanations
 
+**Trustworthy AI explanations with uncertainty intervals and alternative explanations for predictive models with a scikit-learn-compatible classification or regression interface.**
+
+## Explore Calibrated Explanations
+
+| Open source | Live demo | Commercial solutions |
+| :--- | :--- | :--- |
+| [**Code & docs →**](https://github.com/Moffran/calibrated_explanations) | [**Try CE in your browser →**](https://calibrated-explanations-demo.ju.se/) | [**Grejna AB →**](https://grejna.ai/?utm_source=ce_github&utm_medium=referral&utm_campaign=ce_ecosystem) |
+| BSD-licensed Python library for developers and researchers. | Interactive, illustrative companion to the library. | Optional commercial integration, operational use and pilot discussions, separate from the OSS library. |
+
+[Documentation](https://calibrated-explanations.readthedocs.io/) · [PyPI](https://pypi.org/project/calibrated-explanations/) · [Decision Labs](https://games.grejna.ai/)
+
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![PyPI version](https://img.shields.io/pypi/v/calibrated-explanations)](https://pypi.org/project/calibrated-explanations/)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations)
 [![Docs](https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest)](https://calibrated-explanations.readthedocs.io)
 [![CI](https://github.com/Moffran/calibrated_explanations/actions/workflows/ci.yml/badge.svg)](https://github.com/Moffran/calibrated_explanations/actions/workflows/ci.yml)
 
-**Trustworthy AI explanations with uncertainty intervals and alternative explanations for predictive models with a scikit-learn-compatible classification or regression interface.**
+
 
 > **Try it in your browser:** [Open the interactive Calibrated Explanations demo](https://calibrated-explanations-demo.ju.se/). Follow a guided workflow or explore the expert interface without installing anything locally.
 >
