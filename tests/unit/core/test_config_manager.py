@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import warnings
 
 import pytest
 
+from calibrated_explanations.core import config_manager as config_manager_module
 from calibrated_explanations.core.config_manager import ConfigManager, ConfigSpec
 from calibrated_explanations.core.config_manager import _KNOWN_ENV_KEYS
 from calibrated_explanations.utils.exceptions import ConfigurationError
@@ -133,9 +135,27 @@ def test_should_capture_supported_key_validation_issue_when_non_strict() -> None
 
 
 def test_should_warn_for_unknown_ce_environment_variables(monkeypatch) -> None:
+    monkeypatch.setattr(config_manager_module, "_REPORTED_UNKNOWN_ENV_KEYS", set())
     monkeypatch.setenv("CE_UNKNOWN_SETTING", "x")
     with pytest.warns(UserWarning, match=r"Unknown CE_\* environment variables detected"):
         ConfigManager.from_sources()
+
+
+def test_should_warn_once_per_process_for_same_unknown_ce_environment_variables(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(config_manager_module, "_REPORTED_UNKNOWN_ENV_KEYS", set())
+    monkeypatch.setenv("CE_UNKNOWN_SETTING", "x")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ConfigManager.from_sources()
+        ConfigManager.from_sources()
+        monkeypatch.setenv("CE_OTHER_UNKNOWN_SETTING", "y")
+        ConfigManager.from_sources()
+
+    messages = [str(w.message) for w in caught if "Unknown CE_*" in str(w.message)]
+    assert len(messages) == 2
+    assert "CE_OTHER_UNKNOWN_SETTING" in messages[1]
 
 
 def test_should_not_include_duplicate_known_env_keys() -> None:

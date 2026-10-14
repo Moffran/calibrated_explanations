@@ -5,13 +5,13 @@ recipe/meta.yaml, commit, push, open a PR against conda-forge/main) against a
 local clone of https://github.com/tuvelofstrom/calibrated-explanations-feedstock.
 
 This step is best-effort and never fails `make release-postcommit`: it only
-runs when CE_CONDA_FEEDSTOCK_DIR points at an existing local clone, and a
+runs when CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR points at an existing local clone, and a
 failure here is reported as a warning, not an error, since it touches a
 separate external repository outside this project's release contract
 (release.md steps 14-17).
 
 Configure once per machine (not committed to this repo):
-    setx CE_CONDA_FEEDSTOCK_DIR "C:\\path\\to\\calibrated-explanations-feedstock"
+    setx CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR "C:\\path\\to\\calibrated-explanations-feedstock"
 """
 
 from __future__ import annotations
@@ -23,10 +23,10 @@ from pathlib import Path
 
 
 def main() -> int:
-    feedstock_dir = os.environ.get("CE_CONDA_FEEDSTOCK_DIR")
+    feedstock_dir = os.environ.get("CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR")
     if not feedstock_dir:
         print(
-            "[conda feedstock] CE_CONDA_FEEDSTOCK_DIR is not set; skipping the "
+            "[conda feedstock] CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR is not set; skipping the "
             "feedstock version bump. Set it to a local clone of "
             "tuvelofstrom/calibrated-explanations-feedstock to enable this step."
         )
@@ -36,7 +36,7 @@ def main() -> int:
     update_script = repo_path / "update_meta.py"
     if not update_script.is_file():
         print(
-            f"[conda feedstock] CE_CONDA_FEEDSTOCK_DIR={feedstock_dir!r} does not "
+            f"[conda feedstock] CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR={feedstock_dir!r} does not "
             "contain update_meta.py; skipping the feedstock version bump."
         )
         return 0

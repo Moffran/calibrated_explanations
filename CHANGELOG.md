@@ -9,7 +9,7 @@
 
 - **Optional conda-forge feedstock auto-update:** `make release-postcommit` now
   ends with a best-effort `scripts/update_conda_feedstock.py` step that, when
-  `CE_CONDA_FEEDSTOCK_DIR` points at a local clone of the
+  `CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR` points at a local clone of the
   `calibrated-explanations-feedstock` fork, bumps `recipe/meta.yaml` to the
   just-published PyPI version and opens a PR against
   `conda-forge/calibrated-explanations-feedstock`. No-op when the env var is
@@ -18,6 +18,13 @@
 
 ### Fixed
 
+- **Unknown `CE_*` environment-variable warning no longer repeats:** the
+  `UserWarning` from `ConfigManager.from_sources()` fired on every explainer
+  construction, so a single stray `CE_*` variable could flood experiment
+  logs. It now fires once per process for each distinct set of unknown keys.
+  The release-tooling variable `CE_CONDA_FEEDSTOCK_DIR` was renamed to
+  `CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR` so that it stays out of the
+  library's reserved `CE_` namespace.
 - **Enabled parallel with the `auto` strategy now fails fast (#218):**
   `perf_parallel(True)` without `backend=`, or `CE_PARALLEL=1`/`on`/`enable`
   without a strategy token, left the removed `auto` strategy selected, and the

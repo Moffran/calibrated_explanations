@@ -192,7 +192,7 @@ development version, and it never performs steps 11-13.
 ### Optional: conda-forge feedstock auto-update
 
 `release-postcommit` ends with a best-effort, non-blocking call to
-`scripts/update_conda_feedstock.py`. When the `CE_CONDA_FEEDSTOCK_DIR`
+`scripts/update_conda_feedstock.py`. When the `CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR`
 environment variable points at a local clone of
 [`tuvelofstrom/calibrated-explanations-feedstock`](https://github.com/tuvelofstrom/calibrated-explanations-feedstock)
 (a fork of `conda-forge/calibrated-explanations-feedstock`), it runs that
@@ -211,7 +211,7 @@ This step is unset (skipped) by default and is unrelated to steps 14-17 above
 machine to enable it:
 
 ```powershell
-setx CE_CONDA_FEEDSTOCK_DIR "C:\path\to\calibrated-explanations-feedstock"
+setx CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR "C:\path\to\calibrated-explanations-feedstock"
 ```
 
 To retry after a failure without rerunning the rest of postcommit:

@@ -22,6 +22,10 @@ _LOGGER = logging.getLogger(__name__)
 _PYPROJECT_TOOL_NAMESPACE = ("tool", "calibrated_explanations")
 _PLUGIN_CONFIG_SECTION = "plugin_configs"
 _PLUGIN_CONFIG_ENV_KEY = "CE_PLUGIN_CONFIG_JSON"
+# Unknown-key sets already reported; from_sources() runs per orchestrator, so
+# without this the same warning repeats on every explainer construction.
+_REPORTED_UNKNOWN_ENV_KEYS: set[tuple[str, ...]] = set()
+_REPORTED_UNKNOWN_ENV_KEYS_LOCK = threading.Lock()
 _DEFAULT_KNOWN_ENV_KEYS = (
     "CE_EXPLANATION_PLUGIN",
     "CE_EXPLANATION_PLUGIN_FACTUAL",
@@ -432,10 +436,20 @@ class ConfigManager:
     def from_sources(cls, *, strict: bool = True) -> ConfigManager:
         """Capture environment and pyproject snapshots once."""
         spec = cls._spec
-        unknown_env_keys = sorted(
-            key for key in os.environ if key.startswith("CE_") and key not in spec.known_env_keys
+        unknown_env_keys = tuple(
+            sorted(
+                key
+                for key in os.environ
+                if key.startswith("CE_") and key not in spec.known_env_keys
+            )
         )
-        if unknown_env_keys:
+        with _REPORTED_UNKNOWN_ENV_KEYS_LOCK:
+            first_report = bool(unknown_env_keys) and (
+                unknown_env_keys not in _REPORTED_UNKNOWN_ENV_KEYS
+            )
+            if first_report:
+                _REPORTED_UNKNOWN_ENV_KEYS.add(unknown_env_keys)
+        if first_report:
             message = (
                 "Unknown CE_* environment variables detected: "
                 + ", ".join(unknown_env_keys)

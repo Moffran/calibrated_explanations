@@ -158,7 +158,7 @@ release-postcommit:
 # Optional, best-effort: bump the conda-forge feedstock recipe to the latest
 # PyPI release and open a PR. Runs automatically at the end of
 # release-postcommit; exposed standalone to retry after a failure. No-op
-# unless CE_CONDA_FEEDSTOCK_DIR points at a local feedstock clone.
+# unless CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR points at a local feedstock clone.
 .PHONY: conda-feedstock-update
 conda-feedstock-update:
 	python scripts/update_conda_feedstock.py
