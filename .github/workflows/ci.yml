@@ -300,7 +300,7 @@ jobs:
           wheel-smoke-venv/bin/pip install calibrated_explanations --find-links dist -c constraints.txt
           wheel-smoke-venv/bin/python -c "import calibrated_explanations as ce; from calibrated_explanations import WrapCalibratedExplainer; print(ce.__version__)"
       - name: Upload built artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v6
         with:
           name: dist-${{ github.sha }}
           path: dist/
