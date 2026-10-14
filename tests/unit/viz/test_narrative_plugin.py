@@ -2,12 +2,13 @@
 
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 from sklearn.datasets import load_diabetes, load_iris
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations import CalibratedExplainer, WrapCalibratedExplainer
 from calibrated_explanations.viz import NarrativePlotPlugin
 from calibrated_explanations.utils.exceptions import SerializationError, ValidationError
 from calibrated_explanations.core.narrative_generator import NarrativeGenerator, load_template_file
@@ -242,6 +243,47 @@ def test_narrative_plugin_html_output(classification_explainer, iris_data):
     assert "<table" in result
     assert "</table>" in result
     assert "instance_index" in result.lower()
+
+
+def test_should_escape_markup_when_feature_label_contains_html():
+    """User-supplied labels are HTML-escaped in html output only (#222)."""
+    # Arrange
+    rng = np.random.default_rng(0)
+    x = rng.random((160, 2))
+    x[:, 1] = (x[:, 1] > 0.5).astype(float)
+    y = ((x[:, 0] + x[:, 1]) > 1.0).astype(int)
+    feature_name = "<img src=x onerror=alert(1)>"
+    categorical_value = '<b>"on"</b>'
+    class_label = "pos&'q'"
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=10, random_state=0))
+    wrapper.fit(x[:80], y[:80])
+    wrapper.calibrate(
+        x[80:150],
+        y[80:150],
+        feature_names=[feature_name, "b&c"],
+        categorical_features=[1],
+        categorical_labels={1: {0: "off", 1: categorical_value}},
+        class_labels={0: "<i>neg</i>", 1: class_label},
+    )
+    explanations = wrapper.explain_factual(x[150:152])
+
+    # Act
+    html_out = explanations.to_narrative(output_format="html", expertise_level="beginner")
+    text_out = explanations.to_narrative(output_format="text", expertise_level="beginner")
+
+    # Assert
+    for raw in (feature_name, categorical_value, class_label, "b&c"):
+        assert raw not in html_out
+        assert raw in text_out
+    for escaped in (
+        "&lt;img src=x onerror=alert(1)&gt;",
+        "&lt;b&gt;&quot;on&quot;&lt;/b&gt;",
+        "pos&amp;&#x27;q&#x27;",
+        "b&amp;c",
+    ):
+        assert escaped in html_out
+    assert "<br>" in html_out
+    assert "&lt;br&gt;" not in html_out
 
 
 # Test error handling

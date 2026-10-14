@@ -60,6 +60,13 @@
   prediction tuples with `==`, so any enabled cache raised `TypeError` or
   `ValueError` on the first prediction. Nested arrays are now hashed and cached
   results are returned unchanged.
+- **Narrative HTML output escapes user-supplied content (#222):**
+  `to_narrative(output_format="html")` inserted feature names, class labels
+  and categorical values into the table without escaping, so any markup they
+  contained was rendered as live HTML (for example in a notebook). Header and
+  cell content is now passed through `html.escape` before the newline-to-`<br>`
+  conversion. The `text`, `markdown`, `dict` and `dataframe` formats are
+  unchanged.
 
 ## [v1.0.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.1) - 2026-09-22
 

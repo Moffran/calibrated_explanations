@@ -7,6 +7,7 @@ from calibrated explanations instead of traditional visualizations.
 from __future__ import annotations
 
 import contextlib
+import html as html_lib
 import logging
 import sys
 import warnings
@@ -471,7 +472,8 @@ class NarrativePlotPlugin:
         Returns
         -------
         str
-            HTML table output.
+            HTML table output. Header and cell content is HTML-escaped; the
+            only markup derived from values is ``<br>`` for newlines.
         """
         if not results:
             return "<table></table>"
@@ -483,7 +485,8 @@ class NarrativePlotPlugin:
         html.append("<thead><tr>")
         first_result = results[0]
         for key in first_result:
-            html.append(f"<th style='padding: 8px; text-align: left;'>{key}</th>")
+            header = html_lib.escape(str(key))
+            html.append(f"<th style='padding: 8px; text-align: left;'>{header}</th>")
         html.append("</tr></thead>")
 
         # Body
@@ -492,11 +495,13 @@ class NarrativePlotPlugin:
             html.append("<tr>")
             for key in result:
                 value = result[key]
-                # Format value for display
+                # Escape user-supplied content (feature names, class labels,
+                # categorical values) before the intentional newline -> <br>
+                # conversion, so <br> is the only markup emitted.
                 if isinstance(value, (tuple, list)):
-                    value = ", ".join(str(v) for v in value)
+                    value = html_lib.escape(", ".join(str(v) for v in value))
                 else:
-                    value = str(value).replace("\n", "<br>")
+                    value = html_lib.escape(str(value)).replace("\n", "<br>")
                 html.append(f"<td style='padding: 8px; vertical-align: top;'>{value}</td>")
             html.append("</tr>")
         html.append("</tbody>")
