@@ -50,6 +50,7 @@ from ..calibration.interval_wrappers import is_fast_interval_collection
 from ..utils import assert_threshold, check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
 from ..utils.exceptions import (
+    ConfigurationError,
     DataShapeError,
     ValidationError,
 )
@@ -1553,10 +1554,15 @@ class CalibratedExplainer:
         Raises
         ------
         ValidationError
-            If ``bins`` are supplied for an explainer calibrated without bins.
+            If only one of ``xs`` and ``ys`` is given; if ``bins`` are given
+            without ``xs``/``ys``; if ``bins`` are given for an explainer
+            calibrated without bins; or if ``bins`` are missing when appending
+            to an explainer calibrated with bins (Mondrian).
         DataShapeError
             If ``bins`` and ``ys`` differ in length, or ``xs`` has the wrong
             number of features.
+        ConfigurationError
+            If ``xs``/``ys`` are appended while fast mode is enabled.
 
         Notes
         -----
@@ -1574,12 +1580,36 @@ class CalibratedExplainer:
         error is re-raised.
         """
         check_is_fitted(learner)
-        appending = xs is not None and ys is not None
-        if appending and bins is not None:
-            if self.bins is None:
+        if (xs is None) != (ys is None):
+            raise ValidationError(
+                "reinitialize() appends calibration data only when both xs and ys are given; "
+                "pass both, or neither to rebuild on the current calibration set.",
+                details={"xs_given": xs is not None, "ys_given": ys is not None},
+            )
+        appending = xs is not None
+        if not appending and bins is not None:
+            raise ValidationError(
+                "bins describe appended calibration instances; pass xs and ys together with bins.",
+                details={"bins_given": True, "xs_given": False},
+            )
+        if appending:
+            if bins is not None and self.bins is None:
                 raise ValidationError("Cannot mix calibration instances with and without bins.")
-            if len(bins) != len(ys):
+            if bins is None and self.bins is not None:
+                raise ValidationError(
+                    "This explainer uses Mondrian calibration; pass bins for the appended "
+                    "instances (for example, the categorizer's output for xs).",
+                    details={"mondrian": True, "bins_given": False},
+                )
+            if bins is not None and len(bins) != len(ys):
                 raise DataShapeError("The length of bins must match the number of added instances.")
+            if self.is_fast():
+                raise ConfigurationError(
+                    "Appending calibration data is not supported in fast mode. Calibrate afresh "
+                    "on the combined calibration set instead, or call reinitialize(learner) "
+                    "without xs/ys to rebuild on the current calibration set.",
+                    details={"fast": True},
+                )
 
         from ..calibration.interval_learner import (  # pylint: disable=import-outside-toplevel
             discard_interval_calibrator,

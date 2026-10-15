@@ -14,7 +14,11 @@ from sklearn.model_selection import train_test_split
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.calibration import interval_learner as ch
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.utils.exceptions import ConfigurationError, DataShapeError
+from calibrated_explanations.utils.exceptions import (
+    ConfigurationError,
+    DataShapeError,
+    ValidationError,
+)
 
 
 def test_calibration_helpers_round_trip():
@@ -370,3 +374,89 @@ def test_should_restore_previous_mode_when_set_mode_rebuild_fails(
     assert explainer.interval_learner is calibrator
     assert explainer.predict_function == predict_function
     np.testing.assert_array_equal(_outputs(wrapper, "classification", data["x_test"]), before)
+
+
+# --- reinitialize: supported and unsupported update combinations (#208) ---------------
+
+
+def _fast_calibrated(learner, data) -> WrapCalibratedExplainer:
+    wrapper = _calibrated(learner, "classification", data["x_cal"], data["y_cal"])
+    wrapper.explainer.enable_fast_mode()
+    return wrapper
+
+
+def _fast_weights(wrapper: WrapCalibratedExplainer, x) -> np.ndarray:
+    explanations = wrapper.explain_fast(x)
+    return np.array([np.ravel(e.feature_weights["predict"]) for e in explanations])
+
+
+@pytest.mark.parametrize(
+    ("mondrian", "kwargs", "error", "match"),
+    [
+        (False, {"xs": "x_new"}, ValidationError, "both xs and ys"),
+        (False, {"ys": "y_new"}, ValidationError, "both xs and ys"),
+        (False, {"bins": "bins_new"}, ValidationError, "pass xs and ys together with bins"),
+        (False, {"xs": "x_new", "ys": "y_new", "bins": "bins_new"}, ValidationError, "mix"),
+        (True, {"xs": "x_new", "ys": "y_new"}, ValidationError, "Mondrian calibration"),
+    ],
+    ids=["xs-only", "ys-only", "bins-only", "bins-without-mondrian", "mondrian-without-bins"],
+)
+def test_should_reject_unsupported_combination_when_reinitialize_receives_inconsistent_data(
+    mondrian: bool, kwargs: dict, error: type, match: str
+) -> None:
+    data = _reinitialize_data("classification")
+    learner = _fitted_learner("classification", data)
+    wrapper = _calibrated(
+        learner,
+        "classification",
+        data["x_cal"],
+        data["y_cal"],
+        data["bins_cal"] if mondrian else None,
+    )
+    calibrator = wrapper.explainer.interval_learner
+
+    with pytest.raises(error, match=match):
+        wrapper.explainer.reinitialize(learner, **{k: data[v] for k, v in kwargs.items()})
+
+    assert len(wrapper.explainer.y_cal) == len(data["y_cal"])
+    assert wrapper.explainer.interval_learner is calibrator
+
+
+def test_should_reject_appending_when_fast_mode_is_enabled() -> None:
+    data = _reinitialize_data("classification")
+    learner = _fitted_learner("classification", data)
+    wrapper = _fast_calibrated(learner, data)
+    before = _fast_weights(wrapper, data["x_test"][:5])
+
+    with pytest.raises(ConfigurationError, match="not supported in fast mode"):
+        wrapper.explainer.reinitialize(learner, data["x_new"], data["y_new"])
+
+    assert len(wrapper.explainer.y_cal) == len(data["y_cal"])
+    np.testing.assert_array_equal(_fast_weights(wrapper, data["x_test"][:5]), before)
+
+
+def test_should_match_fresh_fast_calibration_when_reinitialize_swaps_learner_in_fast_mode() -> None:
+    data = _reinitialize_data("classification")
+    wrapper = _fast_calibrated(_fitted_learner("classification", data), data)
+    replacement = LogisticRegression().fit(data["x_new"], data["y_new"])
+
+    wrapper.explainer.reinitialize(replacement)
+
+    np.testing.assert_array_equal(
+        _fast_weights(wrapper, data["x_test"][:5]),
+        _fast_weights(_fast_calibrated(replacement, data), data["x_test"][:5]),
+    )
+
+
+@pytest.mark.parametrize("mode", ["classification", "regression"])
+def test_should_refresh_calibration_snapshot_when_reinitialize_appends(mode: str) -> None:
+    data = _reinitialize_data(mode)
+    learner = _fitted_learner(mode, data)
+    wrapper = _calibrated(learner, mode, data["x_cal"], data["y_cal"])
+
+    wrapper.explainer.reinitialize(learner, data["x_new"], data["y_new"])
+
+    snapshot = wrapper.explainer.prediction_orchestrator.get_interval_calibration_features(
+        fast=False
+    )
+    np.testing.assert_array_equal(snapshot, wrapper.explainer.x_cal)

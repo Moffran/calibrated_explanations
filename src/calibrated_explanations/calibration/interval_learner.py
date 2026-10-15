@@ -94,8 +94,9 @@ def update_interval_learner(  # pylint: disable=invalid-name
 ) -> None:
     """Update the interval learner with new calibration data.
 
-    This is a mechanical extraction of ``CalibratedExplainer.__update_interval_learner``
-    that maintains the original behavior while enabling independent testing.
+    This is the single authoritative update path for appended calibration data;
+    ``CalibratedExplainer.reinitialize`` calls it after validating the inputs
+    and appending them to the calibration set.
 
     Parameters
     ----------

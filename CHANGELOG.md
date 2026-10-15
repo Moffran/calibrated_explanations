@@ -18,6 +18,17 @@
 
 ### Fixed
 
+- **One authoritative interval-calibration update path; inconsistent
+  `reinitialize` inputs fail fast (#208):** the unreachable duplicate
+  `IntervalRegistry.update` is removed (it had no callers, and its
+  classification branch ignored `xs`/`ys`), leaving
+  `calibration.interval_learner.update_interval_learner` as the only update
+  path. `reinitialize` used to drop `xs` silently when `ys` was missing (and
+  vice versa), ignore `bins` given without data, and fail with an internal
+  indexing error when appending to a Mondrian explainer without `bins`. These
+  now raise `ValidationError` up front. Appending in fast mode raises a
+  `ConfigurationError` that names the alternatives. The calibration state is
+  unchanged in every case.
 - **`reinitialize` now refreshes calibration (silent wrong output, #239):**
   `CalibratedExplainer.reinitialize(learner, xs, ys)` appended the rows to
   `x_cal`/`y_cal`, but classification kept using the Venn-Abers calibrator

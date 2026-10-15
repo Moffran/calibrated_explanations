@@ -1,7 +1,10 @@
 """Interval calibrator lifecycle and state management.
 
-This module provides the IntervalRegistry class which manages the initialization,
-updates, and state of interval calibrators used for uncertainty quantification.
+This module provides the IntervalRegistry class which manages the initialization
+and state of interval calibrators used for uncertainty quantification. Updates
+with appended calibration data go through
+``calibration.interval_learner.update_interval_learner`` (via
+``CalibratedExplainer.reinitialize``), the single authoritative update path.
 
 Part of Phase 4: Delegate Prediction Functionality (ADR-001, ADR-004).
 """
@@ -18,8 +21,6 @@ from ...calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )
-from ...calibration.interval_wrappers import is_fast_interval_collection
-from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -28,8 +29,8 @@ if TYPE_CHECKING:
 class IntervalRegistry:
     """Manage interval calibrator lifecycle and operations.
 
-    This class encapsulates all interval learner state and methods for initialization,
-    updates, and difficulty estimation. It serves as the centralized registry for
+    This class encapsulates interval learner state and methods for initialization
+    and difficulty estimation. It serves as the centralized registry for
     interval calibration within the prediction orchestrator.
 
     Attributes
@@ -98,46 +99,6 @@ class IntervalRegistry:
         internal `_constant_sigma` protected method.
         """
         return self._constant_sigma(x, learner=learner, beta=beta)
-
-    def update(self, xs: np.ndarray, ys: np.ndarray, bins=None) -> None:
-        """Refresh the interval learner with new calibration data.
-
-        Parameters
-        ----------
-        xs : np.ndarray
-            New calibration features.
-        ys : np.ndarray
-            New calibration targets.
-        bins : optional
-            Binning information for interval estimation.
-
-        Raises
-        ------
-        ConfigurationError
-            If fast explanations are enabled or other incompatible states exist.
-        """
-        if self.explainer.is_fast():
-            raise ConfigurationError("Fast explanations are not supported in this update path.")
-
-        if self.explainer.mode == "classification":
-            # pylint: disable=fixme
-            # TODO: change so that existing calibrators are extended with new calibration instances
-            # Import here to allow monkeypatching in tests
-            from ...calibration.venn_abers import VennAbers
-
-            self.interval_learner = VennAbers(
-                self.explainer.x_cal,
-                self.explainer.y_cal,
-                self.explainer.learner,
-                self.explainer.bins,
-                difficulty_estimator=self.explainer.difficulty_estimator,
-                predict_function=self.explainer.predict_function,
-            )
-        elif "regression" in self.explainer.mode:
-            if is_fast_interval_collection(self.interval_learner):
-                raise ConfigurationError("Fast explanations are not supported in this update path.")
-            # update the IntervalRegressor
-            self.interval_learner.insert_calibration(xs, ys, bins=bins)
 
     def initialize(self) -> None:
         """Create the interval learner backend using calibration helpers.
