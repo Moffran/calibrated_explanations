@@ -7,12 +7,14 @@ threshold assignment for both standard and fast explanation modes.
 import numpy as np
 import pytest
 from sklearn.datasets import load_iris
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.model_selection import train_test_split
 
+from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.calibration import interval_learner as ch
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.utils.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError, DataShapeError
 
 
 def test_calibration_helpers_round_trip():
@@ -128,3 +130,198 @@ def test_should_raise_attribute_error_when_deprecated_calibration_helper_accesse
     ):
         with pytest.raises(AttributeError):
             getattr(ch_helpers, name)
+
+
+# --- reinitialize: calibration state must follow the new data / learner -------------
+
+
+def _reinitialize_data(mode: str) -> dict[str, np.ndarray]:
+    rng = np.random.default_rng(7)
+    x = rng.random((200, 4))
+    if mode == "classification":
+        y = (x[:, 0] + x[:, 1] > 1.0).astype(int)
+        shifted = 1 - y  # inverted labels: any refresh must move the outputs
+    else:
+        y = 3.0 * x[:, 0] - x[:, 1] + rng.normal(0.0, 0.05, size=x.shape[0])
+        shifted = y + 2.0
+    bins = (x[:, 2] > 0.5).astype(int)
+    return {
+        "x_prop": x[:60], "y_prop": y[:60],
+        "x_cal": x[60:120], "y_cal": y[60:120], "bins_cal": bins[60:120],
+        "x_new": x[120:160], "y_new": shifted[120:160], "bins_new": bins[120:160],
+        "x_test": x[160:], "bins_test": bins[160:],
+    }  # fmt: skip
+
+
+def _fitted_learner(mode: str, data: dict[str, np.ndarray]):
+    learner = (
+        RandomForestClassifier(n_estimators=10, random_state=0)
+        if mode == "classification"
+        else RandomForestRegressor(n_estimators=10, random_state=0)
+    )
+    return learner.fit(data["x_prop"], data["y_prop"])
+
+
+def _calibrated(learner, mode: str, x_cal, y_cal, bins=None) -> WrapCalibratedExplainer:
+    wrapper = WrapCalibratedExplainer(learner)
+    wrapper.calibrate(x_cal, y_cal, mode=mode, bins=bins, seed=42)
+    return wrapper
+
+
+def _outputs(wrapper: WrapCalibratedExplainer, mode: str, x, bins=None) -> np.ndarray:
+    if mode == "classification":
+        proba, (low, high) = wrapper.predict_proba(x, uq_interval=True, bins=bins)
+        return np.concatenate([np.ravel(proba), np.ravel(low), np.ravel(high)])
+    point, (low, high) = wrapper.predict(x, uq_interval=True, bins=bins)
+    return np.concatenate([np.ravel(point), np.ravel(low), np.ravel(high)])
+
+
+@pytest.mark.parametrize("mondrian", [False, True], ids=["standard", "mondrian"])
+@pytest.mark.parametrize("mode", ["classification", "regression"])
+def test_should_reflect_appended_calibration_data_when_reinitialize_appends(
+    mode: str, mondrian: bool
+) -> None:
+    """Classification rebuilds on the combined set; regression extends the existing split.
+
+    Regression appends keep the existing conformal split (``insert_calibration``), so only
+    the point predictions, not the intervals, equal a fresh calibration on the combined set.
+    """
+    data = _reinitialize_data(mode)
+    learner = _fitted_learner(mode, data)
+    bins_cal = data["bins_cal"] if mondrian else None
+    bins_new = data["bins_new"] if mondrian else None
+    bins_test = data["bins_test"] if mondrian else None
+    wrapper = _calibrated(learner, mode, data["x_cal"], data["y_cal"], bins_cal)
+    before = _outputs(wrapper, mode, data["x_test"], bins_test)
+
+    wrapper.explainer.reinitialize(learner, data["x_new"], data["y_new"], bins=bins_new)
+
+    after = _outputs(wrapper, mode, data["x_test"], bins_test)
+    fresh = _calibrated(
+        learner,
+        mode,
+        np.vstack([data["x_cal"], data["x_new"]]),
+        np.concatenate([data["y_cal"], data["y_new"]]),
+        None if bins_cal is None else np.concatenate([bins_cal, bins_new]),
+    )
+    expected = _outputs(fresh, mode, data["x_test"], bins_test)
+    assert len(wrapper.explainer.y_cal) == len(data["y_cal"]) + len(data["y_new"])
+    assert not np.array_equal(after, before)
+    if mode == "classification":
+        np.testing.assert_array_equal(after, expected)
+    else:
+        n_test = len(data["x_test"])
+        np.testing.assert_array_equal(after[:n_test], expected[:n_test])
+
+
+@pytest.mark.parametrize("mode", ["classification", "regression"])
+def test_should_match_fresh_calibration_when_reinitialize_swaps_learner(mode: str) -> None:
+    data = _reinitialize_data(mode)
+    wrapper = _calibrated(_fitted_learner(mode, data), mode, data["x_cal"], data["y_cal"])
+    before = _outputs(wrapper, mode, data["x_test"])
+    replacement = (LogisticRegression() if mode == "classification" else Ridge()).fit(
+        data["x_new"], data["y_new"]
+    )
+
+    wrapper.explainer.reinitialize(replacement)
+
+    after = _outputs(wrapper, mode, data["x_test"])
+    fresh = _calibrated(replacement, mode, data["x_cal"], data["y_cal"])
+    assert not np.array_equal(after, before)
+    np.testing.assert_array_equal(after, _outputs(fresh, mode, data["x_test"]))
+
+
+def test_should_match_fresh_calibration_when_wrapper_is_refit_after_calibration() -> None:
+    data = _reinitialize_data("classification")
+    wrapper = WrapCalibratedExplainer(LogisticRegression())
+    wrapper.fit(data["x_prop"], data["y_prop"])
+    wrapper.calibrate(data["x_cal"], data["y_cal"], seed=42)
+
+    wrapper.fit(data["x_new"], data["y_new"])
+
+    fresh = WrapCalibratedExplainer(LogisticRegression())
+    fresh.fit(data["x_new"], data["y_new"])
+    fresh.calibrate(data["x_cal"], data["y_cal"], seed=42)
+    np.testing.assert_array_equal(
+        _outputs(wrapper, "classification", data["x_test"]),
+        _outputs(fresh, "classification", data["x_test"]),
+    )
+
+
+def test_should_not_serve_cached_predictions_when_reinitialize_changes_calibration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CE_CACHE", "1")
+    data = _reinitialize_data("classification")
+    learner = _fitted_learner("classification", data)
+    wrapper = _calibrated(learner, "classification", data["x_cal"], data["y_cal"])
+    assert wrapper.explainer.perf_cache is not None and wrapper.explainer.perf_cache.enabled
+    _outputs(wrapper, "classification", data["x_test"])  # populate the cache
+
+    wrapper.explainer.reinitialize(learner, data["x_new"], data["y_new"])
+
+    fresh = _calibrated(
+        learner,
+        "classification",
+        np.vstack([data["x_cal"], data["x_new"]]),
+        np.concatenate([data["y_cal"], data["y_new"]]),
+    )
+    np.testing.assert_array_equal(
+        _outputs(wrapper, "classification", data["x_test"]),
+        _outputs(fresh, "classification", data["x_test"]),
+    )
+
+
+def _fail(*_args, **_kwargs):
+    raise ConfigurationError("calibrator construction failed")
+
+
+@pytest.mark.parametrize(
+    ("mode", "appending", "target"),
+    [
+        ("classification", True, "obtain_interval_calibrator"),
+        ("classification", False, "obtain_interval_calibrator"),
+        ("regression", True, "refresh_interval_calibration_snapshot"),
+    ],
+    ids=["classification-append", "classification-new-learner", "regression-append"],
+)
+def test_should_restore_previous_state_when_reinitialize_fails(
+    mode: str, appending: bool, target: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    data = _reinitialize_data(mode)
+    learner = _fitted_learner(mode, data)
+    wrapper = _calibrated(learner, mode, data["x_cal"], data["y_cal"])
+    explainer = wrapper.explainer
+    before = _outputs(wrapper, mode, data["x_test"])
+    calibrator = explainer.interval_learner
+    owner = (
+        explainer if target == "obtain_interval_calibrator" else explainer.prediction_orchestrator
+    )
+    monkeypatch.setattr(owner, target, _fail)
+    args = (data["x_new"], data["y_new"]) if appending else ()
+
+    with pytest.raises(ConfigurationError, match="calibrator construction failed"):
+        explainer.reinitialize(learner, *args)
+
+    monkeypatch.undo()
+    assert len(explainer.y_cal) == len(data["y_cal"])
+    assert explainer.learner is learner
+    cached = explainer.plugin_manager.interval_context_metadata["default"]["calibrator"]
+    assert cached is explainer.interval_learner
+    if mode == "classification":
+        assert explainer.interval_learner is calibrator
+    np.testing.assert_array_equal(_outputs(wrapper, mode, data["x_test"]), before)
+
+
+def test_should_leave_calibration_set_unchanged_when_appended_bins_have_wrong_length() -> None:
+    data = _reinitialize_data("classification")
+    learner = _fitted_learner("classification", data)
+    wrapper = _calibrated(learner, "classification", data["x_cal"], data["y_cal"], data["bins_cal"])
+
+    with pytest.raises(DataShapeError):
+        wrapper.explainer.reinitialize(
+            learner, data["x_new"], data["y_new"], bins=data["bins_new"][:-1]
+        )
+
+    assert len(wrapper.explainer.y_cal) == len(data["y_cal"])
+    assert len(wrapper.explainer.bins) == len(data["bins_cal"])

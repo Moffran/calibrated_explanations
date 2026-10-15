@@ -233,6 +233,33 @@ def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: py
     # Plugin does not cache the calibrator; orchestrator does that via capture_interval_calibrators
 
 
+def test_should_rebuild_interval_calibrator_when_context_operation_is_update(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    class DummyCalibrator:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.venn_abers.VennAbers",
+        DummyCalibrator,
+        raising=False,
+    )
+    stale = object()
+    context = make_interval_context(
+        "classification",
+        metadata={
+            "operation": "update",
+            "calibrator": stale,
+            "explainer": SimpleNamespace(predict_function=lambda x: x, interval_learner=stale),
+        },
+    )
+
+    calibrator = LegacyIntervalCalibratorPlugin().create(context)
+
+    assert isinstance(calibrator, DummyCalibrator)
+
+
 def test_interval_plugin_requires_predict_callable(monkeypatch: pytest.MonkeyPatch):
     class DummyCalibrator:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
