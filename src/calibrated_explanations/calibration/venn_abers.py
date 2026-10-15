@@ -11,8 +11,6 @@ Part of ADR-001: Core Decomposition Boundaries (Stage 1a).
 
 from __future__ import annotations
 
-import hashlib
-import pickle  # nosec B403 - deserialization is restricted to trusted, checksum-validated state
 import warnings
 from contextlib import contextmanager
 from typing import Any, Mapping
@@ -24,6 +22,7 @@ from ..core.prediction.interval_summary import IntervalSummary, coerce_interval_
 from ..utils import convert_targets_to_numeric
 from ..utils.exceptions import ConfigurationError
 from .normalization_strategy import NormalizationStrategy, coerce_normalization_strategy
+from .primitive_checksum import primitive_checksums, verify_primitive_checksum
 
 
 @contextmanager
@@ -411,16 +410,12 @@ class VennAbers:
 
         label_map = self.label_map or {}
         original_labels = self.original_labels
-        payload_bytes = pickle.dumps(self, protocol=pickle.HIGHEST_PROTOCOL)
-        return {
+        primitive: dict[str, Any] = {
             "schema_version": 2,
             "calibrator_type": "venn_abers",
             "parameters": {
                 "is_multiclass": bool(self.is_multiclass()),
                 "is_mondrian": bool(self.is_mondrian()),
-            },
-            "checksums": {
-                "sha256": hashlib.sha256(payload_bytes).hexdigest(),
             },
             "fields": {
                 "y_cal_numeric": _as_list(self.y_cal_numeric),
@@ -432,6 +427,8 @@ class VennAbers:
                 "bins": _as_list(self.bins),
             },
         }
+        primitive["checksums"] = primitive_checksums(primitive)
+        return primitive
 
     @classmethod
     def from_primitive(cls, payload: Mapping[str, object]) -> "VennAbers":
@@ -450,6 +447,7 @@ class VennAbers:
     @classmethod
     def _from_primitive_v2(cls, payload: Mapping[str, object]) -> "VennAbers":
         """Rehydrate a JSON-safe schema v2 primitive."""
+        verify_primitive_checksum(payload)
         calibrator_type = payload.get("calibrator_type")
         if calibrator_type != "venn_abers":
             raise ConfigurationError(
