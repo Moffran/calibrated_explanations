@@ -1,6 +1,6 @@
 > **Active scope:** Governing architectural decision for the interval calibrator plugin contract (`IntervalCalibratorPlugin`) and calibrator registration strategy. Remains active as long as these contracts govern calibrator plugins; superseded when the calibrator plugin strategy is revised.
 
-> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-10-15):** Last edited 2026-10-15 (§4 recalibration-operation contract) · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-013: Interval Calibrator Plugin Strategy
 
@@ -50,7 +50,7 @@ We therefore need a plugin model that lets external contributors add new interva
      Implementations may wrap or subclass `IntervalRegressor`, but probability/interval calculations must delegate to the reference logic so conformal guarantees remain intact.
    - When a plugin advertises regression support its returned calibrator object must satisfy the regression protocol. This ensures regression plugins necessarily expose the classification machinery they already depend on, preventing behavioural drift between modes.
    - Plugins can augment these calibrators (e.g., swapping the conformal engine used by IntervalRegressor), but they are required to invoke the base class logic when producing probabilities or intervals to preserve the calibrated guarantees. Any plugin that replaces those internals must demonstrate compatibility with the semantics in ADR-021 and document how classification, percentile regression, and thresholded regression expectations are upheld.
-   - **Legacy default:** ship `DefaultIntervalCalibratorPlugin` inside the package. `create(context)` simply returns the frozen in-tree IntervalRegressor / VennAbers instances that are already constructed by the explainer. This plugin is registered under the identifier `core.interval.legacy` and marked as trusted. It is the mandatory fallback whenever resolution fails or no explicit plugin is configured.
+   - **Legacy default:** ship `DefaultIntervalCalibratorPlugin` inside the package. `create(context)` simply returns the frozen in-tree IntervalRegressor / VennAbers instances that are already constructed by the explainer, except when the context requests a rebuild (see the 2026-10-15 design decision in §4). This plugin is registered under the identifier `core.interval.legacy` and marked as trusted. It is the mandatory fallback whenever resolution fails or no explicit plugin is configured.
    - **FAST plugin (second wave):** ship `FastIntervalCalibratorPlugin` that layers the FAST heuristics on top of the shared protocols. It reuses the existing IntervalRegressor/VennAbers instances but applies the reduced-computation path used by the FAST framework. The plugin registers as `core.interval.fast`, is flagged `fast_compatible=True`, and is never part of the fallback chain for the primary interval mode so FAST remains an opt-in experience separate from the legacy flow.
 
 2. **Registry integration and metadata.**
@@ -89,6 +89,25 @@ We therefore need a plugin model that lets external contributors add new interva
    `plugin_state` for plugin-local scratch data without mutating the explainer.
    No separate `LegacyIntervalContext` class is required unless a future ADR
    introduces a materially different legacy adapter boundary.
+
+   **Design decision (2026-10-15): recalibration operations.** Every interval
+   context carries `metadata["operation"]`: `"initialize"`, `"initialize_fast"`
+   or `"update"`. An `"update"` context means that `calibration_splits` (and
+   `bins`) differ from the data any earlier calibrator was fitted on.
+   - For `"update"`, a plugin MUST return a calibrator fitted on the context's
+     `calibration_splits`. It MUST NOT return `metadata["calibrator"]`, the
+     explainer's existing `interval_learner`, or any other calibrator it cached
+     for earlier data.
+   - The core MUST drop the cached calibrator and the active `interval_learner`
+     before it requests a calibrator for changed calibration data or a changed
+     learner (`CalibratedExplainer.reinitialize`). Plugins therefore never
+     receive a stale `metadata["calibrator"]` for such a request, whatever its
+     `operation`. The legacy plugin also honours `"update"` itself.
+   - A failed rebuild MUST leave the previous calibrator, cached metadata and
+     calibration set in place (fail closed, no half-updated state).
+   - Regression appends keep the incremental `insert_calibration` path above:
+     the appended instances extend the existing conformal split instead of
+     re-drawing it.
 
 5. **Documentation and tooling.**
    - Developer docs gain a dedicated section that explains the layered protocol, the context object, and examples that subclass and compose IntervalRegressor / VennAbers.
@@ -137,6 +156,7 @@ Each alternative scenario is evaluated with the same interval calibrator:
 - Registry protocols and trusted defaults remain the same; no sandboxing or
   distribution changes are required.【F:src/calibrated_explanations/plugins/intervals.py†L1-L80】【F:src/calibrated_explanations/plugins/builtins.py†L120-L183】
 - **2026-06-02 (v0.11.3 Task 9 Workstream D):** ADR-013 §4 Lifecycle previously cited `src/calibrated_explanations/plugins/interval_wrappers.py` as the FAST wrapper location. That file does not exist. The wrapper is at `src/calibrated_explanations/calibration/interval_wrappers.py`. §4 text has been corrected. This is a documentation-only fix; no code change required.
+- **2026-10-15 (v1.0.2):** the §4 recalibration-operation contract is enforced by `discard_interval_calibrator` in `src/calibrated_explanations/calibration/interval_learner.py`, which runs before `update_interval_learner` rebuilds a classification calibrator and before `CalibratedExplainer.reinitialize` rebuilds after a learner change, and by `LegacyIntervalCalibratorPlugin.create`, which honours `operation == "update"`. Before this, `reinitialize` left classification calibration (and, after a learner change, regression intervals) on the previous data or learner.
 
 
 ## Governed claims

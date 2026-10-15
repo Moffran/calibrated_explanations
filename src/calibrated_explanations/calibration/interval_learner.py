@@ -9,7 +9,7 @@ Part of ADR-001: Core Decomposition Boundaries (Stage 1a).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 from ..utils.exceptions import ConfigurationError
 from ..utils.helper import assign_threshold as normalize_threshold
@@ -39,6 +39,51 @@ def assign_threshold(explainer: CalibratedExplainer, threshold) -> None:
     """
     _ = explainer  # preserve signature; explainer no longer used
     return normalize_threshold(threshold)
+
+
+_CACHED_CALIBRATOR_KEYS = ("calibrator", "fast_calibrators", "existing_fast_calibrators")
+
+
+def discard_interval_calibrator(explainer: CalibratedExplainer) -> Callable[[], None]:
+    """Discard the active and cached interval calibrators of an explainer.
+
+    Interval resolution persists the last calibrator in
+    ``plugin_manager.interval_context_metadata`` and the built-in interval
+    plugin reuses it (or the active ``interval_learner``) when present. Call
+    this before rebuilding calibration state on changed calibration data or a
+    changed learner, so the rebuild cannot return a calibrator fitted on other
+    data.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The explainer whose calibrators are discarded.
+
+    Returns
+    -------
+    Callable[[], None]
+        Callback that restores the discarded calibrators, for use when the
+        rebuild fails.
+    """
+    metadata_store = getattr(explainer.plugin_manager, "interval_context_metadata", None) or {}
+    removed: dict[str, dict[str, Any]] = {}
+    for key, bucket in metadata_store.items():
+        if not isinstance(bucket, dict):
+            continue
+        popped = {name: bucket.pop(name) for name in _CACHED_CALIBRATOR_KEYS if name in bucket}
+        if popped:
+            removed[key] = popped
+    previous = explainer.interval_learner
+    explainer.interval_learner = None
+
+    def restore() -> None:
+        explainer.interval_learner = previous
+        for key, popped in removed.items():
+            bucket = metadata_store.get(key)
+            if isinstance(bucket, dict):
+                bucket.update(popped)
+
+    return restore
 
 
 def update_interval_learner(  # pylint: disable=invalid-name
@@ -71,7 +116,13 @@ def update_interval_learner(  # pylint: disable=invalid-name
 
     Notes
     -----
-    - For classification mode: Obtains a fresh interval calibrator from the explainer
+    - The caller must already have appended ``xs``/``ys`` (and ``bins``) to the
+      explainer's calibration set.
+    - For classification mode: Rebuilds the interval calibrator on the full
+      (appended) calibration set. The previously cached calibrator is discarded
+      so the interval plugin cannot return a calibrator fitted on other data. If
+      the rebuild fails, the previous calibrator is restored and the error is
+      re-raised.
     - For regression mode: Delegates to the interval learner's insert_calibration method
     - Sets the explainer's _initialized flag to True after successful update
     """
@@ -79,10 +130,15 @@ def update_interval_learner(  # pylint: disable=invalid-name
         raise ConfigurationError("Fast explanations are not supported in this update path.")
 
     if explainer.mode == "classification":
-        interval, _identifier = explainer.obtain_interval_calibrator(
-            fast=False,
-            metadata={"operation": "update"},
-        )
+        restore = discard_interval_calibrator(explainer)
+        try:
+            interval, _identifier = explainer.obtain_interval_calibrator(
+                fast=False,
+                metadata={"operation": "update"},
+            )
+        except BaseException:
+            restore()
+            raise
         explainer.interval_learner = interval
     elif "regression" in explainer.mode:
         if is_fast_interval_collection(explainer.interval_learner):
