@@ -74,6 +74,23 @@
   the packaged default, raises `SerializationError` with no fallback, and only
   a caller-supplied `.json` `template_path` works. No code change.
 
+### Documentation / Governance
+
+- **ADR-042 canonical ranking semantics (#224):** defines one ranking
+  contract per explanation type for rule retrieval, plots, narratives and
+  conjunction selection. Factual rules rank strongest first by `|weight|`,
+  with the narrower uncertainty interval winning ties. Alternative rules use
+  the `ensured` score that alternative plots already use by default, now also
+  for `__repr__`, narratives and conjunction candidates. Narratives follow
+  plot logic, and `add_conjunctions()` and `to_narrative()` gain the plot's
+  `rnk_metric`/`rnk_weight` arguments. Ties then fall back
+  to native rule index, `NaN` ranks last, `top_k` edge cases are defined,
+  PlotSpec `sort_by` stays presentation-only, and no statistical
+  ranking-stability guarantee is claimed. Current (v1.0.x) behaviour,
+  including the inconsistencies it replaces, is pinned by characterisation
+  tests. No ranking behaviour changes in this release; the ordering changes
+  land in v1.1.0 (#204).
+
 ## [v1.0.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.1) - 2026-09-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.0...v1.0.1)

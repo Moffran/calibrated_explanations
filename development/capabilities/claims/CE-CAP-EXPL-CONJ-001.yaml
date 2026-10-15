@@ -5,6 +5,7 @@ status: current
 
 adr_links:
   - ADR-008
+  - ADR-042
 
 claim_text: >
   calibrated_explanations supports conjunctive multi-feature explanation rules
