@@ -18,6 +18,32 @@
 
 ### Fixed
 
+- **`reinitialize` now refreshes calibration (silent wrong output, #239):**
+  `CalibratedExplainer.reinitialize(learner, xs, ys)` appended the rows to
+  `x_cal`/`y_cal`, but classification kept using the Venn-Abers calibrator
+  fitted on the original calibration set. Probabilities and intervals were
+  unchanged, bit for bit, and no warning was raised. `reinitialize(learner)`
+  with a new or refitted learner had the same problem in both modes; this
+  includes `WrapCalibratedExplainer.fit()` after `calibrate()`. The cached
+  calibrator, the cached predict function and (when `CE_CACHE` is enabled)
+  cached predictions are now discarded. After an append, classification
+  matches a fresh calibration on the combined data. After a learner change,
+  both modes match a fresh calibration. Regression appends still extend the
+  existing conformal split in place. `reinitialize` is now atomic: if it fails
+  (including on mismatched `bins`), the calibration set, bins, learner and
+  calibrator are restored. ADR-013 now states that an interval plugin must not
+  return a cached calibrator for an `operation="update"` context.
+- **Calibrator primitive checksums are reproducible and verified (#240):** the
+  `checksums.sha256` of `VennAbers`/`IntervalRegressor` primitives was a digest
+  of a pickle of the in-memory calibrator. It changed between processes for
+  identical content, and nothing checked it on load. It is now a SHA-256 over
+  the canonical JSON of the persisted content, tagged
+  `"algorithm": "sha256-canonical-json-v1"`. `from_primitive()` verifies it
+  and raises `IncompatibleStateError` when the content was modified or the
+  algorithm is unknown. Primitives saved by 1.0.1 and earlier have no tag. They
+  still load, but with a `UserWarning` plus an INFO log, because they cannot be
+  verified. A future schema version will reject them, so re-save them with
+  `save_state()`.
 - **Unknown `CE_*` environment-variable warning no longer repeats:** the
   `UserWarning` from `ConfigManager.from_sources()` fired on every explainer
   construction, so a single stray `CE_*` variable could flood experiment
