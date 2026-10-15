@@ -57,6 +57,7 @@ tif_<area>.py              # executable scenario implementing the spec
 | CE-TIF-PRED-001 | [CE-TIF-PRED-001.md](CE-TIF-PRED-001.md) | [tif_prediction.py](tif_prediction.py) | PRED-001 | behavioral_contract | active | CE-REQ-PRED-API-001, CE-REQ-PRED-INTERVAL-BOUNDS-001 | CE-CAP-PRED-001 |
 | CE-TIF-PRED-CLASS-001 | [CE-TIF-PRED-CLASS-001.md](CE-TIF-PRED-CLASS-001.md) | [tif_classification.py](tif_classification.py) | PRED-CLASS-001 | numerical_behavior | active | CE-REQ-PRED-CLASS-API-001, CE-REQ-PRED-CLASS-BOUNDS-001 | CE-CAP-PRED-CLASS-001 |
 | CE-TIF-PRED-PROB-001 | [CE-TIF-PRED-PROB-001.md](CE-TIF-PRED-PROB-001.md) | [tif_prob_regression.py](tif_prob_regression.py) | PRED-PROB-001 | numerical_behavior | active | CE-REQ-PRED-PROB-API-001, CE-REQ-PRED-PROB-BOUNDS-001 | CE-CAP-PRED-PROB-001 |
+| CE-TIF-PRED-PROB-002 | [CE-TIF-PRED-PROB-002.md](CE-TIF-PRED-PROB-002.md) | [tif_prob_regression_instance.py](tif_prob_regression_instance.py) | PRED-PROB-002 | numerical_behavior | active | CE-REQ-PRED-PROB-INSTANCE-001 | CE-CAP-PRED-PROB-001 |
 | CE-TIF-REJECT-001 | [CE-TIF-REJECT-001.md](CE-TIF-REJECT-001.md) | [tif_reject.py](tif_reject.py) | REJECT-001 | api_contract | active | CE-REQ-REJECT-API-001 | CE-CAP-REJECT-001 |
 | CE-TIF-VIZ-001 | [CE-TIF-VIZ-001.md](CE-TIF-VIZ-001.md) | [tif_visualization.py](tif_visualization.py) | VIZ-001 | empirical_smoke | active | CE-REQ-VIZ-SMOKE-001 | CE-CAP-VIZ-001 |
 

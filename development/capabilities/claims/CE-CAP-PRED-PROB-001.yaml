@@ -20,12 +20,14 @@ task_types:
 requirements:
   - CE-REQ-PRED-PROB-API-001
   - CE-REQ-PRED-PROB-BOUNDS-001
+  - CE-REQ-PRED-PROB-INSTANCE-001
 
 verification:
   proves:
     - api_contract
     - probability_bounds
     - output_shape
+    - instance_wise_determinism
   verification_type: automated
 
 assumptions:
@@ -36,8 +38,11 @@ assumptions:
   - The probability returned is empirical (conformal predictive system based on CPS).
     Coverage guarantees hold under exchangeability of calibration and test instances.
   - This claim does not assert frequency-calibration of P(Y > threshold | X); it
-    asserts only that the returned array is in [0, 1] and has the correct shape.
-  - The API test verifies shape and bounds only; it does not verify conformal coverage.
+    asserts that the returned array is in [0, 1], has the correct shape, and is
+    instance-wise for a frozen calibration state (CE-REQ-PRED-PROB-INSTANCE-001 requires
+    identical outputs regardless of batch size, order or co-batched objects).
+  - The API tests verify shape, bounds and batch invariance; they do not verify
+    conformal coverage.
 
 evidence_required:
   - commit_sha

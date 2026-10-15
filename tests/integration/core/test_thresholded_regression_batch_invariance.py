@@ -192,3 +192,16 @@ def test_factual_explanation_does_not_depend_on_batch():
     for key in ("predict", "low", "high"):
         np.testing.assert_array_equal(alone.prediction[key], batched.prediction[key])
         np.testing.assert_array_equal(alone.feature_weights[key], batched.feature_weights[key])
+
+
+def test_restored_state_reproduces_instance_wise_outputs(tmp_path):
+    """ADR-031: a save/load round trip keeps thresholded outputs exact and batch-invariant."""
+    wrapper, panel, y = _fit("forest", 9)
+    threshold = _thresholds(y)["p95"]
+    expected = _proba(wrapper, panel, threshold)
+    path = wrapper.save_state(tmp_path / "state")
+
+    restored = WrapCalibratedExplainer.load_state(path, learner=wrapper.learner)
+
+    np.testing.assert_array_equal(_proba(restored, panel, threshold), expected)
+    np.testing.assert_array_equal(_proba(restored, panel[::-1], threshold)[::-1], expected)

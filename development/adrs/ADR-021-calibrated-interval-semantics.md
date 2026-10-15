@@ -1,6 +1,6 @@
 > **Active scope:** Governing architectural decision for prediction interval semantic definitions (`low`, `high`, `predict`, coverage semantics). Remains active as long as these semantics govern calibration output interpretation; superseded when interval semantics are revised.
 
-> **Status note (2026-03-16):** Last edited 2026-03-16 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-10-15):** Last edited 2026-10-15 (amended §3: instance-wise threshold scorer) · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-021: Calibrated Interval Semantics
 
@@ -88,13 +88,26 @@ between the three paths.
   probabilistic path. The explainer first validates and normalizes the
   threshold argument (scalar, tuple, or per-instance sequence) to ensure it can
   be broadcast across perturbations.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1457-L1466】【F:src/calibrated_explanations/core/prediction_helpers.py†L195-L220】
-* `IntervalRegressor.predict_probability` splits calibration residuals in two:
-  one half fits the CPS (identical to the percentile flow) while the other half
-  is reused on demand to fit a Venn-Abers classifier whose targets encode the
-  threshold event (`y \leq t` or `t_0 < y \leq t_1`). The CPS supplies calibrated
-  probabilities for the event, which become the pseudo-scores passed into
-  Venn-Abers; the resulting predictor returns the probability interval along
-  with the calibrated mean.【F:src/calibrated_explanations/core/interval_regressor.py†L67-L205】【F:src/calibrated_explanations/core/interval_regressor.py†L203-L290】
+* `IntervalRegressor.predict_probability` splits calibration residuals in two
+  (seeded permutation): one half fits a dedicated *split* CPS (same residual and
+  difficulty definitions as the percentile flow, but fitted on that half only),
+  while the other half is reused on demand to fit a Venn-Abers classifier whose
+  targets encode the threshold event (`y \leq t` or `t_0 < y \leq t_1`). The
+  split CPS supplies event probabilities, which become the pseudo-scores passed
+  into Venn-Abers; the resulting predictor returns the probability interval along
+  with the calibrated mean.
+* **Score function (amended 2026-10-15).** The Venn-Abers pseudo-score MUST be one
+  deterministic function of the object's `(yhat, sigma, bin)`, applied identically
+  to the Venn-Abers calibration half and to test objects: the unsmoothed CPD value
+  of the split CPS (`smoothing=False`). Implementations MUST NOT score test objects
+  with a CPS fitted on the Venn-Abers calibration half (that breaks inductive
+  Venn-Abers validity), and MUST NOT use smoothed (randomised) CPS values whose
+  random term depends on batch position or seeding order.
+* **Instance-wise contract.** For a frozen calibration state, the thresholded
+  probability and both interval endpoints of an object depend only on that
+  object's model input and bin, never on batch size, order or co-batched objects
+  (`CE-REQ-PRED-PROB-INSTANCE-001`). Thresholded regression is an inductive,
+  not a transductive, Venn-Abers predictor.【F:src/calibrated_explanations/core/interval_regressor.py†L67-L205】【F:src/calibrated_explanations/core/interval_regressor.py†L203-L290】
 * Because the Venn-Abers step is recomputed whenever the threshold changes,
   `predict_probability` caches the latest threshold under
   `self.current_y_threshold` so the helper can expose a `predict_proba` method
@@ -258,3 +271,11 @@ While CE manages the structural formatting above, CE expressly **does not contra
   referencing interval behaviour or requesting changes that depend on it.
 * Future enhancements (e.g., alternative probabilistic calibrators) must state
   explicitly whether they replace CPS, Venn-Abers, or both within each mode.
+* 2026-10-15 amendment (§3, score function and instance-wise contract): CE 1.0.1
+  scored test objects with crepes' smoothed CPD value, whose random term crepes
+  draws by row index after reseeding, and with a CPS fitted on all calibration
+  data. The same object could therefore receive different calibrated
+  probabilities depending on batch composition, and the score function differed
+  from the one Venn-Abers was calibrated on. Both CPS and Venn-Abers are retained;
+  only the scorer changed. Evidence:
+  `development/finished-work/threshold_regression_batch_invariance_report.md`.

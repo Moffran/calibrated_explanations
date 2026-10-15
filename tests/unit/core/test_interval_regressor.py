@@ -15,6 +15,7 @@ class DummyCPS:
         self.fit_calls: list[dict[str, object]] = []
         # Predict invocations pop values from this queue so tests can control outputs.
         self.predict_queue: list[float] = []
+        self.smoothing_calls: list[bool] = []
         self.alphas = np.array([], dtype=float)
         self.binned_alphas = None
 
@@ -57,7 +58,9 @@ class DummyCPS:
         lower_percentiles=None,
         higher_percentiles=None,
         bins=None,
+        smoothing=True,
     ):
+        self.smoothing_calls.append(smoothing)
         if y is None and lower_percentiles is not None and higher_percentiles is not None:
             n = y_hat.shape[0]
             # Return four columns mimicking conformal predictive system outputs.
@@ -378,6 +381,22 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
 
     assert regressor.bins_size == 5
     assert np.array_equal(regressor.bins_storage[:5], np.array([2, 3, 4, 5, 6]))
+
+
+@pytest.mark.parametrize("threshold", [0.25, (0.15, 0.35)])
+def test_threshold_scores_share_one_deterministic_split_cps(monkeypatch, threshold):
+    """Venn-Abers calibration and test scores must use the same unsmoothed split CPS.
+
+    Smoothed crepes p-values draw their random term by row index, which made a test
+    object's calibrated probability depend on its batch position.
+    """
+    regressor = make_regressor(monkeypatch)
+
+    regressor.predict_probability(np.array([[0.1, 0.2], [0.3, 0.4]]), threshold)
+
+    assert regressor.cps.smoothing_calls == []
+    assert regressor.split["cps"].smoothing_calls
+    assert not any(regressor.split["cps"].smoothing_calls)
 
 
 def test_compute_proba_cal_invalid_type(monkeypatch):

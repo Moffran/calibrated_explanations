@@ -1,0 +1,60 @@
+{
+  "evidence_id": "CE-EVID-PRED-PROB-002-20261014",
+  "claim_ids": [
+    "CE-CAP-PRED-PROB-001"
+  ],
+  "requirement_ids": [
+    "CE-REQ-PRED-PROB-INSTANCE-001"
+  ],
+  "adr_refs": [
+    "ADR-021"
+  ],
+  "standard_refs": [],
+  "tif_ids": [
+    "CE-TIF-PRED-PROB-002"
+  ],
+  "verification_type": "numerical_behavior",
+  "result": "pass",
+  "timestamp": "2026-10-14T19:11:37.205541+00:00",
+  "commit_sha": "a4cd790f56391d62c69f3442ff320e2f4f18e75a",
+  "package_version": "1.0.1",
+  "python_version": "3.11.9",
+  "platform": "win32",
+  "dataset_id": "sklearn make_regression n_samples=200 n_features=4 n_informative=3 noise=10 random_seed=42",
+  "random_seed": 42,
+  "configuration": {
+    "threshold": 0.0
+  },
+  "scenarios": [
+    {
+      "scenario_id": "prob_regression_batch_invariance_threshold_0",
+      "observations": {
+        "max_abs_batch_deviation": 0.0,
+        "max_abs_permutation_deviation": 0.0,
+        "threshold": 0.0,
+        "n_instances": 12
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-PRED-PROB-INSTANCE-001",
+          "field": "max_abs_batch_deviation == 0.0",
+          "expected": true,
+          "observed": true,
+          "result": "pass"
+        },
+        {
+          "criterion_ref": "CE-REQ-PRED-PROB-INSTANCE-001",
+          "field": "max_abs_permutation_deviation == 0.0",
+          "expected": true,
+          "observed": true,
+          "result": "pass"
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "logs": null,
+    "raw_output": null
+  }
+}

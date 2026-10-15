@@ -90,7 +90,11 @@ This requirement verifies instance-wise determinism of the calibrated output. It
 does not verify:
 
 - Frequency-calibration of the threshold event probability.
-- Behaviour after `insert_calibration` (online calibration changes the frozen state;
-  outputs are instance-wise with respect to the updated state).
+- Calibration validity after online calibration (`reinitialize` with new instances).
+  Outputs remain instance-wise with respect to the updated state, but `insert_calibration`
+  has pre-existing index and normalisation defects (see
+  `development/finished-work/threshold_regression_batch_invariance_report.md`, Section 6).
+- Mondrian bins that fall entirely into one calibration half (pre-existing silent-zero
+  behaviour; same report, Section 8).
 - Learners that are themselves batch-dependent (for example, models whose
   `predict` normalises over the batch); CE cannot repair a learner's own coupling.

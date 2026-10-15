@@ -25,6 +25,7 @@ from .core.config_manager import (
     get_process_config_manager,
     reset_process_config_manager_for_testing,
 )
+from .utils import learner_supports_predict_proba
 from .viz import _matplotlib_compat as legacy  # noqa: F401 - re-exported as plotting.legacy
 
 
@@ -2150,7 +2151,7 @@ def _build_global_prediction_payload(
     """Build the validated prediction payload shared by all global plot routes."""
     bins = kwargs.get("bins")
     is_regularized = True
-    if "predict_proba" not in dir(explainer.learner) and threshold is None:
+    if not learner_supports_predict_proba(explainer.learner) and threshold is None:
         prediction_kwargs = {"bins": bins}
         if "low_high_percentiles" in kwargs:
             prediction_kwargs["low_high_percentiles"] = kwargs["low_high_percentiles"]
