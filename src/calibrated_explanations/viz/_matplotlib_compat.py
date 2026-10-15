@@ -14,8 +14,8 @@ from pathlib import Path
 
 import numpy as np
 
+from ..utils import learner_supports_predict_proba
 from ..utils.exceptions import ConfigurationError
-from ..utils.helper import learner_supports_predict_proba
 
 # Guard optional dependency imports so importing this module doesn't fail in
 # environments without matplotlib (tests/CI where viz extras aren't installed).

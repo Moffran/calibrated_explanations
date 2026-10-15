@@ -25,7 +25,7 @@ from .core.config_manager import (
     get_process_config_manager,
     reset_process_config_manager_for_testing,
 )
-from .utils.helper import learner_supports_predict_proba
+from .utils import learner_supports_predict_proba
 from .viz import _matplotlib_compat as legacy  # noqa: F401 - re-exported as plotting.legacy
 
 

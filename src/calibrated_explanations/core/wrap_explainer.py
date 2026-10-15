@@ -37,7 +37,11 @@ from ..api.params import (
     reject_unknown_public_kwargs,
     validate_param_combination,
 )
-from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
+from ..utils import (  # noqa: F401
+    check_is_fitted,
+    learner_supports_predict_proba,
+    safe_isinstance,
+)
 from ..utils.exceptions import (
     ConfigurationError,
     DataShapeError,
@@ -47,7 +51,6 @@ from ..utils.exceptions import (
     SerializationError,
     ValidationError,
 )
-from ..utils.helper import learner_supports_predict_proba
 from .calibrated_explainer import (  # circular during split
     _EXPLAIN_KWARGS as _CE_EXPLAIN_KWARGS,
 )
