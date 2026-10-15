@@ -247,13 +247,16 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     def create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> Any:
         """Instantiate the legacy interval calibrator for the supplied context."""
         task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
-        cached = context.metadata.get("calibrator")
+        # An "update" context carries changed calibration splits, so neither the
+        # cached nor the existing calibrator may be reused (ADR-013).
+        rebuild = context.metadata.get("operation") == "update"
+        cached = None if rebuild else context.metadata.get("calibrator")
         if cached is not None:
             return cached
         explainer = context.metadata.get("explainer")
 
         # Try to reuse existing calibrator if it's protocol-compliant and not a FAST collection
-        if explainer is not None:
+        if explainer is not None and not rebuild:
             existing = getattr(explainer, "interval_learner", None)
             if existing is not None and not is_fast_interval_collection(existing):
                 # Import protocol definitions to check compliance

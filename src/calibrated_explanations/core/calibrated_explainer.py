@@ -22,7 +22,7 @@ from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 if TYPE_CHECKING:
     from ..explanations import AlternativeExplanations, CalibratedExplanations
@@ -1541,34 +1541,109 @@ class CalibratedExplainer:
             New calibration input data to append
         ys : array-like, optional
             New calibration target data to append
+        bins : array-like, optional
+            Mondrian categories of the appended instances. Required when the
+            explainer was calibrated with bins.
 
         Returns
         -------
         :class:`.CalibratedExplainer`
             A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
+
+        Raises
+        ------
+        ValidationError
+            If ``bins`` are supplied for an explainer calibrated without bins.
+        DataShapeError
+            If ``bins`` and ``ys`` differ in length, or ``xs`` has the wrong
+            number of features.
+
+        Notes
+        -----
+        Without ``xs``/``ys``, the interval calibrator is rebuilt from scratch on
+        the current calibration set using ``learner``, equivalent to calibrating
+        afresh. With ``xs``/``ys``, the instances are appended to the calibration
+        set. The classification calibrator is then rebuilt on the combined set,
+        equivalent to calibrating afresh on the combined data. The regression
+        calibrator is extended in place: the appended instances are added to the
+        existing conformal split rather than re-drawing it, so the intervals can
+        differ from those of a fresh calibration on the combined data.
+
+        The update is atomic: if it fails, the calibration set, bins, learner
+        and interval calibrator are restored to their previous state before the
+        error is re-raised.
         """
-        self._initialized = False
         check_is_fitted(learner)
-        self.learner = learner
-        if xs is not None and ys is not None:
-            self.append_cal(xs, ys)
-            if bins is not None:
-                if self.bins is None:
-                    raise ValidationError("Cannot mix calibration instances with and without bins.")
-                if len(bins) != len(ys):
-                    raise DataShapeError(
-                        "The length of bins must match the number of added instances."
-                    )
-                self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
-            # update interval learner via helper
-            from ..calibration.interval_learner import update_interval_learner as _upd_il
+        appending = xs is not None and ys is not None
+        if appending and bins is not None:
+            if self.bins is None:
+                raise ValidationError("Cannot mix calibration instances with and without bins.")
+            if len(bins) != len(ys):
+                raise DataShapeError("The length of bins must match the number of added instances.")
 
-            _upd_il(self, xs, ys, bins=bins)
-        else:
-            from ..calibration.interval_learner import initialize_interval_learner as _init_il
+        from ..calibration.interval_learner import (  # pylint: disable=import-outside-toplevel
+            discard_interval_calibrator,
+            initialize_interval_learner,
+            update_interval_learner,
+        )
 
-            _init_il(self)
+        rollback = self._snapshot_reinitialize_state()
+        self._initialized = False
+        try:
+            previous_learner, self.learner = self.learner, learner
+            bound_to = getattr(self.predict_function, "__self__", None)
+            if bound_to is previous_learner and bound_to is not learner:
+                # Rebind the default predict function; a user-supplied one is kept.
+                self.predict_function = getattr(learner, self.predict_function.__name__)
+            if appending:
+                self.append_cal(xs, ys)
+                if bins is not None:
+                    self.bins = np.concatenate((self.bins, bins))
+                update_interval_learner(self, xs, ys, bins=bins)
+            else:
+                # A changed learner invalidates every calibrator fitted on the
+                # previous learner's calibration predictions.
+                discard_interval_calibrator(self)
+                initialize_interval_learner(self)
+        except BaseException:
+            rollback()
+            raise
+        if self.perf_cache is not None and getattr(self.perf_cache, "enabled", False):
+            # Cached predictions were computed with the previous calibration state.
+            self.perf_cache.flush()
         self._initialized = True
+
+    def _snapshot_reinitialize_state(self) -> Callable[[], None]:
+        """Capture the state ``reinitialize`` mutates and return a rollback callback."""
+        x_cal, y_cal, bins = self.x_cal, self.y_cal, self.bins
+        learner, predict_function = self.learner, self.predict_function
+        initialized = self._initialized
+        active = self.interval_learner
+        interval_learner = active
+        if active is not None and hasattr(active, "insert_calibration"):
+            # Regression appends mutate the calibrator in place; keep a private copy
+            # that still refers to this explainer.
+            interval_learner = copy.deepcopy(active, {id(self): self})
+        metadata = {
+            key: dict(bucket) if isinstance(bucket, dict) else bucket
+            for key, bucket in (self.plugin_manager.interval_context_metadata or {}).items()
+        }
+        default_bucket = metadata.get("default")
+        if isinstance(default_bucket, dict) and default_bucket.get("calibrator") is active:
+            default_bucket["calibrator"] = interval_learner
+        orchestrator = self.prediction_orchestrator
+        features = orchestrator.get_interval_calibration_features(fast=False)
+
+        def rollback() -> None:
+            self.x_cal, self.y_cal, self.bins = x_cal, y_cal, bins
+            self.learner, self.predict_function = learner, predict_function
+            self.interval_learner = interval_learner
+            self.plugin_manager.interval_context_metadata = metadata
+            if features is not None:
+                orchestrator.set_interval_calibration_snapshot(features, fast=False)
+            self._initialized = initialized
+
+        return rollback
 
     def __repr__(self):
         """Return the string representation of the CalibratedExplainer."""

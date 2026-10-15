@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import json
+import logging
 import pickle
-from typing import Any
+import subprocess
+import sys
+import textwrap
+from typing import Any, Callable
 
 import numpy as np
 import pytest
@@ -15,7 +20,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.calibration.interval_regressor import IntervalRegressor
 from calibrated_explanations.calibration.venn_abers import VennAbers
-from calibrated_explanations.utils.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError, IncompatibleStateError
 
 
 def _classification_wrapper() -> tuple[WrapCalibratedExplainer, np.ndarray]:
@@ -199,3 +204,91 @@ def test_interval_regressor_from_primitive_v2_rejects_invalid_payloads() -> None
                 "fields": {"y_cal_hat": [1.0], "residual_cal": [0.1]},
             }
         )
+
+
+_CALIBRATOR_CASES: list[tuple[str, Callable[[], Any], type, str]] = [
+    ("venn_abers", lambda: _classification_wrapper()[0], VennAbers, "cprobs"),
+    ("interval_regressor", lambda: _regression_wrapper()[0], IntervalRegressor, "residual_cal"),
+]
+
+
+@pytest.mark.parametrize(
+    ("calibrator_type", "build_wrapper", "calibrator_cls", "field"),
+    _CALIBRATOR_CASES,
+    ids=[case[0] for case in _CALIBRATOR_CASES],
+)
+def test_should_produce_identical_checksum_when_primitive_is_built_in_separate_process(
+    calibrator_type: str, build_wrapper: Callable[[], Any], calibrator_cls: type, field: str
+) -> None:
+    """The primitive checksum covers persisted content only, so it is reproducible."""
+    script = textwrap.dedent(
+        f"""
+        import json, warnings
+        warnings.simplefilter("ignore")
+        from tests.unit.calibration.test_calibrator_primitive_roundtrip import (
+            _classification_wrapper, _regression_wrapper,
+        )
+        build = _classification_wrapper if {calibrator_type!r} == "venn_abers" else _regression_wrapper
+        print(json.dumps(build()[0].explainer.interval_learner.to_primitive()["checksums"]))
+        """
+    )
+
+    other_process = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, check=True
+    )
+    in_process = build_wrapper().explainer.interval_learner.to_primitive()["checksums"]
+
+    assert json.loads(other_process.stdout.strip().splitlines()[-1]) == in_process
+    assert in_process["algorithm"] == "sha256-canonical-json-v1"
+
+
+@pytest.mark.parametrize(
+    ("calibrator_type", "build_wrapper", "calibrator_cls", "field"),
+    _CALIBRATOR_CASES,
+    ids=[case[0] for case in _CALIBRATOR_CASES],
+)
+def test_should_reject_primitive_when_fields_are_modified_after_writing(
+    calibrator_type: str, build_wrapper: Callable[[], Any], calibrator_cls: type, field: str
+) -> None:
+    """A primitive whose persisted fields changed must not load."""
+    primitive = json.loads(json.dumps(build_wrapper().explainer.interval_learner.to_primitive()))
+    calibrator_cls.from_primitive(copy.deepcopy(primitive))  # untampered primitive loads
+    values = primitive["fields"][field]
+    while isinstance(values[0], list):  # cprobs is nested
+        values = values[0]
+    values[0] += 0.01
+
+    with pytest.raises(IncompatibleStateError, match="checksum validation failed"):
+        calibrator_cls.from_primitive(primitive)
+
+
+@pytest.mark.parametrize(
+    ("calibrator_type", "build_wrapper", "calibrator_cls", "field"),
+    _CALIBRATOR_CASES,
+    ids=[case[0] for case in _CALIBRATOR_CASES],
+)
+def test_should_load_with_warning_when_primitive_has_legacy_untagged_checksum(
+    calibrator_type: str,
+    build_wrapper: Callable[[], Any],
+    calibrator_cls: type,
+    field: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Primitives written by <= 1.0.1 (pickle digest, no algorithm tag) still load, visibly."""
+    primitive = build_wrapper().explainer.interval_learner.to_primitive()
+    primitive["checksums"] = {"sha256": "0" * 64}
+
+    with caplog.at_level(logging.INFO), pytest.warns(UserWarning, match="no verifiable checksum"):
+        restored = calibrator_cls.from_primitive(primitive)
+
+    assert isinstance(restored, calibrator_cls)
+    assert any("no verifiable checksum" in record.getMessage() for record in caplog.records)
+
+
+def test_should_reject_primitive_when_checksum_algorithm_is_unknown() -> None:
+    """An unknown checksum algorithm fails closed instead of skipping verification."""
+    primitive = _classification_wrapper()[0].explainer.interval_learner.to_primitive()
+    primitive["checksums"]["algorithm"] = "md5"
+
+    with pytest.raises(IncompatibleStateError, match="unsupported checksum algorithm"):
+        VennAbers.from_primitive(primitive)

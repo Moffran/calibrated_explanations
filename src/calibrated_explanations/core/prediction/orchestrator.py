@@ -804,9 +804,12 @@ class PredictionOrchestrator:
         enriched_metadata.update(metadata)
         enriched_metadata.setdefault("task", self.explainer.mode)
         enriched_metadata.setdefault("mode", self.explainer.mode)
-        enriched_metadata.setdefault(
-            "predict_function", getattr(self.explainer, "predict_function", None)
-        )
+        # The predict function is rebound when `reinitialize` swaps the learner.
+        # Overwrite any cached value unless the caller supplied one explicitly.
+        if "predict_function" not in metadata:
+            enriched_metadata["predict_function"] = getattr(
+                self.explainer, "predict_function", None
+            )
         # Difficulty estimator can be updated post-init via `set_difficulty_estimator`.
         # Always overwrite any cached value so interval plugins see the current estimator.
         enriched_metadata["difficulty_estimator"] = self.explainer.difficulty_estimator
