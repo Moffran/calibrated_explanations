@@ -446,6 +446,10 @@ class IntervalRegressor:
     def _(self, y_threshold: tuple):
         """Compute the probability calibration for an interval threshold.
 
+        Uses the same deterministic split-CPS score function as the scalar case,
+        so the event ``low < y <= high`` is scored identically for calibration and
+        test objects.
+
         Parameters
         ----------
             y_threshold : tuple

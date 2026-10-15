@@ -143,9 +143,22 @@ What the evaluation shows:
 - **Unchanged:** classification (Venn-Abers on learner probabilities, no crepes p-values),
   percentile regression intervals (`predict_uncertainty`, no `tau` term), and serialized
   state schema (`split_parts` and the residual arrays are unchanged; the split CPS is refit
-  on load as before).
-- **Online calibration** (`insert_calibration`) already updates `split["cps"]` and the
-  part-1 arrays, so it stays consistent with the shared scorer.
+  on load as before). A save/load round trip reproduces thresholded outputs exactly and
+  stays batch-invariant; `test_restored_state_reproduces_instance_wise_outputs` pins this.
+- **Online calibration** (`CalibratedExplainer.reinitialize(learner, xs, ys)` →
+  `insert_calibration`) has two **pre-existing** defects that this change neither
+  introduces nor repairs:
+  - New rows are indexed `len(residual_cal) - 1 + i` instead of `len(residual_cal) + i`.
+    After adding 5 rows to 100, index 99 appears twice in the split and index 104 is
+    missing.
+  - New residuals are inserted unnormalised into the CPS alphas, which is wrong when a
+    difficulty estimator is active.
+
+  As a result the split CPS no longer equals a refit on part 0. Before the fix, the same
+  defects affected the full CPS used for test scores. Outputs after online calibration
+  remain deterministic and instance-wise, but they are not a valid inductive Venn-Abers
+  predictor until `insert_calibration` is repaired. This overlaps with the v1.0.2 task T7
+  (#208), which concerns the interval-calibration update path.
 - **Golden values:** no existing test pinned thresholded regression numbers. Before the
   fix, the full existing suite had one failure,
   `test_runtime_version_matches_installed_package_metadata`. It passes in isolation and is
@@ -166,6 +179,21 @@ like batch coupling.
 
 ## 8. Out of scope, recorded separately
 
+- **Mondrian bins missing from one calibration half** (pre-existing; relevant to
+  ADR-039). The split is a seeded permutation that ignores bins, so a small bin can fall
+  entirely into one half:
+  - *Bin only in the CPS half (part 0):* no Venn-Abers calibrator exists for the bin, and
+    the point estimate and both bounds come out as silent `0`.
+  - *Bin only in the Venn-Abers half (part 1):* the split CPS has no alphas for the bin,
+    and crepes silently returns score `0` on both the calibration side and, after this
+    fix, the test side. The output is an uninformative but internally consistent
+    Venn-Abers interval (for example `[0.5, 1.0]` from one calibration object). Before
+    the fix, a real test score was compared against the silent `0` calibration scores.
+
+  Neither case warns. ADR-039 forbids implicitly substituting an output for a bin that
+  has no fitted calibrator. The remedy is a bin-stratified split or an explicit
+  `ValidationError`/`UserWarning`; it needs its own issue and decision.
+- `insert_calibration` index and normalisation defects (Section 6).
 - The open one-sided percentile intervals that use `min(y_cal)` / `max(y_cal)` as
   placeholder bounds (`predict_uncertainty`) are a different defect and are untouched here.
 - `CE-TIF-PRED-PROB-001` and `CE-CAP-PRED-PROB-001` describe the event as `P(Y > t)`,
@@ -174,7 +202,23 @@ like batch coupling.
   `self.learner`) when fitted with `learner=`. This is an upstream bug; the evaluation
   uses `f=learner.predict` instead.
 
-## 9. Not yet done
+## 9. ADR alignment
+
+| ADR | Assessment |
+|---|---|
+| ADR-001 | No new imports; the change is confined to `calibration/interval_regressor.py`. |
+| ADR-002 | No new error paths. |
+| ADR-011 / ADR-020 | No public signature changes; the legacy API contract is unaffected. The numeric change is a correctness fix (the ADR-039 precedent: superseded behaviour is a defect, not supported API), so no deprecation cycle applies. Recorded in CHANGELOG. |
+| ADR-013 | `IntervalRegressor` remains the only thresholded backbone; no plugin implements a separate path. |
+| ADR-021 | §3 amended (2026-10-15): split-CPS scorer shared by both sides, `smoothing=False`, instance-wise contract. Both CPS and Venn-Abers are retained. |
+| ADR-028 | No new logging or fallbacks. |
+| ADR-029 | Regression reject scores change numerically through `predict_probability`; there is no contract change. |
+| ADR-030 | Public-API tests; the ratification lane passes (0 private-member violations, no marker or anti-pattern regressions). |
+| ADR-031 | Schema unchanged; the round trip is exact (tested). |
+| ADR-039 | Bins are forwarded unchanged. The pre-existing half-coverage gap is recorded in Section 8. |
+| ADR-040 | New requirement `CE-REQ-PRED-PROB-INSTANCE-001`, new TIF `CE-TIF-PRED-PROB-002`, raw evidence, and updated claim assumptions; the existing TIF's evidence history is untouched. The chain check reports 0 errors. |
+
+## 10. Not yet done
 
 The CSE validation (re-running CSE-004b-R on the frozen FULL archive, then CSE-004b FULL)
 was not run from this change: the CSE environment was not available. It must be run
