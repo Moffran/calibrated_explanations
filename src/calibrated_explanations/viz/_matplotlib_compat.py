@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from ..utils.exceptions import ConfigurationError
+from ..utils.helper import learner_supports_predict_proba
 
 # Guard optional dependency imports so importing this module doesn't fail in
 # environments without matplotlib (tests/CI where viz extras aren't installed).
@@ -641,7 +642,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             key: kwargs[key] for key in ("bins", "low_high_percentiles") if key in kwargs
         }
         is_regularized = True
-        if "predict_proba" not in dir(explainer.learner) and threshold is None:
+        if not learner_supports_predict_proba(explainer.learner) and threshold is None:
             predict, (low, high) = explainer.predict(x, uq_interval=True, **prediction_kwargs)
             is_regularized = False
         else:
@@ -672,7 +673,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         max_y = max_y + 0.1 * (max_y - min_y)
 
     if y is None:
-        if "predict_proba" not in dir(explainer.learner) and threshold is None:
+        if not learner_supports_predict_proba(explainer.learner) and threshold is None:
             plt.scatter(predict, uncertainty, label="Predictions", marker=".", s=marker_size)
         else:
             if explainer.is_multiclass():  # pylint: disable=protected-access
@@ -683,7 +684,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
                 proba = proba[:, 1]
             plt.scatter(proba, uncertainty, label="Predictions", marker=".", s=marker_size)
 
-    elif "predict_proba" not in dir(explainer.learner) and threshold is None:
+    elif not learner_supports_predict_proba(explainer.learner) and threshold is None:
         norm = mcolors.Normalize(vmin=y.min(), vmax=y.max())
         colormap = plt.cm.viridis  # pylint: disable=no-member
         colors = colormap(norm(y))
@@ -691,7 +692,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             predict, uncertainty, label="Predictions", color=colors, marker=".", s=marker_size
         )
     else:
-        if "predict_proba" not in dir(explainer.learner):
+        if not learner_supports_predict_proba(explainer.learner):
             if not np.isscalar(threshold):
                 warnings.warn(
                     "plot_global requires a scalar threshold for non-probabilistic explainers.",
@@ -751,12 +752,12 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
                 s=marker_size,
             )
         plt.legend()
-    if "predict_proba" not in dir(explainer.learner) and threshold is None:
+    if not learner_supports_predict_proba(explainer.learner) and threshold is None:
         plt.xlabel("Predictions", loc="center")
         plt.ylabel("Uncertainty", loc="center")
     else:
         plt.ylabel("Uncertainty")
-        if "predict_proba" not in dir(explainer.learner):
+        if not learner_supports_predict_proba(explainer.learner):
             if np.isscalar(threshold):
                 plt.xlabel(f"Probability of Y < {threshold}")
             else:

@@ -226,6 +226,40 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         raise NotFittedError(msg % {"name": type(estimator).__name__})
 
 
+def learner_supports_predict_proba(learner: Any) -> bool:
+    """Return whether ``learner`` is a probabilistic classifier.
+
+    Used to infer the task (classification vs regression) from a learner.
+    ``"predict_proba" in dir(learner)`` is unreliable: before scikit-learn 1.8
+    ``dir()`` of a meta-estimator such as ``Pipeline`` lists ``predict_proba``
+    even when its final step is a regressor. scikit-learn estimators are
+    therefore classified by their estimator type; other learners by whether
+    ``predict_proba`` is actually accessible.
+
+    Parameters
+    ----------
+    learner : Any
+        A fitted or unfitted predictive learner.
+
+    Returns
+    -------
+    bool
+        ``True`` for classifiers, ``False`` for regressors.
+    """
+    from sklearn.base import (  # pylint: disable=import-outside-toplevel
+        BaseEstimator,
+        is_classifier,
+        is_regressor,
+    )
+
+    if isinstance(learner, BaseEstimator):
+        if is_classifier(learner):
+            return True
+        if is_regressor(learner):
+            return False
+    return hasattr(learner, "predict_proba")
+
+
 def is_notebook():
     """Check if the code is running in a Jupyter notebook."""
     try:

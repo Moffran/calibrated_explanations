@@ -261,16 +261,26 @@ def test_factual_repr_breaks_ties_by_rule_text_and_disagrees_with_rank_features(
 
 
 @pytest.mark.parametrize(
-    ("weights", "expected"),
+    ("weights", "nan_rule", "expected_finite_order"),
     [
-        ([np.nan, 0.1, 0.3], ["r0", "r2", "r1"]),
-        ([0.1, np.nan, 0.3], ["r0", "r1", "r2"]),
+        ([np.nan, 0.1, 0.3], "r0", ["r2", "r1"]),
+        ([0.1, np.nan, 0.3], "r1", ["r0", "r2"]),
     ],
 )
-def test_factual_repr_nan_impact_order_depends_on_input_position(weights, expected):
+def test_factual_repr_nan_impact_order_depends_on_input_position(
+    weights, nan_rule, expected_finite_order
+):
+    """A NaN impact makes the sort key incomparable (ADR-042 D6).
+
+    Where the NaN rule itself lands depends on the interpreter's sort algorithm
+    (CPython 3.13 changed ``list.sort``), so only the interpreter-independent
+    symptom is pinned: the NaN's input position flips the order of the finite rules.
+    """
     explanation = _make_factual(weights, [0.0] * 3, [0.0] * 3, ["r0", "r1", "r2"])
 
-    assert _repr_rule_order(explanation) == expected
+    order = _repr_rule_order(explanation)
+
+    assert [rule for rule in order if rule != nan_rule] == expected_finite_order
 
 
 # --- AlternativeExplanation ordering ------------------------------------------------

@@ -47,6 +47,7 @@ from ..utils.exceptions import (
     SerializationError,
     ValidationError,
 )
+from ..utils.helper import learner_supports_predict_proba
 from .calibrated_explainer import (  # circular during split
     _EXPLAIN_KWARGS as _CE_EXPLAIN_KWARGS,
 )
@@ -568,7 +569,9 @@ class WrapCalibratedExplainer:
             candidate_kwargs.setdefault("perf_parallel", getattr(self, "_perf_parallel", None))
             if "mode" not in candidate_kwargs:
                 candidate_kwargs["mode"] = (
-                    "classification" if "predict_proba" in dir(self.learner) else "regression"
+                    "classification"
+                    if learner_supports_predict_proba(self.learner)
+                    else "regression"
                 )
             candidate_mode, candidate_kwargs = validate_explainer_init_kwargs(
                 candidate_kwargs,
@@ -830,7 +833,7 @@ class WrapCalibratedExplainer:
         self._assert_fitted(
             "The WrapCalibratedExplainer must be fitted before predicting probabilities."
         )
-        if "predict_proba" not in dir(self.learner):
+        if not learner_supports_predict_proba(self.learner):
             if threshold is None:
                 raise ValidationError("The threshold parameter must be specified for regression.")
             self._assert_calibrated(
@@ -1688,7 +1691,7 @@ class WrapCalibratedExplainer:
         instantiates anything from these fields.
         """
         learner = self.learner
-        task = "classification" if "predict_proba" in dir(learner) else "regression"
+        task = "classification" if learner_supports_predict_proba(learner) else "regression"
         n_features = None
         classes: list[Any] | None = None
         explainer = getattr(self, "explainer", None)
@@ -2078,7 +2081,7 @@ class WrapCalibratedExplainer:
                 details={"required_learner": required},
             )
         check_is_fitted(learner)
-        task = "classification" if "predict_proba" in dir(learner) else "regression"
+        task = "classification" if learner_supports_predict_proba(learner) else "regression"
         expected_task = learner_meta.get("task")
         if expected_task is not None and task != expected_task:
             raise ValidationError(

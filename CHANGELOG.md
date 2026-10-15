@@ -18,6 +18,13 @@
 
 ### Fixed
 
+- **Regression `Pipeline`s are no longer treated as classifiers (#245):** the
+  task was inferred from `"predict_proba" in dir(learner)`. Before
+  scikit-learn 1.8, `dir()` of a `Pipeline` lists `predict_proba` even when the
+  final step is a regressor, so `calibrate()` without `mode=` treated a
+  regression pipeline as a classifier and failed. scikit-learn estimators are
+  now classified by `is_classifier`/`is_regressor`, other learners by whether
+  `predict_proba` is accessible. The plotting paths use the same check.
 - **Thresholded regression is now instance-wise (batch-invariant):**
   `predict_proba(x, threshold=...)`, `predict(..., threshold=...)` and
   thresholded explanations could give the same object a different calibrated
