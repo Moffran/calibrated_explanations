@@ -7,10 +7,8 @@ and Venn-Abers scaling to deliver calibrated probabilities and intervals.
 Part of ADR-001: Core Decomposition Boundaries (Stage 1a).
 """
 
-import hashlib
 import inspect
 import numbers
-import pickle  # nosec B403 - deserialization is restricted to trusted, checksum-validated state
 from functools import singledispatchmethod
 from typing import Any, Mapping
 
@@ -19,6 +17,7 @@ import numpy as np
 
 from ..utils import assert_threshold, safe_first_element
 from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
+from .primitive_checksum import primitive_checksums, verify_primitive_checksum
 from .venn_abers import VennAbers
 
 
@@ -687,16 +686,12 @@ class IntervalRegressor:
                 return value.tolist()
             return list(value)
 
-        payload_bytes = pickle.dumps(self, protocol=pickle.HIGHEST_PROTOCOL)
-        return {
+        primitive: dict[str, Any] = {
             "schema_version": 2,
             "calibrator_type": "interval_regressor",
             "parameters": {
                 "has_bins": bool(self.bins is not None),
                 "seed": getattr(self.ce, "seed", None),
-            },
-            "checksums": {
-                "sha256": hashlib.sha256(payload_bytes).hexdigest(),
             },
             "fields": {
                 "bins": _as_list(self.bins),
@@ -712,6 +707,8 @@ class IntervalRegressor:
                 else self.current_y_threshold,
             },
         }
+        primitive["checksums"] = primitive_checksums(primitive)
+        return primitive
 
     @classmethod
     def from_primitive(cls, payload: Mapping[str, object]) -> "IntervalRegressor":
@@ -730,6 +727,7 @@ class IntervalRegressor:
     @classmethod
     def _from_primitive_v2(cls, payload: Mapping[str, object]) -> "IntervalRegressor":
         """Rehydrate a JSON-safe schema v2 primitive."""
+        verify_primitive_checksum(payload)
         calibrator_type = payload.get("calibrator_type")
         if calibrator_type != "interval_regressor":
             raise ConfigurationError(

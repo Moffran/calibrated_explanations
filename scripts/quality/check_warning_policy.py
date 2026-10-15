@@ -109,6 +109,19 @@ FALLBACK_SITE_REGISTRY: Final[tuple[FallbackSiteSpec, ...]] = (
         ),
     ),
     FallbackSiteSpec(
+        site_id="calibrator_primitive_unverified_checksum_load",
+        rel_path="calibration/primitive_checksum.py",
+        context="verify_primitive_checksum",
+        message_pattern=r"has no verifiable checksum; it is loaded without",
+        disposition="user_visible",
+        required_warning=True,
+        reason=(
+            "ADR-031: primitives written by <= 1.0.1 carry a pickle digest that cannot "
+            "be recomputed, so they load without integrity verification. The skipped "
+            "check must be user-visible; a future schema version rejects them."
+        ),
+    ),
+    FallbackSiteSpec(
         site_id="cache_backend_minimal_lru_fallback",
         rel_path="cache/cache.py",
         context="_notify_minimal_cache_backend",
