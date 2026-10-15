@@ -325,3 +325,48 @@ def test_should_leave_calibration_set_unchanged_when_appended_bins_have_wrong_le
 
     assert len(wrapper.explainer.y_cal) == len(data["y_cal"])
     assert len(wrapper.explainer.bins) == len(data["bins_cal"])
+
+
+# --- set_mode: the calibrator must follow the new mode (#241) ------------------------
+
+
+@pytest.mark.parametrize(
+    ("start", "target"),
+    [("classification", "regression"), ("regression", "classification")],
+)
+def test_should_match_fresh_calibration_when_set_mode_switches_mode(
+    start: str, target: str
+) -> None:
+    data = _reinitialize_data("classification")
+    learner = _fitted_learner("classification", data)
+    wrapper = _calibrated(learner, start, data["x_cal"], data["y_cal"])
+
+    wrapper.explainer.set_mode(target)
+
+    fresh = _calibrated(learner, target, data["x_cal"], data["y_cal"])
+    assert type(wrapper.explainer.interval_learner) is type(fresh.explainer.interval_learner)
+    assert wrapper.explainer.predict_function == fresh.explainer.predict_function
+    np.testing.assert_array_equal(
+        _outputs(wrapper, target, data["x_test"]), _outputs(fresh, target, data["x_test"])
+    )
+
+
+def test_should_restore_previous_mode_when_set_mode_rebuild_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = _reinitialize_data("classification")
+    learner = _fitted_learner("classification", data)
+    wrapper = _calibrated(learner, "classification", data["x_cal"], data["y_cal"])
+    explainer = wrapper.explainer
+    before = _outputs(wrapper, "classification", data["x_test"])
+    calibrator, predict_function = explainer.interval_learner, explainer.predict_function
+    monkeypatch.setattr(explainer, "obtain_interval_calibrator", _fail)
+
+    with pytest.raises(ConfigurationError, match="calibrator construction failed"):
+        explainer.set_mode("regression")
+
+    monkeypatch.undo()
+    assert explainer.mode == "classification"
+    assert explainer.interval_learner is calibrator
+    assert explainer.predict_function == predict_function
+    np.testing.assert_array_equal(_outputs(wrapper, "classification", data["x_test"]), before)

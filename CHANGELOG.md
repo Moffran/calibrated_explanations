@@ -33,6 +33,14 @@
   (including on mismatched `bins`), the calibration set, bins, learner and
   calibrator are restored. ADR-013 now states that an interval plugin must not
   return a cached calibrator for an `operation="update"` context.
+- **`set_mode` now rebuilds the calibrator for the new mode (#241):**
+  `CalibratedExplainer.set_mode()` re-ran calibrator initialization but reused
+  the cached calibrator, task and predict function of the previous mode, so
+  switching between classification and regression kept a `VennAbers` or
+  `IntervalRegressor` of the wrong kind. The calibrator is now rebuilt for the
+  new mode and the default predict function is rebound (`predict_proba` or
+  `predict`; a user-supplied one is kept). If the rebuild fails, the previous
+  mode and calibration state are restored.
 - **Calibrator primitive checksums are reproducible and verified (#240):** the
   `checksums.sha256` of `VennAbers`/`IntervalRegressor` primitives was a digest
   of a pickle of the in-memory calibrator. It changed between processes for
