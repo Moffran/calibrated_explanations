@@ -802,14 +802,17 @@ class PredictionOrchestrator:
         stored_metadata = dict(self.explainer.plugin_manager.interval_context_metadata.get(key, {}))
         enriched_metadata = stored_metadata
         enriched_metadata.update(metadata)
-        enriched_metadata.setdefault("task", self.explainer.mode)
-        enriched_metadata.setdefault("mode", self.explainer.mode)
-        # The predict function is rebound when `reinitialize` swaps the learner.
-        # Overwrite any cached value unless the caller supplied one explicitly.
-        if "predict_function" not in metadata:
-            enriched_metadata["predict_function"] = getattr(
-                self.explainer, "predict_function", None
-            )
+        # The mode changes via `set_mode` and the predict function is rebound by
+        # `reinitialize`/`set_mode`. Overwrite any cached value unless the caller
+        # supplied one explicitly.
+        current = {
+            "task": self.explainer.mode,
+            "mode": self.explainer.mode,
+            "predict_function": getattr(self.explainer, "predict_function", None),
+        }
+        for name, value in current.items():
+            if name not in metadata:
+                enriched_metadata[name] = value
         # Difficulty estimator can be updated post-init via `set_difficulty_estimator`.
         # Always overwrite any cached value so interval plugins see the current estimator.
         enriched_metadata["difficulty_estimator"] = self.explainer.difficulty_estimator
