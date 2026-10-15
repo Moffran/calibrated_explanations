@@ -2267,18 +2267,54 @@ class CalibratedExplainer:
         Raises
         ------
             ValidationError: If ``mode`` is not 'classification' or 'regression'.
+
+        Notes
+        -----
+        With ``initialize=True`` the interval calibrator of the previous mode is
+        discarded and a calibrator for the new mode is built, and the default
+        predict function is rebound to ``predict_proba`` (classification) or
+        ``predict`` (regression); a user-supplied predict function is kept. If
+        the rebuild fails, the previous mode and calibration state are restored.
         """
         mode = normalize_mode(mode)
+        if not initialize:
+            # Construction-time path: the plugin manager and calibrator do not exist yet.
+            self._initialized = False
+            self._assign_mode(mode)
+            return
+
+        from ..calibration.interval_learner import (  # pylint: disable=import-outside-toplevel
+            discard_interval_calibrator,
+        )
+
+        previous_mode = self.mode
+        previous_num_classes = getattr(self, "num_classes", None)
+        rollback = self._snapshot_reinitialize_state()
         self._initialized = False
+        try:
+            self._assign_mode(mode)
+            bound_to = getattr(self.predict_function, "__self__", None)
+            if bound_to is self.learner and self.predict_function.__name__ in (
+                "predict",
+                "predict_proba",
+            ):
+                self.predict_function = (
+                    self.learner.predict_proba if mode == "classification" else self.learner.predict
+                )
+            discard_interval_calibrator(self)
+            self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
+        except BaseException:
+            self.mode, self.num_classes = previous_mode, previous_num_classes
+            rollback()
+            raise
+
+    def _assign_mode(self, mode: str) -> None:
+        """Set ``mode`` and the matching ``num_classes``."""
         if mode == "classification":
-            # assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
             self.num_classes = len(np.unique(self.y_cal))
         elif mode == "regression":
-            # assert 'predict' in dir(self.learner), "The learner must have a predict method."
             self.num_classes = 0
         self.mode = mode
-        if initialize:
-            self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
 
     # pylint: disable=too-many-branches
     def set_discretizer(
