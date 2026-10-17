@@ -149,7 +149,7 @@
 
 ### Documentation / Governance
 
-- **ADR-042 canonical ranking semantics (#224):** defines one ranking
+- **ADR-042 canonical ranking semantics (#224), accepted:** defines one ranking
   contract per explanation type for rule retrieval, plots, narratives and
   conjunction selection. Factual rules rank strongest first by `|weight|`,
   with the narrower uncertainty interval winning ties. Alternative rules use

@@ -2,7 +2,7 @@
 
 # ADR-042: Canonical Rule and Feature Ranking Semantics
 
-Status: Draft
+Status: Accepted
 Date: 2026-10-14
 Deciders: Core maintainers
 Reviewers: Core maintainers
@@ -440,9 +440,9 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
 
 ## Open Questions
 
-- **Typed ranking result.** Should the D9 result be exposed publicly in
-  v1.1.0? The default is to keep it internal until a ranking-plugin ADR
-  exists.
+None. Whether the D9 typed ranking result is exposed publicly in v1.1.0 is
+an implementation decision tracked in #204; until it is decided there, the
+result stays internal.
 
 ## Appendix A: Current behaviour (v1.0.x) and its disposition
 
