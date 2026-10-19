@@ -34,7 +34,7 @@ from ...plugins import (
     RegressionIntervalCalibrator,
     validate_interval_calibrator_output,
 )
-from ...utils import assert_threshold
+from ...utils import assert_threshold, median_containment_sides
 from ...utils.exceptions import (
     CalibratedError,
     ConfigurationError,
@@ -310,12 +310,22 @@ class PredictionOrchestrator:
         if cache_enabled and key_parts is not None:
             cache.set(stage="predict", parts=key_parts, value=result)
 
-        self._validate_prediction_result(result)
+        self._validate_prediction_result(
+            result, threshold=threshold, low_high_percentiles=low_high_percentiles
+        )
         return result
 
-    def _validate_prediction_result(self, result):
-        """Enforce low <= predict <= high invariant on prediction results."""
+    def _validate_prediction_result(self, result, *, threshold=None, low_high_percentiles=None):
+        """Enforce low <= predict <= high invariant on prediction results.
+
+        For percentile-driven regression (no threshold), each side of the
+        containment check applies only where ``median_containment_sides``
+        says the requested percentiles imply it (ADR-021).
+        """
         predict, low, high, _ = result
+        check_low, check_high = True, True
+        if threshold is None and "regression" in str(getattr(self.explainer, "mode", "")):
+            check_low, check_high = median_containment_sides(low_high_percentiles)
 
         # Skip validation if any component is None or empty
         if predict is None or low is None or high is None:
@@ -349,7 +359,9 @@ class PredictionOrchestrator:
             # Check low <= predict <= high
             # Allow small floating point tolerance
             epsilon = 1e-9
-            if not np.all((low - epsilon <= predict) & (predict <= high + epsilon)):
+            above_low = (low - epsilon <= predict) if check_low else True
+            below_high = (predict <= high + epsilon) if check_high else True
+            if not np.all(np.logical_and(above_low, below_high)):
                 warnings.warn(
                     "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
                     UserWarning,

@@ -48,6 +48,7 @@ from ..utils import (
     EntropyDiscretizer,
     RegressorDiscretizer,
     calculate_metrics,
+    median_containment_sides,
     prepare_for_saving,
     safe_first_element,
     safe_mean,
@@ -348,7 +349,12 @@ class CalibratedExplanation(ABC):
         return self
 
     def _validate_prediction_invariant(self) -> None:
-        """Enforce low <= predict <= high invariant on prediction payload."""
+        """Enforce low <= predict <= high invariant on prediction payload.
+
+        For percentile-driven regression (no threshold), each side of the
+        containment check applies only where ``median_containment_sides``
+        says the requested percentiles imply it (ADR-021).
+        """
         import warnings
 
         predict = self.prediction.get("predict")
@@ -357,6 +363,12 @@ class CalibratedExplanation(ABC):
 
         if predict is None or low is None or high is None:
             return
+
+        check_low, check_high = True, True
+        if self.is_regression() and not self.is_thresholded():
+            check_low, check_high = median_containment_sides(
+                getattr(self.calibrated_explanations, "low_high_percentiles", None)
+            )
 
         with contextlib.suppress(TypeError, ValueError):
             # Handle scalar values (common case)
@@ -373,7 +385,9 @@ class CalibratedExplanation(ABC):
                     )
                 # Allow small floating point tolerance
                 epsilon = 1e-9
-                if not (low - epsilon <= predict <= high + epsilon):
+                above_low = not check_low or low - epsilon <= predict
+                below_high = not check_high or predict <= high + epsilon
+                if not (above_low and below_high):
                     warnings.warn(
                         "Prediction invariant violated: predict not in [low, high]",
                         UserWarning,

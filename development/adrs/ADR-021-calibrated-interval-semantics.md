@@ -1,6 +1,6 @@
 > **Active scope:** Governing architectural decision for prediction interval semantic definitions (`low`, `high`, `predict`, coverage semantics). Remains active as long as these semantics govern calibration output interpretation; superseded when interval semantics are revised.
 
-> **Status note (2026-10-15):** Last edited 2026-10-15 (amended §3: instance-wise threshold scorer) · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-10-19):** Last edited 2026-10-19 (amended §4/§4b: percentile-scoped median containment, #247; 2026-10-15 amended §3: instance-wise threshold scorer) · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-021: Calibrated Interval Semantics
 
@@ -133,6 +133,26 @@ between the three paths.
   within its bounds. Every runtime pathway—`PredictBridge`, interval plugins,
   explanation containers, and downstream helpers—**must** assert
   `low <= predict <= high`. Any output that violates this inclusive invariant is
+  invalid; §4b defines how a violation is reported. The rule applies to
+  all `[low, high]` pairs emitted by the system, including feature-level weight
+  intervals and derived telemetry, because they inherit the same calibrated
+  meaning from the underlying predictors.
+* **Percentile scope (amended 2026-10-19, #247).** In percentile-driven
+  regression (no threshold) `predict` is the CPS median, so the requested
+  percentiles determine which sides of `low <= predict <= high` hold:
+  - `predict >= low` is required only when the low percentile is finite and
+    `<= 50`;
+  - `predict <= high` is required only when the high percentile is finite and
+    `>= 50`.
+
+  For example `(5, 95)`, `(40, 60)`, `(-inf, 90)` and `(10, inf)` contain the
+  median, while `(-inf, 40)` and `(60, inf)` legitimately exclude it. An
+  infinite percentile is currently reported as `min(y_cal)` or `max(y_cal)`.
+  That value is a placeholder, not a calibrated bound, and MUST NOT be used in
+  a containment check; #237 replaces it with an unbounded representation in
+  v1.1.0. `low <= high` is checked for every interval, so a placeholder that
+  crosses the finite bound is still reported. Classification and thresholded
+  regression keep the full check.
 
 ## Terminology: "Probabilistic Regression" vs. "Thresholded Regression"
 
@@ -172,10 +192,6 @@ The two names coexist because they serve different purposes:
 * **Code Comments:** Prefer "probabilistic regression" in user-facing comments; use "thresholded regression" in internal implementation comments when describing the threshold mechanism.
 * **Method Names:** Prefer "probabilistic" in public method names (e.g., `predict_probabilistic_regression()`); "thresholded" may be used in internal helper methods where the technical mechanism is relevant.
 * **Tests:** Use "probabilistic regression" in test names and docstrings for user-level tests; use "thresholded regression" in implementation-level tests that directly test the threshold mechanism.
-  treated as a failure rather than a recoverable warning. The rule applies to
-  all `[low, high]` pairs emitted by the system, including feature-level weight
-  intervals and derived telemetry, because they inherit the same calibrated
-  meaning from the underlying predictors.
 
 ### 4a. Feature-Level Interval Propagation
 
@@ -198,8 +214,14 @@ The invariant `low <= predict <= high` applies uniformly:
 * At the feature-weight level (in factual rules)
 * At the alternative scenario level (per-scenario predictions)
 
-Any violation of this invariant—whether detected in the prediction bridge,
-plugin output, or downstream consumers—must raise a hard failure.
+At the prediction and alternative scenario levels, percentile-driven regression
+applies the percentile scope defined in §4.
+
+Enforcement (amended 2026-10-19, #247): a violation detected in plugin batch
+output (`validate_explanation_batch`) raises `ValidationError`. The prediction
+orchestrator and explanation containers emit a `UserWarning` instead, as they
+did before this amendment. Differences below the floating-point tolerance are
+not violations (see Explicit Non-Guarantees, item 3).
 
 ### 5. Implications for interval plugins
 

@@ -691,6 +691,38 @@ def prepare_for_saving(filename):
     return "", "", "", ""
 
 
+def median_containment_sides(low_high_percentiles) -> tuple[bool, bool]:
+    """Return which reported bounds must contain a CPS median prediction.
+
+    A percentile-driven regression interval only implies
+    ``low <= predict <= high`` when the requested percentiles contain the
+    50th percentile, and an infinite percentile is reported as the
+    calibration-target minimum or maximum, which is a placeholder rather than
+    a calibrated bound (ADR-021).
+
+    Parameters
+    ----------
+    low_high_percentiles : tuple of float or None
+        The requested ``(low, high)`` percentiles. ``None`` or an unparsable
+        value enforces both sides.
+
+    Returns
+    -------
+    tuple of bool
+        ``(check_low, check_high)``: whether ``predict >= low`` and
+        ``predict <= high`` must hold.
+    """
+    if low_high_percentiles is None:
+        return True, True
+    try:
+        low_p, high_p = (float(v) for v in low_high_percentiles)
+    except (TypeError, ValueError):
+        return True, True
+    check_low = bool(np.isfinite(low_p) and low_p <= 50)
+    check_high = bool(np.isfinite(high_p) and high_p >= 50)
+    return check_low, check_high
+
+
 def safe_mean(values, default=0.0):
     """Return the mean of values, but return `default` if values is empty.
 

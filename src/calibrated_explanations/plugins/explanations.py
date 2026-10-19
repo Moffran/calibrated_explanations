@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from ..explanations.explanations import CalibratedExplanations as CalibratedExplanationsType
 else:
     CalibratedExplanationsType = object
+from ..utils import median_containment_sides
 from ..utils.exceptions import ValidationError
 from .base import ExplainerPlugin, PluginMeta, freeze_plugin_config, thaw_plugin_config
 from .predict import PredictBridge
@@ -343,8 +344,15 @@ def validate_explanation_batch(
     *,
     expected_mode: str | None = None,
     expected_task: str | None = None,
+    low_high_percentiles: Tuple[float, float] | None = None,
 ) -> ExplanationBatch:
-    """Validate runtime contracts for ``ExplanationBatch`` payloads."""
+    """Validate runtime contracts for ``ExplanationBatch`` payloads.
+
+    ``low_high_percentiles`` is the request's percentile pair for
+    percentile-driven regression (pass ``None`` when a threshold is used). It
+    limits the regression ``low <= predict <= high`` checks to the sides the
+    percentiles imply (ADR-021); ``None`` enforces both sides.
+    """
     if not isinstance(batch, ExplanationBatch):
         raise ValidationError("explanation plugins must return an ExplanationBatch instance")
 
@@ -436,21 +444,24 @@ def validate_explanation_batch(
             },
         )
 
+    task = str(task_hint or expected_task or "")
+    sides = median_containment_sides(low_high_percentiles) if task == "regression" else (True, True)
     for index, instance in enumerate(instances):
         prediction = instance.get("prediction")
         if isinstance(prediction, MappingABC):
             _validate_prediction_invariant(
                 prediction,
                 f"Instance {index} prediction",
-                task=str(task_hint or expected_task or ""),
+                task=task,
+                sides=sides,
             )
         mode = str(instance.get("mode") or instance.get("explanation_type") or mode_hint or "")
         if mode == "alternative":
-            _validate_alternative_reference_prediction(instance, metadata, index)
+            _validate_alternative_reference_prediction(instance, metadata, index, sides=sides)
         for rule_index, rule in enumerate(_iter_rule_mappings(instance, index)):
             _validate_rule_weight_interval(rule, index, rule_index)
             if mode == "alternative":
-                _validate_alternative_rule_prediction(rule, index, rule_index)
+                _validate_alternative_rule_prediction(rule, index, rule_index, sides=sides)
 
     return batch
 
@@ -513,6 +524,8 @@ def _validate_alternative_reference_prediction(
     instance: MappingABC[str, Any],
     metadata: MappingABC[str, Any],
     instance_index: int,
+    *,
+    sides: Tuple[bool, bool] = (True, True),
 ) -> None:
     """Validate the required alternative reference prediction payload."""
     reference_prediction = instance.get(
@@ -528,11 +541,16 @@ def _validate_alternative_reference_prediction(
             reference_prediction,
             f"Instance {instance_index} reference_prediction",
             task=str(metadata.get("task") or ""),
+            sides=sides,
         )
 
 
 def _validate_alternative_rule_prediction(
-    rule: MappingABC[str, Any], instance_index: int, rule_index: int
+    rule: MappingABC[str, Any],
+    instance_index: int,
+    rule_index: int,
+    *,
+    sides: Tuple[bool, bool] = (True, True),
 ) -> None:
     """Validate alternative rule predicted values and optional intervals."""
     if "predicted_value" not in rule:
@@ -552,10 +570,29 @@ def _validate_alternative_rule_prediction(
         prediction_interval["low"],
         prediction_interval["high"],
         f"Instance {instance_index} rule {rule_index} predicted_value",
+        sides=sides,
     )
 
 
-def _validate_numeric_interval(value: Any, low: Any, high: Any, context: str) -> None:
+def _within_bounds(
+    value_arr: np.ndarray, low_arr: np.ndarray, high_arr: np.ndarray, sides: Tuple[bool, bool]
+) -> bool:
+    """Return whether ``value`` respects the enforced sides of ``[low, high]``."""
+    epsilon = 1e-9
+    check_low, check_high = sides
+    above_low = (low_arr - epsilon <= value_arr) if check_low else True
+    below_high = (value_arr <= high_arr + epsilon) if check_high else True
+    return bool(np.all(np.logical_and(above_low, below_high)))
+
+
+def _validate_numeric_interval(
+    value: Any,
+    low: Any,
+    high: Any,
+    context: str,
+    *,
+    sides: Tuple[bool, bool] = (True, True),
+) -> None:
     """Enforce low <= value <= high with small floating-point tolerance."""
     with contextlib.suppress(TypeError, ValueError):
         value_arr = np.asanyarray(value)
@@ -574,21 +611,25 @@ def _validate_numeric_interval(value: Any, low: Any, high: Any, context: str) ->
         if not np.all(low_arr <= high_arr):
             raise ValidationError(f"{context}: Interval invariant violated: low > high")
 
-        epsilon = 1e-9
-        if not np.all((low_arr - epsilon <= value_arr) & (value_arr <= high_arr + epsilon)):
+        if not _within_bounds(value_arr, low_arr, high_arr, sides):
             raise ValidationError(
                 f"{context}: Prediction invariant violated: predict not in [low, high]"
             )
 
 
 def _validate_prediction_invariant(
-    payload: Mapping[str, Any], context: str, *, task: str = ""
+    payload: Mapping[str, Any],
+    context: str,
+    *,
+    task: str = "",
+    sides: Tuple[bool, bool] = (True, True),
 ) -> None:
     """Enforce prediction interval invariants on payloads.
 
-    Regression point predictions must lie inside their numeric intervals.
-    Classification payloads may pair calibrated score intervals with class
-    labels, so only the low <= high interval shape invariant is enforced.
+    Regression point predictions must lie inside their numeric intervals, on
+    the ``sides`` the requested percentiles imply. Classification payloads may
+    pair calibrated score intervals with class labels, so only the
+    low <= high interval shape invariant is enforced.
     """
     import numpy as np
 
@@ -621,11 +662,9 @@ def _validate_prediction_invariant(
         if not np.all(low_arr <= high_arr):
             raise ValidationError(f"{context}: Interval invariant violated: low > high")
 
-        if task == "regression":
-            # Check low <= predict <= high
-            # Allow small floating point tolerance
-            epsilon = 1e-9
-            if not np.all((low_arr - epsilon <= predict_arr) & (predict_arr <= high_arr + epsilon)):
-                raise ValidationError(
-                    f"{context}: Prediction invariant violated: predict not in [low, high]"
-                )
+        # Check low <= predict <= high on the enforced sides, with a small
+        # floating point tolerance
+        if task == "regression" and not _within_bounds(predict_arr, low_arr, high_arr, sides):
+            raise ValidationError(
+                f"{context}: Prediction invariant violated: predict not in [low, high]"
+            )

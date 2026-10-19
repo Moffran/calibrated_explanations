@@ -907,6 +907,9 @@ class ExplanationOrchestrator:
                     batch,
                     expected_mode=mode,
                     expected_task=self.explainer.mode,
+                    low_high_percentiles=(
+                        request.low_high_percentiles if threshold is None else None
+                    ),
                 )
             except (
                 Exception
