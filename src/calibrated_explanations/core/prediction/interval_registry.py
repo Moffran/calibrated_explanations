@@ -90,7 +90,14 @@ class IntervalRegistry:
             Unit vector of ones with length matching the number of instances in x.
         """
         # pylint: disable=unused-argument
-        return np.ones(x.shape[0]) if isinstance(x, (np.ndarray, list, tuple)) else np.ones(1)
+        # Size from any array-like with a leading dimension (ndarray, DataFrame,
+        # sparse matrix) so the vector always matches the number of instances.
+        shape = getattr(x, "shape", None)
+        if shape is not None and len(shape) > 0:
+            return np.ones(shape[0])
+        if isinstance(x, (list, tuple)):
+            return np.ones(len(x))
+        return np.ones(1)
 
     def constant_sigma(self, x: np.ndarray, learner=None, beta=None) -> np.ndarray:
         """Public wrapper returning a unit difficulty vector when no estimator is configured.
