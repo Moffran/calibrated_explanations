@@ -18,6 +18,22 @@
 
 ### Fixed
 
+- **No false invariant warnings for one-sided or off-centre percentile
+  intervals (#247):** in regression without a threshold,
+  `predict(..., uq_interval=True)`, `explain_factual` and `explore_alternatives`
+  warned `Prediction invariant violated: predict not in [low, high]` for valid
+  queries. This happened in two cases. With `low_high_percentiles=(-inf, q)` or
+  `(q, inf)`, the open end is reported as the minimum or maximum calibration
+  target, so a median outside that range was flagged. Intervals such as
+  `(-inf, 40)` or `(60, inf)` do not contain the median at all. The check now
+  only applies to the sides the requested percentiles imply. It no longer uses
+  the placeholder end, and it is still enforced for `(5, 95)`, `(40, 60)`,
+  `(-inf, 90)` and `(10, inf)`. Plugin batch validation follows the same rule.
+  Classification and probabilistic regression are unchanged. All returned
+  numbers are unchanged, including the `min(y_cal)`/`max(y_cal)` placeholder
+  ends, and a `low > high` warning is still raised when the placeholder
+  crosses the finite bound. Representing the open end as unbounded is planned
+  for v1.1.0 (#237). ADR-021 §4/§4b is amended accordingly.
 - **One authoritative interval-calibration update path; inconsistent
   `reinitialize` inputs fail fast (#208):** the unreachable duplicate
   `IntervalRegistry.update` is removed (it had no callers, and its
