@@ -105,7 +105,10 @@
   Venn-Abers intervals are slightly wider, most visibly under Mondrian
   calibration. Individual probabilities can shift noticeably when the
   calibration set is small. New requirement `CE-REQ-PRED-PROB-INSTANCE-001` (TIF
-  `CE-TIF-PRED-PROB-002`) pins the contract.
+  `CE-TIF-PRED-PROB-002`) pins the contract. The split CPS needs one
+  difficulty value per instance. Without a difficulty estimator, every input
+  type, including a pandas `DataFrame`, now gets one value per row, so
+  `DataFrame` and array inputs give identical results (#249).
 
 - **Unknown `CE_*` environment-variable warning no longer repeats:** the
   `UserWarning` from `ConfigManager.from_sources()` fired on every explainer
