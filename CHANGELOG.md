@@ -3,7 +3,11 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.1...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.2...main)
+
+## [v1.0.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.2) - 2026-10-20
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.1...v1.0.2)
 
 ### Fixed
 
@@ -14,19 +18,6 @@
   equal tuple-event scores. Probability estimates and interval endpoints can
   change substantially (up to 0.50 for an endpoint in a small synthetic
   comparison). Classification and percentile-based regression are unchanged.
-
-### Added
-
-- **Optional conda-forge feedstock auto-update:** `make release-postcommit` now
-  ends with a best-effort `scripts/update_conda_feedstock.py` step that, when
-  `CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR` points at a local clone of the
-  `calibrated-explanations-feedstock` fork, bumps `recipe/meta.yaml` to the
-  just-published PyPI version and opens a PR against
-  `conda-forge/calibrated-explanations-feedstock`. No-op when the env var is
-  unset; failures warn rather than fail the release. Standalone retry via
-  `make conda-feedstock-update`.
-
-### Fixed
 
 - **No false invariant warnings for one-sided or off-centre percentile
   intervals (#247):** in regression without a threshold,
@@ -175,6 +166,17 @@
   extra); the claim now records that without PyYAML a YAML template, including
   the packaged default, raises `SerializationError` with no fallback, and only
   a caller-supplied `.json` `template_path` works. No code change.
+
+### Added
+
+- **Optional conda-forge feedstock auto-update:** `make release-postcommit` now
+  ends with a best-effort `scripts/update_conda_feedstock.py` step that, when
+  `CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR` points at a local clone of the
+  `calibrated-explanations-feedstock` fork, bumps `recipe/meta.yaml` to the
+  just-published PyPI version and opens a PR against
+  `conda-forge/calibrated-explanations-feedstock`. No-op when the env var is
+  unset; failures warn rather than fail the release. Standalone retry via
+  `make conda-feedstock-update`.
 
 ### Documentation / Governance
 

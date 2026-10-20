@@ -1,11 +1,11 @@
 {
-  "wheel_path": "dist\\calibrated_explanations-1.0.1-py3-none-any.whl",
-  "sdist_path": "dist\\calibrated_explanations-1.0.1.tar.gz",
+  "wheel_path": "dist\\calibrated_explanations-1.0.2-py3-none-any.whl",
+  "sdist_path": "dist\\calibrated_explanations-1.0.2.tar.gz",
   "wheel_license_members": [
-    "calibrated_explanations-1.0.1.dist-info/licenses/LICENSE"
+    "calibrated_explanations-1.0.2.dist-info/licenses/LICENSE"
   ],
   "sdist_license_members": [
-    "calibrated_explanations-1.0.1/LICENSE"
+    "calibrated_explanations-1.0.2/LICENSE"
   ],
   "wheel_license_metadata": [
     "LICENSE"
@@ -39,6 +39,7 @@
     "src/calibrated_explanations/calibration/interval_regressor.py",
     "src/calibrated_explanations/calibration/interval_wrappers.py",
     "src/calibrated_explanations/calibration/normalization_strategy.py",
+    "src/calibrated_explanations/calibration/primitive_checksum.py",
     "src/calibrated_explanations/calibration/state.py",
     "src/calibrated_explanations/calibration/summaries.py",
     "src/calibrated_explanations/calibration/venn_abers.py",
@@ -178,10 +179,7 @@
     "calibrated_explanations"
   ],
   "unexpected_top_level_packages": [],
-  "stale_artifacts_removed": [
-    "calibrated_explanations-1.0.0-py3-none-any.whl",
-    "calibrated_explanations-1.0.0.tar.gz"
-  ],
+  "stale_artifacts_removed": [],
   "status": "pass",
   "errors": []
 }

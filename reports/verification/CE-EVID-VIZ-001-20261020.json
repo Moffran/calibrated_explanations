@@ -1,0 +1,55 @@
+{
+  "evidence_id": "CE-EVID-VIZ-001-20261020",
+  "claim_ids": [
+    "CE-CAP-VIZ-001"
+  ],
+  "requirement_ids": [
+    "CE-REQ-VIZ-SMOKE-001"
+  ],
+  "adr_refs": [
+    "ADR-023",
+    "ADR-036",
+    "ADR-037"
+  ],
+  "standard_refs": [],
+  "tif_ids": [
+    "CE-TIF-VIZ-001"
+  ],
+  "verification_type": "empirical_smoke",
+  "result": "pass",
+  "timestamp": "2026-10-20T20:54:48.946497+00:00",
+  "commit_sha": "923672ecec4fe148c87811ae6b91f38b778434e8",
+  "package_version": "1.0.2",
+  "python_version": "3.11.9",
+  "platform": "win32",
+  "dataset_id": "sklearn make_classification n_samples=120 n_features=4 n_informative=3 n_redundant=1 random_seed=42",
+  "random_seed": 42,
+  "configuration": {
+    "backend": "Agg",
+    "show": false
+  },
+  "scenarios": [
+    {
+      "scenario_id": "plot_no_raise_agg_backend",
+      "observations": {
+        "exception_raised": false,
+        "exception_type": null,
+        "n_instances": 2
+      },
+      "result": "pass",
+      "acceptance": [
+        {
+          "criterion_ref": "CE-REQ-VIZ-SMOKE-001",
+          "field": "exception_raised",
+          "expected": false,
+          "observed": false,
+          "result": "pass"
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "logs": null,
+    "raw_output": null
+  }
+}

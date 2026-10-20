@@ -1,18 +1,25 @@
 {
   "policy": "Retained user-visible fallbacks must emit UserWarning plus an INFO log. Internal best-effort fallbacks may remain exempt only when this registry records a reason and the available logger signal.",
   "warnings": {
-    "total": 113,
+    "total": 115,
     "by_category": {
-      "USER_CONTRACT": 95,
+      "USER_CONTRACT": 97,
       "FALLBACK_VISIBLE": 13,
       "DEPRECATION": 5
     },
     "sites": [
       {
         "file": "api/config.py",
-        "line": 298,
+        "line": 307,
         "context": "ExplainerBuilder.build_config",
         "message_snippet": "<f-string>",
+        "category": "USER_CONTRACT"
+      },
+      {
+        "file": "calibration/primitive_checksum.py",
+        "line": 104,
+        "context": "verify_primitive_checksum",
+        "message_snippet": "Calibrator primitive %r has no verifiable checksum; it is loaded without integrity verification. Re-save it with save_state() to add one. Primitives without a v",
         "category": "USER_CONTRACT"
       },
       {
@@ -31,56 +38,63 @@
       },
       {
         "file": "core/calibrated_explainer.py",
-        "line": 387,
+        "line": 388,
         "context": "CalibratedExplainer.__init__",
         "message_snippet": "condition_source not provided; defaulting to 'prediction' in v0.10.3. Pass condition_source='observed' to retain previous behaviour.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/calibrated_explainer.py",
-        "line": 605,
+        "line": 607,
         "context": "CalibratedExplainer.__deepcopy__",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/calibrated_explainer.py",
-        "line": 1660,
+        "line": 1809,
         "context": "CalibratedExplainer.explain_factual",
         "message_snippet": "_use_plugin has no effect on guarded explanation methods",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/calibrated_explainer.py",
-        "line": 1802,
+        "line": 1951,
         "context": "CalibratedExplainer.explore_alternatives",
         "message_snippet": "_use_plugin has no effect on guarded explanation methods",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/calibrated_explainer.py",
-        "line": 2428,
+        "line": 2613,
         "context": "CalibratedExplainer.predict",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/config_manager.py",
-        "line": 418,
+        "line": 132,
+        "context": "warn_unrecognised_env_token",
+        "message_snippet": "%s contains unrecognised token %r; it is ignored. From v1.1.0 unrecognised tokens raise ConfigurationError.",
+        "category": "USER_CONTRACT"
+      },
+      {
+        "file": "core/config_manager.py",
+        "line": 459,
         "context": "ConfigManager.from_sources",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/config_manager.py",
-        "line": 542,
+        "line": 583,
         "context": "ConfigManager._validate_sections",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/config_manager.py",
-        "line": 676,
+        "line": 717,
         "context": "ConfigManager.validate_plugin_config_selection",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
@@ -171,42 +185,42 @@
       },
       {
         "file": "core/explain/orchestrator.py",
-        "line": 1065,
+        "line": 1068,
         "context": "ExplanationOrchestrator.invoke_factual",
         "message_snippet": "multi_labels_enabled=True was requested but the problem appears to be binary; this mode is intended for 3+ class problems.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/explain/orchestrator.py",
-        "line": 1264,
+        "line": 1267,
         "context": "ExplanationOrchestrator.invoke_alternative",
         "message_snippet": "multi_labels_enabled=True was requested but the problem appears to be binary; this mode is intended for 3+ class problems.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/explain/orchestrator.py",
-        "line": 1511,
+        "line": 1514,
         "context": "ExplanationOrchestrator.invoke_guarded_factual",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/explain/orchestrator.py",
-        "line": 1532,
+        "line": 1535,
         "context": "ExplanationOrchestrator.invoke_guarded_factual",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/explain/orchestrator.py",
-        "line": 1675,
+        "line": 1678,
         "context": "ExplanationOrchestrator.invoke_guarded_alternative",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/explain/orchestrator.py",
-        "line": 1696,
+        "line": 1699,
         "context": "ExplanationOrchestrator.invoke_guarded_alternative",
         "message_snippet": "",
         "category": "USER_CONTRACT"
@@ -227,28 +241,28 @@
       },
       {
         "file": "core/prediction/orchestrator.py",
-        "line": 343,
+        "line": 353,
         "context": "PredictionOrchestrator._validate_prediction_result",
         "message_snippet": "Prediction interval invariant violated: low > high. This indicates an issue with the underlying estimator.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/prediction/orchestrator.py",
-        "line": 353,
+        "line": 365,
         "context": "PredictionOrchestrator._validate_prediction_result",
         "message_snippet": "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "core/prediction/orchestrator.py",
-        "line": 559,
+        "line": 571,
         "context": "PredictionOrchestrator.predict_impl",
         "message_snippet": "crepes produced an unexpected result (likely too-small calibration set); returning zeros as a degraded fallback.",
         "category": "FALLBACK_VISIBLE"
       },
       {
         "file": "core/prediction/orchestrator.py",
-        "line": 594,
+        "line": 606,
         "context": "PredictionOrchestrator.predict_impl",
         "message_snippet": "crepes produced an unexpected result while computing probabilities; returning zeros as a degraded fallback.",
         "category": "FALLBACK_VISIBLE"
@@ -339,161 +353,161 @@
       },
       {
         "file": "explanations/explanation.py",
-        "line": 80,
+        "line": 81,
         "context": "_log_forwarded_plot_kwargs",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 369,
+        "line": 381,
         "context": "CalibratedExplanation._validate_prediction_invariant",
         "message_snippet": "Prediction interval invariant violated: low > high",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 377,
+        "line": 391,
         "context": "CalibratedExplanation._validate_prediction_invariant",
         "message_snippet": "Prediction invariant violated: predict not in [low, high]",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1475,
+        "line": 1489,
         "context": "CalibratedExplanation.add_new_rule_condition",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1481,
+        "line": 1495,
         "context": "CalibratedExplanation.add_new_rule_condition",
         "message_snippet": "Alternatives for all categorical features are already included",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1491,
+        "line": 1505,
         "context": "CalibratedExplanation.add_new_rule_condition",
         "message_snippet": "Rule already included",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1507,
+        "line": 1521,
         "context": "CalibratedExplanation.add_new_rule_condition",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1516,
+        "line": 1530,
         "context": "CalibratedExplanation.add_new_rule_condition",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1584,
+        "line": 1598,
         "context": "CalibratedExplanation.add_new_rule_condition",
         "message_snippet": "The alternative explanation is identical to the original explanation",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1855,
+        "line": 1869,
         "context": "FactualExplanation._check_preconditions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 1862,
+        "line": 1876,
         "context": "FactualExplanation._check_preconditions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 2339,
+        "line": 2353,
         "context": "FactualExplanation.add_conjunctions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 2347,
+        "line": 2361,
         "context": "FactualExplanation.add_conjunctions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 2458,
+        "line": 2472,
         "context": "FactualExplanation.plot",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 2574,
+        "line": 2588,
         "context": "FactualExplanation.plot",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 2834,
+        "line": 2848,
         "context": "AlternativeExplanation._check_preconditions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 2841,
+        "line": 2855,
         "context": "AlternativeExplanation._check_preconditions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 3917,
+        "line": 3931,
         "context": "AlternativeExplanation.add_conjunctions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 3929,
+        "line": 3943,
         "context": "AlternativeExplanation.add_conjunctions",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 4055,
+        "line": 4069,
         "context": "AlternativeExplanation.plot",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 4273,
+        "line": 4287,
         "context": "FastExplanation.add_conjunctions",
         "message_snippet": "The add_conjunctions method is currently not supported for `FastExplanation`, making this call resulting in no change.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 4290,
+        "line": 4304,
         "context": "FastExplanation.add_new_rule_condition",
         "message_snippet": "The add_new_rule_condition method is currently not supported for `FastExplanation`, making this call resulting in no change.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "explanations/explanation.py",
-        "line": 4446,
+        "line": 4460,
         "context": "FastExplanation.plot",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
@@ -563,42 +577,42 @@
       },
       {
         "file": "parallel/parallel.py",
-        "line": 299,
+        "line": 344,
         "context": "ParallelExecutor.__enter__",
         "message_snippet": "Failed to initialize parallel pool for strategy %r (%s: %s); falling back to sequential execution.",
         "category": "FALLBACK_VISIBLE"
       },
       {
         "file": "parallel/parallel.py",
-        "line": 456,
+        "line": 501,
         "context": "ParallelExecutor.map",
         "message_snippet": "Parallel execution failed (%r); falling back to sequential execution.",
         "category": "FALLBACK_VISIBLE"
       },
       {
         "file": "parallel/parallel.py",
-        "line": 766,
+        "line": 806,
         "context": "ParallelExecutor.joblib_strategy",
         "message_snippet": "Joblib is not available; falling back to thread-based parallel execution.",
         "category": "FALLBACK_VISIBLE"
       },
       {
         "file": "plotting.py",
-        "line": 285,
+        "line": 286,
         "context": "_warn_and_log_plotspec_fallback",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "plotting.py",
-        "line": 372,
+        "line": 373,
         "context": "_reject_unconsumed_plot_kwargs",
         "message_snippet": "",
         "category": "USER_CONTRACT"
       },
       {
         "file": "plotting.py",
-        "line": 929,
+        "line": 930,
         "context": "_setup_plot_style",
         "message_snippet": "<f-string>",
         "category": "USER_CONTRACT"
@@ -738,28 +752,28 @@
       },
       {
         "file": "viz/_matplotlib_compat.py",
-        "line": 406,
+        "line": 407,
         "context": "plot_triangular",
         "message_snippet": "All predictions are (almost) identical.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "viz/_matplotlib_compat.py",
-        "line": 408,
+        "line": 409,
         "context": "plot_triangular",
         "message_snippet": "All uncertainties are (almost) identical.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "viz/_matplotlib_compat.py",
-        "line": 666,
+        "line": 667,
         "context": "plot_global",
         "message_snippet": "All uncertainties are (almost) identical.",
         "category": "USER_CONTRACT"
       },
       {
         "file": "viz/_matplotlib_compat.py",
-        "line": 696,
+        "line": 697,
         "context": "plot_global",
         "message_snippet": "plot_global requires a scalar threshold for non-probabilistic explainers.",
         "category": "USER_CONTRACT"
@@ -780,14 +794,14 @@
       },
       {
         "file": "viz/narrative_plugin.py",
-        "line": 149,
+        "line": 150,
         "context": "NarrativePlotPlugin.plot",
         "message_snippet": "Narrative template fallback: default template used because provided relative path was missing",
         "category": "FALLBACK_VISIBLE"
       },
       {
         "file": "viz/narrative_plugin.py",
-        "line": 160,
+        "line": 161,
         "context": "NarrativePlotPlugin.plot",
         "message_snippet": "Narrative template fallback: default template used because provided absolute path was missing",
         "category": "FALLBACK_VISIBLE"
@@ -802,7 +816,7 @@
     ]
   },
   "fallback_registry": {
-    "total": 10,
+    "total": 12,
     "failures": 0,
     "sites": [
       {
@@ -840,6 +854,32 @@
         "matched_warning": true,
         "matched_log": true,
         "reason": "An explicitly requested joblib strategy runs on threads when joblib is not installed, so the substitution must be user-visible.",
+        "notes": "",
+        "status": "pass",
+        "violations": []
+      },
+      {
+        "site_id": "runtime_env_unrecognised_token_ignored",
+        "rel_path": "core/config_manager.py",
+        "context": "warn_unrecognised_env_token",
+        "disposition": "user_visible",
+        "required_log_level": "INFO",
+        "matched_warning": true,
+        "matched_log": true,
+        "reason": "ADR-034 / #219: an unrecognised CE_CACHE or CE_PARALLEL token is ignored, so the requested behaviour is not applied and the drop must be user-visible. Escalates to ConfigurationError in v1.1.0 (#225).",
+        "notes": "",
+        "status": "pass",
+        "violations": []
+      },
+      {
+        "site_id": "calibrator_primitive_unverified_checksum_load",
+        "rel_path": "calibration/primitive_checksum.py",
+        "context": "verify_primitive_checksum",
+        "disposition": "user_visible",
+        "required_log_level": "INFO",
+        "matched_warning": true,
+        "matched_log": true,
+        "reason": "ADR-031: primitives written by <= 1.0.1 carry a pickle digest that cannot be recomputed, so they load without integrity verification. The skipped check must be user-visible; a future schema version rejects them.",
         "notes": "",
         "status": "pass",
         "violations": []

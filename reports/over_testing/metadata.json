@@ -1,6 +1,6 @@
 {
-  "coverage_file": ".coverage.local_checks.4640",
-  "contexts_detected": 10833,
+  "coverage_file": ".coverage.local_checks.32328",
+  "contexts_detected": 12347,
   "context_regex": null,
   "source_root": "src\\calibrated_explanations",
   "over_testing_threshold": 20,
