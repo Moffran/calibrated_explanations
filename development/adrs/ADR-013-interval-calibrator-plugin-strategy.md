@@ -157,6 +157,10 @@ Each alternative scenario is evaluated with the same interval calibrator:
   distribution changes are required.【F:src/calibrated_explanations/plugins/intervals.py†L1-L80】【F:src/calibrated_explanations/plugins/builtins.py†L120-L183】
 - **2026-06-02 (v0.11.3 Task 9 Workstream D):** ADR-013 §4 Lifecycle previously cited `src/calibrated_explanations/plugins/interval_wrappers.py` as the FAST wrapper location. That file does not exist. The wrapper is at `src/calibrated_explanations/calibration/interval_wrappers.py`. §4 text has been corrected. This is a documentation-only fix; no code change required.
 - **2026-10-15 (v1.0.2):** the §4 recalibration-operation contract is enforced by `discard_interval_calibrator` in `src/calibrated_explanations/calibration/interval_learner.py`, which runs before `update_interval_learner` rebuilds a classification calibrator and before `CalibratedExplainer.reinitialize` rebuilds after a learner change, and by `LegacyIntervalCalibratorPlugin.create`, which honours `operation == "update"`. Before this, `reinitialize` left classification calibration (and, after a learner change, regression intervals) on the previous data or learner.
+- **2026-10-20 (#251):** The in-tree Venn-Abers calibrator applies the same
+  10-decimal score transformation when fitting and querying thresholded
+  regression. Classification retains its existing fit precision. The interval
+  plugin protocol and public wrapper API do not change.
 
 
 ## Governed claims

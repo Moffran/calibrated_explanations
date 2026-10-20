@@ -24,6 +24,11 @@ from ..utils.exceptions import ConfigurationError
 from .normalization_strategy import NormalizationStrategy, coerce_normalization_strategy
 from .primitive_checksum import primitive_checksums, verify_primitive_checksum
 
+# Split-CPS tuple scores subtract two floating-point CPD values. Ten decimal
+# places merge arithmetic noise, including near-boundary cases at 20,000 CPS
+# grid steps, while preserving distinct scores at that resolution.
+PROBABILISTIC_REGRESSION_SCORE_PRECISION = 10
+
 
 @contextmanager
 def _ignore_runtime_warnings():
@@ -71,6 +76,8 @@ class VennAbers:
             Underlying Venn-Abers models fitted per class or bin.
     """
 
+    score_precision: int | None = None
+
     def __init__(
         self,
         x_cal,
@@ -114,14 +121,25 @@ class VennAbers:
         cprobs = self._predict_proba_with_difficulty(x_cal) if cprobs is None else cprobs
         self.cprobs = cprobs
         self.bins = bins
+        self.score_precision = type(self).score_precision
 
         self.ctargets = self.y_cal_numeric
 
         self._fit_va()
 
+    def _prepare_scores(self, probs: np.ndarray) -> np.ndarray:
+        """Apply the same optional precision contract to fit and lookup scores."""
+        if self.score_precision is None:
+            return probs
+        prepared = np.array(probs, copy=True)
+        prepared[:, 1] = np.round(prepared[:, 1], self.score_precision)
+        prepared[:, 0] = 1 - prepared[:, 1]
+        return prepared
+
     def _fit_va(self) -> None:
         """Fit underlying Venn-Abers models from stored calibration arrays."""
-        cprobs = np.asarray(self.cprobs)
+        cprobs = self._prepare_scores(np.asarray(self.cprobs))
+        fit_precision = 4 if self.score_precision is None else None
         with _ignore_runtime_warnings():
             if self.is_mondrian():
                 self.va = {}
@@ -136,14 +154,16 @@ class VennAbers:
                             va_class_bin.fit(
                                 tmp_probs[self.bins == b, :],
                                 np.multiply(c == self.ctargets[self.bins == b], 1),
-                                precision=4,
+                                precision=fit_precision,
                             )
                             self.va[c][b] = va_class_bin
                 else:
                     for b in np.unique(self.bins):
                         va_bin = va.VennAbers()
                         va_bin.fit(
-                            cprobs[self.bins == b, :], self.ctargets[self.bins == b], precision=4
+                            cprobs[self.bins == b, :],
+                            self.ctargets[self.bins == b],
+                            precision=fit_precision,
                         )
                         self.va[b] = va_bin
             elif self.is_multiclass():
@@ -153,11 +173,13 @@ class VennAbers:
                     tmp_probs[:, 0] = 1 - cprobs[:, c]
                     tmp_probs[:, 1] = cprobs[:, c]
                     va_class = va.VennAbers()
-                    va_class.fit(tmp_probs, np.multiply(c == self.ctargets, 1), precision=4)
+                    va_class.fit(
+                        tmp_probs, np.multiply(c == self.ctargets, 1), precision=fit_precision
+                    )
                     self.va[c] = va_class
             else:
                 self.va = va.VennAbers()
-                self.va.fit(cprobs, self.ctargets, precision=4)
+                self.va.fit(cprobs, self.ctargets, precision=fit_precision)
 
     def _predict_proba_with_difficulty(self, x, bins=None):
         """Augment raw probabilities with optional difficulty adjustments."""
@@ -269,7 +291,9 @@ class VennAbers:
                 normalization = coerce_normalization_strategy(normalize)
             else:
                 normalization = coerce_normalization_strategy(normalization)
-            tprobs = self._predict_proba_with_difficulty(x, bins=bins)
+            tprobs = self._prepare_scores(
+                np.asarray(self._predict_proba_with_difficulty(x, bins=bins))
+            )
             p0p1 = np.zeros((tprobs.shape[0], 2))
             va_proba = np.zeros(tprobs.shape)
             interval_summary = coerce_interval_summary(interval_summary)
@@ -416,6 +440,7 @@ class VennAbers:
             "parameters": {
                 "is_multiclass": bool(self.is_multiclass()),
                 "is_mondrian": bool(self.is_mondrian()),
+                "score_precision": self.score_precision,
             },
             "fields": {
                 "y_cal_numeric": _as_list(self.y_cal_numeric),
@@ -498,6 +523,10 @@ class VennAbers:
             if isinstance(payload.get("parameters"), Mapping)
             else len(np.unique(obj.y_cal_numeric)) > 2
         )
+        parameters = payload.get("parameters")
+        obj.score_precision = (
+            parameters.get("score_precision") if isinstance(parameters, Mapping) else None
+        )
         obj.de = None
         obj.learner = None
         obj._predict_proba = None
@@ -510,6 +539,12 @@ class VennAbers:
         self.de = difficulty_estimator
         if learner is not None:
             self._predict_proba = learner.predict_proba
+
+
+class _ThresholdVennAbers(VennAbers):
+    """Use one high-resolution score representation for split-CPS probabilities."""
+
+    score_precision = PROBABILISTIC_REGRESSION_SCORE_PRECISION
 
 
 def exponent_scaling_list(probs, difficulties, beta=5):

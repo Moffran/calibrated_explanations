@@ -158,6 +158,16 @@ def test_scalar_threshold_matches_per_instance_threshold_path(fitted):
     np.testing.assert_array_equal(scalar, per_instance)
 
 
+def test_should_match_singleton_queries_when_thresholds_mix_scalar_and_tuple(fitted):
+    """Each row's threshold uses the same precision contract in the row loop."""
+    wrapper, panel, y = fitted
+    limits = _thresholds(y)
+    thresholds = [limits["p50"] if i % 2 else limits["within"] for i in range(N_TEST)]
+    batched = _proba(wrapper, panel, thresholds)
+    singleton = np.vstack([_proba(wrapper, panel[i : i + 1], thresholds[i]) for i in range(N_TEST)])
+    np.testing.assert_array_equal(batched, singleton)
+
+
 def test_public_predict_interval_matches_predict_proba_and_is_batch_invariant(fitted):
     """``predict`` returns event labels; its probability interval must match ``predict_proba``."""
     wrapper, panel, y = fitted

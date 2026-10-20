@@ -6,10 +6,12 @@ import warnings
 
 import numpy as np
 import pytest
+from venn_abers import VennAbers as UpstreamVennAbers
 
 from calibrated_explanations.core import ConfigurationError
 from calibrated_explanations.calibration import venn_abers as venn_abers_module
 from calibrated_explanations.calibration import VennAbers
+from calibrated_explanations.calibration import interval_regressor as interval_module
 from calibrated_explanations.utils.exceptions import ValidationError
 
 
@@ -220,3 +222,113 @@ def test_should_preserve_global_warning_filters_when_fitting_and_predicting():
     baseline_after_fit = list(warnings.filters)
     _ = calibrator.predict_proba(np.array([[3.0], [4.0]]), output_interval=True)
     assert warnings.filters == baseline_after_fit
+
+
+@pytest.mark.parametrize("tuple_score", [False, True])
+def test_should_use_same_precision_for_regression_fit_and_lookup(monkeypatch, tuple_score):
+    """Equal split-CPS scores must share one Venn-Abers interval."""
+    monkeypatch.setattr(venn_abers_module.va, "VennAbers", UpstreamVennAbers)
+    counts = np.array([1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4])
+    labels = np.array([0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1])
+    offsets = np.arange(len(counts)) % 3
+    scores = (offsets + counts) / 7 - offsets / 7 if tuple_score else counts / 7
+    calibration = np.column_stack((1 - scores, scores))
+
+    class IdentityLearner:
+        def predict_proba(self, x):
+            return np.asarray(x)
+
+    calibrator = interval_module.VennAbers(None, labels, IdentityLearner(), cprobs=calibration)
+    raw = calibrator.predict_proba(calibration, output_interval=True)
+    canonical_scores = counts / 7
+    canonical = calibrator.predict_proba(
+        np.column_stack((1 - canonical_scores, canonical_scores)), output_interval=True
+    )
+
+    np.testing.assert_array_equal(raw[1], canonical[1])
+    np.testing.assert_array_equal(raw[2], canonical[2])
+    assert np.unique(calibrator.va.c_).size == 4
+
+
+def test_should_preserve_score_precision_in_primitive(monkeypatch):
+    """A reloaded regression calibrator must keep its fit and lookup contract."""
+    monkeypatch.setattr(venn_abers_module.va, "VennAbers", UpstreamVennAbers)
+    scores = np.array([1, 1, 2, 2, 3, 3]) / 7
+    labels = np.array([0, 1, 0, 1, 0, 1])
+    calibration = np.column_stack((1 - scores, scores))
+
+    class IdentityLearner:
+        def predict_proba(self, x):
+            return np.asarray(x)
+
+    calibrator = interval_module.VennAbers(None, labels, IdentityLearner(), cprobs=calibration)
+    restored = VennAbers.from_primitive(calibrator.to_primitive())
+    restored.reattach_learner(IdentityLearner())
+
+    assert restored.score_precision == 10
+    np.testing.assert_array_equal(
+        restored.predict_proba(calibration, output_interval=True)[1],
+        calibrator.predict_proba(calibration, output_interval=True)[1],
+    )
+
+
+def test_should_keep_distinct_cps_scores_when_grid_exceeds_four_decimal_resolution(
+    monkeypatch,
+):
+    """Twelve-place quantization must preserve nearby genuine CPS steps."""
+    monkeypatch.setattr(venn_abers_module.va, "VennAbers", UpstreamVennAbers)
+    scores = np.array([1, 1, 2, 2, 3, 3]) / 20_000
+    labels = np.array([0, 1, 0, 1, 0, 1])
+    calibration = np.column_stack((1 - scores, scores))
+
+    class IdentityLearner:
+        def predict_proba(self, x):
+            return np.asarray(x)
+
+    calibrator = interval_module.VennAbers(None, labels, IdentityLearner(), cprobs=calibration)
+
+    assert len(calibrator.va.c_) == 3
+    np.testing.assert_array_equal(calibrator.va.c_, np.unique(scores))
+
+
+def test_should_merge_equal_tuple_scores_near_decimal_boundary(monkeypatch):
+    """An equal score near a twelve-place midpoint must retain its VA interval."""
+    monkeypatch.setattr(venn_abers_module.va, "VennAbers", UpstreamVennAbers)
+    counts = np.repeat([19_994, 19_995, 19_996], 3)
+    labels = np.array([0, 0, 1, 0, 1, 1, 1, 1, 1])
+    scores = counts / 19_999
+    calibration = np.column_stack((1 - scores, scores))
+
+    class IdentityLearner:
+        def predict_proba(self, x):
+            return np.asarray(x)
+
+    calibrator = interval_module.VennAbers(None, labels, IdentityLearner(), cprobs=calibration)
+    matched = np.array([19_995 / 19_999, 19_997 / 19_999 - 2 / 19_999])
+    _, low, high = calibrator.predict_proba(
+        np.column_stack((1 - matched, matched)), output_interval=True
+    )
+
+    np.testing.assert_array_equal(low, np.repeat(low[0], 2))
+    np.testing.assert_array_equal(high, np.repeat(high[0], 2))
+
+
+def test_should_keep_classification_precision_behavior_by_default(monkeypatch):
+    """Regression precision opt-in must not change classification outputs."""
+    monkeypatch.setattr(venn_abers_module.va, "VennAbers", UpstreamVennAbers)
+    scores = np.array([1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4]) / 7
+    labels = np.array([0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1])
+    calibration = np.column_stack((1 - scores, scores))
+
+    class IdentityLearner:
+        def predict_proba(self, x):
+            return np.asarray(x)
+
+    calibrator = VennAbers(None, labels, IdentityLearner(), cprobs=calibration)
+    reference = UpstreamVennAbers().fit(calibration, labels, precision=4)
+
+    np.testing.assert_array_equal(calibrator.va.c_, reference.c_)
+    np.testing.assert_array_equal(
+        np.column_stack(calibrator.predict_proba(calibration, output_interval=True)[1:]),
+        reference.predict_proba(calibration)[1],
+    )

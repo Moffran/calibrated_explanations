@@ -5,6 +5,16 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.1...main)
 
+### Fixed
+
+- **Thresholded-regression Venn–Abers score precision (#251):** split-CPS scores
+  are now rounded to 10 decimal places at both calibration and inference. This
+  removes spurious interval changes when identical scalar scores straddle the
+  former four-decimal calibration grid, and merges floating-point variants of
+  equal tuple-event scores. Probability estimates and interval endpoints can
+  change substantially (up to 0.50 for an endpoint in a small synthetic
+  comparison). Classification and percentile-based regression are unchanged.
+
 ### Added
 
 - **Optional conda-forge feedstock auto-update:** `make release-postcommit` now

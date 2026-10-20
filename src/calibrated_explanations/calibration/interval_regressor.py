@@ -18,7 +18,7 @@ import numpy as np
 from ..utils import assert_threshold, safe_first_element
 from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
 from .primitive_checksum import primitive_checksums, verify_primitive_checksum
-from .venn_abers import VennAbers
+from .venn_abers import _ThresholdVennAbers as VennAbers
 
 
 class IntervalRegressor:

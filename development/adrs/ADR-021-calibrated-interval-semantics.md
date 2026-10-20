@@ -301,3 +301,20 @@ While CE manages the structural formatting above, CE expressly **does not contra
   from the one Venn-Abers was calibrated on. Both CPS and Venn-Abers are retained;
   only the scorer changed. Evidence:
   `development/finished-work/threshold_regression_batch_invariance_report.md`.
+* 2026-10-20 amendment (§3, Venn-Abers score representation; #251): The
+  unsmoothed split-CPS score is rounded to 10 decimal places for both the
+  Venn-Abers fit and test lookup in thresholded regression. This preserves
+  equal scalar scores and merges floating-point variants of equal tuple-event
+  scores while retaining the CPS grid resolution at tested calibration sizes.
+  The deterministic score function and instance-wise contract remain intact.
+  Classification still uses its existing four-decimal fit behaviour; percentile
+  regression does not use this Venn-Abers path.
+  Twelve decimal places were rejected: at 19,999 split-CPS grid steps, two
+  floating-point forms of the same tuple score can round differently and move
+  an upper interval endpoint from 0.75 to 1.00.
+  In five seeded synthetic regression splits (150 held-out cases each), mean
+  Brier scores changed from 0.09561 to 0.09428 for scalar thresholds and from
+  0.13132 to 0.13053 for tuple thresholds; ten-bin ECE changed from 0.08248 to
+  0.08105 and from 0.10802 to 0.10502 respectively. Mean interval widths
+  changed from 0.12168 to 0.10228 and from 0.11555 to 0.10086. These are
+  descriptive checks, not statistical calibration or coverage guarantees.
