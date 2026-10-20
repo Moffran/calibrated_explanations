@@ -22,6 +22,19 @@ import sys
 from pathlib import Path
 
 
+def _resolve_feedstock_clone(configured: Path) -> Path | None:
+    """Return the clone containing update_meta.py, or None if none is found.
+
+    Accepts either the clone itself or a same-named parent folder wrapping it
+    (e.g. ``.../calibrated-explanations-feedstock/calibrated-explanations-feedstock``),
+    a common layout when the clone was made inside a pre-created folder.
+    """
+    for candidate in (configured, configured / configured.name):
+        if (candidate / "update_meta.py").is_file():
+            return candidate
+    return None
+
+
 def main() -> int:
     feedstock_dir = os.environ.get("CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR")
     if not feedstock_dir:
@@ -32,14 +45,16 @@ def main() -> int:
         )
         return 0
 
-    repo_path = Path(feedstock_dir)
-    update_script = repo_path / "update_meta.py"
-    if not update_script.is_file():
+    repo_path = _resolve_feedstock_clone(Path(feedstock_dir))
+    if repo_path is None:
         print(
             f"[conda feedstock] CALIBRATED_EXPLANATIONS_FEEDSTOCK_DIR={feedstock_dir!r} does not "
-            "contain update_meta.py; skipping the feedstock version bump."
+            "contain update_meta.py (checked the directory itself and a same-named nested "
+            "clone); skipping the feedstock version bump."
         )
         return 0
+    feedstock_dir = str(repo_path)
+    update_script = repo_path / "update_meta.py"
 
     print(f"[conda feedstock] Running {update_script} ...")
     result = subprocess.run([sys.executable, str(update_script)], cwd=repo_path, text=True)
