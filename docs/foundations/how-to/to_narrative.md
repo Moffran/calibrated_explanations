@@ -110,3 +110,33 @@ narratives = explanations.to_narrative(
 
 The `to_narrative` method provides a clean, intuitive API for generating
 narratives from calibrated explanations.
+
+## Narrative facts for your own text
+
+`to_narrative()` renders the packaged templates offline. If you write your own
+text, or check text produced elsewhere, start from the deterministic facts CE
+has already computed instead of re-reading explanation objects:
+
+```python
+from calibrated_explanations.explanations import build_narrative_spec
+
+payload = explanations.to_json()["explanations"][0]
+spec = build_narrative_spec(payload)
+
+spec.prediction            # predict, low, high, low_bounded, high_bounded
+spec.rules[0].rule         # strongest rule first (ADR-042 canonical order)
+spec.rules[0].source       # "/rules/<i>": where the fact came from in the payload
+spec.context               # metadata.narrative_context: problem type, class, threshold, reject state
+spec.qualifiers            # e.g. ("rejected",) or ("unbounded_interval",)
+spec.to_json()             # canonical JSON; identical input gives identical text and spec_id
+```
+
+The spec copies values without rounding and raises `ValidationError` for
+missing, `NaN` or contradictory data. An endpoint with `low_bounded=False` or
+`high_bounded=False` is not a calibrated bound (for example the open side of
+`low_high_percentiles=(-inf, 90)`) and must not be stated as a numeric limit.
+For alternatives, `rnk_metric` and `rnk_weight` select the ranking as in the
+alternative plots.
+
+A correct spec does not make text built from it correct: check your text
+against the spec. CE does not describe narrative prose as calibrated.

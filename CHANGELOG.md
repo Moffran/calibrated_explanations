@@ -5,6 +5,28 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.2...main)
 
+### Added
+
+- **Narrative semantic contract (ADR-041, #227-#230):** `to_json()` and
+  `to_json_stream()` now add `metadata.narrative_context` to each explanation
+  (problem type, the class a probability refers to, threshold, requested
+  percentiles and reject/defer state, each only when CE has established it).
+  The extension is additive: no existing key changes, and payloads without it
+  still load. New `calibrated_explanations.explanations.build_narrative_spec`
+  returns an immutable, versioned `NarrativeSpec` with the prediction, every
+  rule's intervals, source references and qualifiers, in ADR-042 order. It
+  copies values without rounding, marks open one-sided interval endpoints as
+  unbounded (ADR-021), raises `ValidationError` on invalid or contradictory
+  data, and gives identical canonical JSON for identical input. It adds no
+  dependency and makes no network calls.
+
+### Changed
+
+- **Narrative provider plans withdrawn (#231, #233, #234):** the narrative
+  provider plugin family, provider API and provider verification chain are not
+  planned. `to_narrative()`, `to_dataframe()`, `narrate()` and
+  `plot(style="narrative")` are unchanged and keep working offline (#232).
+
 ## [v1.0.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.2) - 2026-10-20
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v1.0.1...v1.0.2)

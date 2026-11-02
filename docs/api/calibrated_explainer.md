@@ -182,3 +182,13 @@ alternative_explanation.plot()
 `
 
 Entry-point tier: Tier 3.
+
+## Narrative facts
+
+`build_narrative_spec` turns one serialized explanation into an immutable
+`NarrativeSpec` (ADR-041). See [Generate narratives](../foundations/how-to/to_narrative.md).
+
+```{eval-rst}
+.. automodule:: calibrated_explanations.explanations.narrative_spec
+   :members: build_narrative_spec, NarrativeSpec, NarrativeRuleFact, NarrativeInterval
+```

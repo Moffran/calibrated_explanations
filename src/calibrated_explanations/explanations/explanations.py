@@ -834,11 +834,58 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
         if metadata is not None:
             domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
+        narrative_context = self._narrative_context(exp)
+        if narrative_context:
+            domain.metadata = {
+                **(dict(domain.metadata) if isinstance(domain.metadata, Mapping) else {}),
+                "narrative_context": narrative_context,
+            }
 
         domain.calibration_metadata = self._build_calibration_metadata()
         domain.model_metadata = self._build_model_metadata()
 
         return domain
+
+    def _narrative_context(self, exp) -> dict[str, Any]:
+        """Return the ``metadata.narrative_context`` extension for one explanation (ADR-041).
+
+        Only semantics CE has already established are copied: problem type, the
+        class the reported probability refers to, the threshold definition, the
+        requested regression percentiles and the reject/defer state. A key whose
+        source is unavailable is omitted, never inferred.
+        """
+        context: dict[str, Any] = {}
+        mode = exp.get_mode() if hasattr(exp, "get_mode") else None
+        if mode == "classification":
+            context["problem_type"] = (
+                "multiclass_classification" if exp.is_multiclass() else "binary_classification"
+            )
+            classes = (exp.prediction or {}).get("classes")
+            classes = np.asarray(classes).ravel() if classes is not None else np.asarray([])
+            if classes.size == 1:
+                class_index = int(classes[0])
+                context["class_index"] = class_index
+                labels = exp.get_class_labels()
+                if isinstance(labels, Mapping) and labels.get(class_index) is not None:
+                    context["class_label"] = jsonify_value(labels[class_index])
+        elif mode == "regression":
+            threshold = getattr(exp, "y_threshold", None)
+            if threshold is not None:
+                context["problem_type"] = "probabilistic_regression"
+                context["threshold"] = jsonify_value(threshold)
+            else:
+                context["problem_type"] = "regression"
+                if self.low_high_percentiles is not None:
+                    context["low_high_percentiles"] = [float(p) for p in self.low_high_percentiles]
+        reject_context = getattr(exp, "reject_context", None)
+        if reject_context is not None:
+            context["reject"] = {
+                "rejected": bool(reject_context.rejected),
+                "reject_type": reject_context.reject_type,
+                "prediction_set_size": int(reject_context.prediction_set_size),
+                "confidence": jsonify_value(reject_context.confidence),
+            }
+        return context
 
     def _build_calibration_metadata(self):
         """Return CalibrationDescriptor(method=mode_string) from the frozen explainer wrapper."""

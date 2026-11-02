@@ -32,6 +32,25 @@ until a v2 schema cycle.
   optional `model_metadata` object with a `type` string to preserve the typed
   descriptors from the Explanation domain model.
 
+### `metadata.narrative_context` (additive, v1.1.0, ADR-041)
+
+`CalibratedExplanations.to_json()` and `to_json_stream()` add a
+`narrative_context` object to each explanation's `metadata`. It restates
+semantics CE has already established, so that a stored payload can be
+described without the explainer that produced it. Keys are present only when
+their source is known; nothing is inferred.
+
+| Key | Present for | Meaning |
+|---|---|---|
+| `problem_type` | every known mode | `binary_classification`, `multiclass_classification`, `regression` or `probabilistic_regression` |
+| `class_index` | classification | class whose probability `prediction.predict` reports (class `1` for binary) |
+| `class_label` | classification, when labels are known | label of `class_index` |
+| `threshold` | probabilistic regression | `t` for the event `y <= t`, or `[low, high]` for `low < y <= high` |
+| `low_high_percentiles` | percentile regression | requested `(low, high)` percentiles; an infinite value means that endpoint is a placeholder, not a calibrated bound (ADR-021) |
+| `reject` | a reject policy is active | `{rejected, reject_type, prediction_set_size, confidence}` from the instance's reject context |
+
+Payloads without `narrative_context` remain valid and load unchanged.
+
 `provenance` and `metadata` are the stable extension surface for runtime context;
 the v1 contract is payload-only and does not require an outer envelope. Patch
 releases may add documented sub-keys beneath these objects. They will not rename

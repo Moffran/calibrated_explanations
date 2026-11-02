@@ -168,3 +168,38 @@ def test_should_render_multiclass_runner_up_and_truthful_predicted_class_in_narr
     assert match is not None
     assert match.group(1).strip() != ""
     assert float(match.group(2)) >= 0.0
+
+
+@pytest.fixture
+def no_network(monkeypatch):
+    """Make every socket connection and DNS lookup fail for the duration of a test."""
+    import socket
+
+    def refuse(*args, **kwargs):
+        raise OSError("network access is blocked in this test")
+
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket.socket, "connect_ex", refuse)
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+
+
+def test_should_return_documented_narrative_formats_offline(factual_explanations, no_network):
+    """Verify the existing narrative entry points keep their formats with networking blocked (ADR-041)."""
+    pd = pytest.importorskip("pandas")
+
+    from calibrated_explanations.explanations import build_narrative_spec
+
+    single = factual_explanations[0]
+    expected = {"dataframe": pd.DataFrame, "text": str, "html": str, "markdown": str}
+
+    for output_format, kind in expected.items():
+        assert isinstance(factual_explanations.to_narrative(output_format=output_format), kind)
+        assert isinstance(single.to_narrative(output_format=output_format), kind)
+    assert isinstance(factual_explanations.to_narrative(output_format="dict"), list)
+    assert isinstance(single.to_narrative(output_format="dict"), dict)
+    assert isinstance(factual_explanations.to_dataframe(), pd.DataFrame)
+    assert isinstance(single.narrate(output_format="text"), str)
+    assert isinstance(factual_explanations.plot(style="narrative", output="dict"), list)
+    spec = build_narrative_spec(factual_explanations.to_json()["explanations"][0])
+    assert spec.context["problem_type"] == "binary_classification"
