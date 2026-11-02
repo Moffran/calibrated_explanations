@@ -1,4 +1,4 @@
-> **Status note (2026-10-15):** Last edited 2026-10-15 · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).
+> **Status note (2026-11-02):** Last edited 2026-11-02 (D15 amended for ADR-041) · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).
 
 # ADR-042: Canonical Rule and Feature Ranking Semantics
 
@@ -286,16 +286,18 @@ Calibration guarantees (ADR-021) attach to predictions and intervals, not to
 ranks. The `ensured` score combines two calibrated quantities, but the score
 itself carries no guarantee.
 
-### D15. Interaction with the ADR-041 narrative-provider draft
+### D15. Interaction with ADR-041 (`NarrativeSpec`)
 
-If ADR-041 introduces `NarrativeSpec`, the spec MUST carry rules in the
-canonical order produced by D9. It MUST also record the ranking key:
-`feature_weight` for factual explanations, or `ensured` with its `w`, or
-`feature_weight` for alternatives.
+`NarrativeSpec` (ADR-041) MUST carry rules in the canonical order produced by
+D9. It MUST also record the ranking key: `feature_weight` for factual
+explanations, or `ensured` with its `w`, or `feature_weight` for alternatives.
 
-Narrative providers MUST NOT re-rank. Any provider-side reordering is
-presentation, MUST be declared, and is subject to D12. ADR-041 MUST cite this
-ADR.
+Consumers of a `NarrativeSpec` MUST NOT re-rank. Any reordering is
+presentation, MUST be declared, and is subject to D12. ADR-041 cites this ADR.
+
+*Amended 2026-11-02:* ADR-041 was accepted as a minimal semantic contract
+without narrative providers; the former "provider" wording is replaced by
+"consumers of a `NarrativeSpec`".
 
 ### D16. Narratives follow plot logic
 
