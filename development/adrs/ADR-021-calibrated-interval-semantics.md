@@ -1,6 +1,6 @@
 > **Active scope:** Governing architectural decision for prediction interval semantic definitions (`low`, `high`, `predict`, coverage semantics). Remains active as long as these semantics govern calibration output interpretation; superseded when interval semantics are revised.
 
-> **Status note (2026-10-19):** Last edited 2026-10-19 (amended §4/§4b: percentile-scoped median containment, #247; 2026-10-15 amended §3: instance-wise threshold scorer) · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-11-07):** Amended §2/§4/§4b for unbounded one-sided CPS endpoints and percentile-scoped checks (#237), following the #247 amendment; §3 instance-wise threshold scorer amended 2026-10-15 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-021: Calibrated Interval Semantics
 
@@ -71,6 +71,9 @@ between the three paths.
   `IntervalRegressor.predict_uncertainty`. That method calls the CPS to produce
   `(median, low, high)` triples and returns them in the format expected by the
   explanation pipeline.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1402-L1455】【F:src/calibrated_explanations/core/interval_regressor.py†L121-L166】
+  Infinite requested percentiles produce open `-inf`/`inf` endpoints, not
+  calibration-target extrema; the endpoint values do not change the CPS
+  calibration or finite quantile bounds.
 * `prediction_helpers.initialize_explanation` records the active percentile
   pair on each `CalibratedExplanations` container so downstream consumers know
   the bounds are conformal percentiles rather than probability events. If no
@@ -147,12 +150,11 @@ between the three paths.
 
   For example `(5, 95)`, `(40, 60)`, `(-inf, 90)` and `(10, inf)` contain the
   median, while `(-inf, 40)` and `(60, inf)` legitimately exclude it. An
-  infinite percentile is currently reported as `min(y_cal)` or `max(y_cal)`.
-  That value is a placeholder, not a calibrated bound, and MUST NOT be used in
-  a containment check; #237 replaces it with an unbounded representation in
-  v1.1.0. `low <= high` is checked for every interval, so a placeholder that
-  crosses the finite bound is still reported. Classification and thresholded
-  regression keep the full check.
+  infinite percentile is reported as `-inf` or `inf`, respectively; it is an
+  open endpoint, not a calibrated finite bound. `low <= high` is checked for
+  every interval. Classification and thresholded regression keep the full
+  check. JSON payloads encode these open endpoints as the strings `"-inf"` and
+  `"inf"` and restore them to infinities when loaded.
 
 ## Terminology: "Probabilistic Regression" vs. "Thresholded Regression"
 
@@ -216,6 +218,13 @@ The invariant `low <= predict <= high` applies uniformly:
 
 At the prediction and alternative scenario levels, percentile-driven regression
 applies the percentile scope defined in §4.
+
+For percentile-driven regression, open endpoints are represented in memory by
+`-inf` and `inf`, never by calibration-target extrema. Factual rule-weight
+intervals mirror the corresponding open prediction side; alternative
+rule-prediction intervals preserve it. JSON export uses the explicit strings
+`"-inf"` and `"inf"` at open endpoints, while plots may clip those endpoints to
+the calibration-target range for display without changing the interval values.
 
 Enforcement (amended 2026-10-19, #247): a violation detected in plugin batch
 output (`validate_explanation_batch`) raises `ValidationError`. The prediction

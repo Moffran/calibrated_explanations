@@ -43,6 +43,7 @@ from ...utils.exceptions import (
     ValidationError,
 )
 from ..config_manager import ConfigManager
+from ..validation import validate_low_high_percentiles
 from .interval_summary import coerce_interval_summary
 from .validation import check_interval_runtime_metadata
 
@@ -516,26 +517,7 @@ class PredictionOrchestrator:
         if "regression" in self.explainer.mode:
             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
             if threshold is None:  # normal regression
-                if not (low_high_percentiles[0] <= low_high_percentiles[1]):  # pylint: disable=superfluous-parens
-                    raise ValidationError(
-                        "The low percentile must be smaller than (or equal to) the high percentile."
-                    )
-                if not (
-                    (
-                        (low_high_percentiles[0] > 0 and low_high_percentiles[0] <= 50)
-                        and (low_high_percentiles[1] >= 50 and low_high_percentiles[1] < 100)
-                    )
-                    or low_high_percentiles[0] == -np.inf
-                    or low_high_percentiles[1] == np.inf
-                    and not (
-                        low_high_percentiles[0] == -np.inf and low_high_percentiles[1] == np.inf
-                    )
-                ):
-                    raise ValidationError(
-                        "The percentiles must be between 0 and 100 (exclusive). \
-                            The lower percentile can be -np.inf and the higher percentile can \
-                            be np.inf (but not at the same time) to allow one-sided intervals."
-                    )
+                low_high_percentiles = validate_low_high_percentiles(low_high_percentiles)
                 low = (
                     [low_high_percentiles[0], 50]
                     if low_high_percentiles[0] != -np.inf

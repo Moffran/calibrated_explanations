@@ -132,7 +132,9 @@ def jsonify_value(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {str(key): jsonify_value(val) for key, val in value.items()}
     if isinstance(value, np.generic):  # numpy scalars
-        return value.item()
+        return jsonify_value(value.item())
+    if isinstance(value, float) and np.isinf(value):
+        return "-inf" if value < 0 else "inf"
     if callable(value):
         return str(value)
     return value

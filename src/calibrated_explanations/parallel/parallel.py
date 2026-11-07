@@ -324,11 +324,10 @@ class ParallelExecutor:
                     extra["initializer"] = self.config.worker_initializer
                     extra["initargs"] = self.config.worker_init_args or ()
                 self.pool = ProcessPoolExecutor(max_workers=max_workers, **extra)
-            elif strategy_name == "joblib":
-                if _JoblibParallel is not None:
-                    n_jobs = self.config.max_workers or -1
-                    self.pool = _JoblibParallel(n_jobs=n_jobs, prefer="processes")
-                    self.pool.__enter__()
+            elif strategy_name == "joblib" and _JoblibParallel is not None:
+                n_jobs = self.config.max_workers or -1
+                self.pool = _JoblibParallel(n_jobs=n_jobs, prefer="processes")
+                self.pool.__enter__()
         except BaseException:  # ADR-002: catch all exceptions including system exits
             exc = sys.exc_info()[1]
             if not isinstance(exc, Exception):

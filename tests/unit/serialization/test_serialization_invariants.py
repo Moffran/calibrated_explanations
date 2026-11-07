@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from calibrated_explanations.explanations.models import Explanation, FeatureRule
@@ -53,3 +55,27 @@ def test_from_json_roundtrip_preserves_basic_fields():
     exp = from_json(payload)
     back = to_json(exp)
     assert back["task"] == "t"
+
+
+def test_unbounded_percentile_interval_roundtrips_as_standard_json():
+    exp = Explanation(
+        task="regression",
+        index=0,
+        explanation_type="factual",
+        prediction={"predict": 0.5, "low": float("-inf"), "high": 0.4},
+        rules=[],
+        metadata={
+            "narrative_context": {
+                "problem_type": "regression",
+                "low_high_percentiles": [float("-inf"), 40.0],
+            }
+        },
+    )
+
+    payload = to_json(exp)
+
+    assert payload["prediction"]["low"] == "-inf"
+    json.dumps(payload, allow_nan=False)
+    restored = from_json(payload)
+    assert restored.prediction["low"] == float("-inf")
+    assert restored.metadata["narrative_context"]["low_high_percentiles"][0] == float("-inf")
