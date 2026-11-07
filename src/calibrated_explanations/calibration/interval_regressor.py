@@ -267,9 +267,7 @@ class IntervalRegressor:
             percentiles are used to calculate the prediction interval for the uncertainty estimation. If the
             first value is set to -np.inf (negative infinity), the interval will be one-sided and upper-bounded
             and if the second value is np.inf (infinity), the interval will be one-sided and lower-bounded.
-            The open endpoint is reported as the minimum or maximum of the calibration targets. That
-            value is a placeholder, not a calibrated bound, so the median may lie outside it, and an
-            interval below the 50th percentile may exclude the median (ADR-021).
+            Open endpoints are returned as -np.inf or np.inf and are not calibrated finite bounds (ADR-021).
         bins
             array-like of shape (n_samples,), default=None
             Mondrian categories
@@ -301,10 +299,8 @@ class IntervalRegressor:
             y_test_hat,
             interval[:, 0]
             if low_high_percentiles[0] != -np.inf
-            else np.tile(np.array([np.min(self.ce.y_cal)]), len(interval)),
-            interval[:, 2]
-            if low_high_percentiles[1] != np.inf
-            else np.tile(np.array([np.max(self.ce.y_cal)]), len(interval)),
+            else np.full(len(interval), -np.inf),
+            interval[:, 2] if low_high_percentiles[1] != np.inf else np.full(len(interval), np.inf),
             None,
         )
 

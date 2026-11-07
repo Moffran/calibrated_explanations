@@ -1,12 +1,12 @@
 """Percentile-aware ``low <= predict <= high`` checks for CPS regression (#247).
 
-The interval values are unchanged; only the invariant checks are scoped to the
-sides the requested percentiles imply (ADR-021). Replacing the
-``min(y_cal)``/``max(y_cal)`` placeholders with infinities is #237 (v1.1.0).
+Open interval endpoints are unbounded, and invariant checks are scoped to the
+sides the requested percentiles imply (ADR-021).
 """
 
 from __future__ import annotations
 
+import json
 import warnings
 
 import numpy as np
@@ -71,6 +71,8 @@ def _invariant_messages(fn) -> list[str]:
         ((-np.inf, 40), (False, False)),
         ((60, np.inf), (False, False)),
         ((60, 95), (False, True)),
+        ((60, 80), (False, True)),
+        ((10, 80), (True, True)),
         ((5, 40), (True, False)),
         (None, (True, True)),
     ],
@@ -87,8 +89,7 @@ def test_one_sided_90_interval_beyond_calibration_range_should_not_warn(
     fitted, percentiles, offset
 ):
     wrapper, y_cal, x_for = fitted
-    # Median just beyond the calibration-target range on the open side, so the
-    # placeholder endpoint excludes it while the finite bound stays consistent.
+    # Median just beyond the calibration-target range on the open side.
     edge = np.max(y_cal) if offset > 0 else np.min(y_cal)
     x_test = x_for(edge + offset)
 
@@ -98,17 +99,16 @@ def test_one_sided_90_interval_beyond_calibration_range_should_not_warn(
     pred, (low, high) = wrapper.predict(x_test, uq_interval=True, low_high_percentiles=percentiles)
 
     assert messages == []
-    # The placeholder endpoint is still reported unchanged (#237 replaces it).
     if offset > 0:
-        assert high[0] == pytest.approx(np.max(y_cal))
-        assert pred[0] > high[0]
+        assert np.isposinf(high[0])
+        assert low[0] <= pred[0]
     else:
-        assert low[0] == pytest.approx(np.min(y_cal))
-        assert pred[0] < low[0]
+        assert np.isneginf(low[0])
+        assert pred[0] <= high[0]
 
 
-@pytest.mark.parametrize("percentiles", [(-np.inf, 40), (60, np.inf)])
-def test_sub_median_one_sided_interval_may_exclude_median(fitted, percentiles):
+@pytest.mark.parametrize("percentiles", [(-np.inf, 40), (60, 80), (60, np.inf)])
+def test_interval_excluding_median_is_valid_when_percentiles_exclude_median(fitted, percentiles):
     wrapper, y_cal, x_for = fitted
     x_test = x_for(float(np.median(y_cal)))
 
@@ -118,11 +118,24 @@ def test_sub_median_one_sided_interval_may_exclude_median(fitted, percentiles):
     pred, (low, high) = wrapper.predict(x_test, uq_interval=True, low_high_percentiles=percentiles)
 
     assert messages == []
-    assert not (low[0] <= pred[0] <= high[0])
+    if percentiles == (60, 80):
+        assert pred[0] < low[0] <= high[0]
+    else:
+        assert not (low[0] <= pred[0] <= high[0])
 
 
 @pytest.mark.parametrize(
-    "percentiles", [(5, 95), (40, 60), (-np.inf, 90), (10, np.inf), (-np.inf, 40), (60, np.inf)]
+    "percentiles",
+    [
+        (5, 95),
+        (40, 60),
+        (10, 80),
+        (60, 80),
+        (-np.inf, 90),
+        (10, np.inf),
+        (-np.inf, 40),
+        (60, np.inf),
+    ],
 )
 @pytest.mark.parametrize("method", ["explain_factual", "explore_alternatives"])
 def test_explanations_should_not_emit_false_containment_warning(fitted, percentiles, method):
@@ -136,18 +149,29 @@ def test_explanations_should_not_emit_false_containment_warning(fitted, percenti
     assert not [m for m in messages if CONTAINMENT in m]
 
 
-def test_placeholder_endpoint_crossing_finite_bound_still_warns(fitted):
+def test_off_centre_open_interval_serializes_as_json_when_median_is_excluded(fitted):
     wrapper, y_cal, x_for = fitted
-    # Far beyond the range the finite 10th percentile also exceeds the
-    # max(y_cal) placeholder, so the returned interval is genuinely inverted.
+    explanations = wrapper.explain_factual(
+        x_for(float(np.max(y_cal) + 0.5)),
+        low_high_percentiles=(-np.inf, 40),
+    )
+
+    payload = explanations.to_json()
+
+    assert payload["explanations"][0]["prediction"]["low"] == "-inf"
+    json.dumps(payload, allow_nan=False)
+
+
+def test_open_endpoint_does_not_invert_interval_when_prediction_exceeds_calibration_range(fitted):
+    wrapper, y_cal, x_for = fitted
+    # Far beyond the calibration range; the open upper endpoint remains unbounded.
     x_test = x_for(np.max(y_cal) + 20)
 
     messages = _invariant_messages(
         lambda: wrapper.predict(x_test, uq_interval=True, low_high_percentiles=(10, np.inf))
     )
 
-    assert any(INVERTED in m for m in messages)
-    assert not any(CONTAINMENT in m for m in messages)
+    assert messages == []
 
 
 @pytest.mark.parametrize("percentiles", [(5, 95), (40, 60), (-np.inf, 90), (10, np.inf)])
@@ -189,8 +213,8 @@ def _regression_batch(payload: dict) -> ExplanationBatch:
     )
 
 
-def test_batch_validator_accepts_median_outside_placeholder_bound():
-    # (-inf, 90): low is the min(y_cal) placeholder and does not bind the median
+def test_batch_validator_accepts_median_outside_unbounded_endpoint():
+    # (-inf, 90): the open low endpoint does not bind the median.
     batch = _regression_batch({"predict": -5.0, "low": -3.0, "high": 0.0})
 
     validate_explanation_batch(

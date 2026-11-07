@@ -22,6 +22,15 @@
 
 ### Changed
 
+- **One-sided CPS intervals now expose unbounded endpoints (#237, v1.1.0):**
+  percentile requests with an open end return `-inf` or `inf` instead of a
+  finite calibration-target minimum or maximum. Existing interval keys and
+  finite-end behavior are unchanged; consumers that treated the former
+  placeholders as bounds should handle unbounded values explicitly. JSON
+  payloads encode these values as `"-inf"`/`"inf"` strings so they remain
+  standards-compliant and round-trip. Plot rendering continues to clip open
+  endpoints to the observed target range for display only. Median checks remain
+  scoped to the requested percentiles (ADR-021).
 - **Narrative provider plans withdrawn (#231, #233, #234):** the narrative
   provider plugin family, provider API and provider verification chain are not
   planned. `to_narrative()`, `to_dataframe()`, `narrate()` and

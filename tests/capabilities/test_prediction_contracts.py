@@ -233,14 +233,14 @@ def test_should_return_narrower_interval_when_percentiles_are_closer(
         )
 
 
-def test_should_accept_neg_inf_lower_bound_and_return_constant_floor_when_regression(
+def test_should_accept_neg_inf_lower_bound_when_regression(
     regression_explainer,
 ):
     """Verify CE-REQ-PRED-INTERVAL-BOUNDS-001: -np.inf lower percentile produces a one-sided upper-bounded interval.
 
     Acceptance criteria (from CE-REQ-PRED-INTERVAL-BOUNDS-001 §6):
     - predict(X, uq_interval=True, low_high_percentiles=(-np.inf, 90)) completes without error.
-    - All lower bounds equal min(y_cal) — a constant floor.
+    - All lower bounds are negative infinity, representing an open endpoint.
     - For all i: low[i] <= high[i].
     """
     explainer, X_test = regression_explainer
@@ -254,26 +254,22 @@ def test_should_accept_neg_inf_lower_bound_and_return_constant_floor_when_regres
     assert low is not None, "CE-REQ-PRED-INTERVAL-BOUNDS-001: low must not be None"
     assert high is not None, "CE-REQ-PRED-INTERVAL-BOUNDS-001: high must not be None"
 
-    expected_floor = low[0]
+    assert np.all(np.isneginf(low))
     for i in range(len(X_test)):
-        assert low[i] == expected_floor, (
-            f"CE-REQ-PRED-INTERVAL-BOUNDS-001: lower bound at index {i} ({low[i]}) differs from "
-            f"constant floor ({expected_floor}) — -np.inf must produce a uniform lower bound"
-        )
         assert low[i] <= high[i], (
             f"CE-REQ-PRED-INTERVAL-BOUNDS-001: low[{i}]={low[i]} > high[{i}]={high[i]} — "
             "one-sided interval bounds must still be ordered"
         )
 
 
-def test_should_accept_pos_inf_upper_bound_and_return_constant_ceiling_when_regression(
+def test_should_accept_pos_inf_upper_bound_when_regression(
     regression_explainer,
 ):
     """Verify CE-REQ-PRED-INTERVAL-BOUNDS-001: np.inf upper percentile produces a one-sided lower-bounded interval.
 
     Acceptance criteria (from CE-REQ-PRED-INTERVAL-BOUNDS-001 §7):
     - predict(X, uq_interval=True, low_high_percentiles=(10, np.inf)) completes without error.
-    - All upper bounds equal max(y_cal) — a constant ceiling.
+    - All upper bounds are positive infinity, representing an open endpoint.
     - For all i: low[i] <= high[i].
     """
     explainer, X_test = regression_explainer
@@ -287,12 +283,8 @@ def test_should_accept_pos_inf_upper_bound_and_return_constant_ceiling_when_regr
     assert low is not None, "CE-REQ-PRED-INTERVAL-BOUNDS-001: low must not be None"
     assert high is not None, "CE-REQ-PRED-INTERVAL-BOUNDS-001: high must not be None"
 
-    expected_ceiling = high[0]
+    assert np.all(np.isposinf(high))
     for i in range(len(X_test)):
-        assert high[i] == expected_ceiling, (
-            f"CE-REQ-PRED-INTERVAL-BOUNDS-001: upper bound at index {i} ({high[i]}) differs from "
-            f"constant ceiling ({expected_ceiling}) — np.inf must produce a uniform upper bound"
-        )
         assert low[i] <= high[i], (
             f"CE-REQ-PRED-INTERVAL-BOUNDS-001: low[{i}]={low[i]} > high[{i}]={high[i]} — "
             "one-sided interval bounds must still be ordered"

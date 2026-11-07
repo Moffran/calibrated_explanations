@@ -335,6 +335,12 @@ def _read_context(payload: Mapping[str, Any], task: str) -> dict[str, Any]:
         )
     percentiles = context.get("low_high_percentiles")
     if percentiles is not None:
+        if isinstance(percentiles, (list, tuple)):
+            percentiles = [
+                float(p) if isinstance(p, str) and p in ("-inf", "inf", "+inf") else p
+                for p in percentiles
+            ]
+            context["low_high_percentiles"] = percentiles
         valid = (
             problem_type == "regression"
             and isinstance(percentiles, (list, tuple))
@@ -361,6 +367,8 @@ def _read_context(payload: Mapping[str, Any], task: str) -> dict[str, Any]:
 
 
 def _number(value: Any, source: str) -> float:
+    if isinstance(value, str) and value in ("-inf", "inf", "+inf"):
+        return float(value)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValidationError(
             "Narrative spec requires a numeric scalar value",

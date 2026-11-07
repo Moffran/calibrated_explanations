@@ -696,9 +696,9 @@ def median_containment_sides(low_high_percentiles) -> tuple[bool, bool]:
 
     A percentile-driven regression interval only implies
     ``low <= predict <= high`` when the requested percentiles contain the
-    50th percentile, and an infinite percentile is reported as the
-    calibration-target minimum or maximum, which is a placeholder rather than
-    a calibrated bound (ADR-021).
+    corresponding side of the 50th percentile. Infinite percentiles identify
+    unbounded endpoints and are not treated as calibrated finite bounds
+    (ADR-021).
 
     Parameters
     ----------
