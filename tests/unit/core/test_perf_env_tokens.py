@@ -14,7 +14,7 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 from calibrated_explanations import WrapCalibratedExplainer
-from calibrated_explanations.api.config import ExplainerBuilder
+from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
 from calibrated_explanations.cache import CacheConfig, CalibratorCache
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.config_manager import ConfigManager
@@ -221,6 +221,32 @@ def test_build_config_should_expose_token_details_on_outer_error(
     assert details["capability"] == ("cache" if env_var == "CE_CACHE" else "parallel")
     assert details["source"] == env_var
     assert token in details["cause"]
+    assert details["env_var"] == env_var
+    assert details["token"] == token
+    _assert_token_error(excinfo.value.__cause__, env_var, token)
+
+
+@pytest.mark.parametrize(
+    ("env_var", "raw", "token"),
+    [
+        pytest.param("CE_CACHE", "on,max_item=5", "max_item=5", id="cache"),
+        pytest.param("CE_PARALLEL", "enable,threads,worker=3", "worker=3", id="parallel"),
+    ],
+)
+def test_from_config_should_expose_token_details_for_hand_built_config(
+    monkeypatch, env_var, raw, token
+):
+    """A hand-built ExplainerConfig skips build_config but still parses the env at from_config."""
+    monkeypatch.delenv("CE_CACHE", raising=False)
+    monkeypatch.delenv("CE_PARALLEL", raising=False)
+    monkeypatch.setenv(env_var, raw)
+    cfg = ExplainerConfig(model=LogisticRegression())
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        WrapCalibratedExplainer.from_config(cfg)
+
+    details = excinfo.value.details
+    assert details["source"] == env_var
     assert details["env_var"] == env_var
     assert details["token"] == token
     _assert_token_error(excinfo.value.__cause__, env_var, token)

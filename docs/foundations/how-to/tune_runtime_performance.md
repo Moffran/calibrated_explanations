@@ -169,7 +169,7 @@ the variable that owns it. A disable label does not excuse an invalid token:
 rejected.
 
 When the error surfaces depends on the entry point: ``build_config()`` for the
-builder path, ``calibrate()`` for ``WrapCalibratedExplainer(model)``, and the
+builder path, ``from_config()`` for a hand-built ``ExplainerConfig``, ``calibrate()`` for ``WrapCalibratedExplainer(model)``, and the
 constructor for ``CalibratedExplainer(...)``. On the constructor paths an
 explicitly supplied ``perf_cache`` or ``perf_parallel`` primitive takes
 precedence over the environment, so the matching variable is not read there. Unknown
