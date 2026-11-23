@@ -46,6 +46,7 @@ from ...utils.int_utils import as_int_array, coerce_to_int
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
+    from ..prediction.interval_summary import IntervalSummary
 
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
 _TELEMETRY_LOGGER = logging.getLogger("calibrated_explanations.telemetry.explanation")
@@ -54,17 +55,17 @@ _TELEMETRY_LOGGER = logging.getLogger("calibrated_explanations.telemetry.explana
 # (`_EXPLAIN_KWARGS` in calibrated_explainer.py), or that this module itself
 # injects internally (e.g. explain_fast()/the FAST feature-filter pass always
 # call ``invoke("fast", ..., extras={"mode": "fast", ...})``) -- rather than
-# plugin-specific options. reject_confidence/interval_summary/
-# multi_labels_enabled are consumed by the orchestrator itself; verbose is
-# accepted but currently a no-op. These are always allowed regardless of what
+# plugin-specific options. reject_confidence is consumed by the orchestrator
+# itself; verbose is accepted but currently a no-op. multi_labels_enabled and
+# interval_summary are explicit orchestrator arguments since T12 (#206) and
+# never travel in extras, so they are deliberately absent here. These are
+# always allowed regardless of what
 # the selected plugin declares via plugin_meta['explain_kwargs_schema'] --
 # only names outside this closed surface are subject to the plugin's declared
 # schema (ADR-038 §3).
 _FRAMEWORK_KNOWN_EXTRAS_KEYS: frozenset[str] = frozenset(
     {
         "reject_confidence",
-        "interval_summary",
-        "multi_labels_enabled",
         "verbose",
         "mode",
         "invoked_by",
@@ -500,6 +501,7 @@ class ExplanationOrchestrator:
         extras: Mapping[str, Any] | None = None,
         reject_policy: Any | None = None,
         _ce_skip_reject: bool = False,
+        interval_summary: IntervalSummary | None = None,
     ) -> Any:
         """Execute the full explanation pipeline for the given mode.
 
@@ -519,6 +521,10 @@ class ExplanationOrchestrator:
             Feature indices to exclude from explanation.
         extras : dict or None
             Extra parameters to pass through to the plugin.
+        interval_summary : IntervalSummary or None, default=None
+            Canonical interval-summary strategy, delivered to the plugin through
+            ``ExplanationRequest.interval_summary``. ``None`` uses the
+            explainer-level setting.
 
         Returns
         -------
@@ -568,6 +574,7 @@ class ExplanationOrchestrator:
                         features_to_ignore,
                         extras=extras,
                         _ce_skip_reject=True,
+                        interval_summary=interval_summary,
                     )
 
                 # Apply reject policy via the reject orchestrator. If a RejectResult
@@ -856,6 +863,7 @@ class ExplanationOrchestrator:
                     features_to_ignore=features_to_ignore_flat,
                     extras=extras,
                     _ce_skip_reject=True,
+                    interval_summary=interval_summary,
                 )
 
                 filter_res = compute_filtered_features_to_ignore(
@@ -887,8 +895,10 @@ class ExplanationOrchestrator:
                 ),
                 bins=tuple(bins) if bins is not None else None,
                 features_to_ignore=features_to_ignore_flat,
-                interval_summary=(extras or {}).get(
-                    "interval_summary", self.explainer.interval_summary
+                interval_summary=(
+                    interval_summary
+                    if interval_summary is not None
+                    else self.explainer.interval_summary
                 ),
                 extras=dict(extras or {}),
                 feature_filter_per_instance_ignore=per_instance_ignore,
@@ -1014,6 +1024,9 @@ class ExplanationOrchestrator:
         discretizer: str | None = None,
         _use_plugin: bool = True,
         reject_policy: Any | None = None,
+        *,
+        multi_labels_enabled: bool = False,
+        interval_summary: IntervalSummary | None = None,
         **kwargs: Any,
     ) -> Any:
         """Execute factual explanation with automatic discretizer setting.
@@ -1037,8 +1050,15 @@ class ExplanationOrchestrator:
             Discretizer type to set (e.g., "binaryEntropy" for classification).
         _use_plugin : bool, default=True
             Whether to use the plugin system.
+        multi_labels_enabled : bool, default=False
+            Validated public control; when ``True`` one explanation per class is
+            produced and a ``MultiClassCalibratedExplanations`` is returned.
+        interval_summary : IntervalSummary or None, default=None
+            Canonical interval-summary strategy resolved at the public boundary.
+            ``None`` (internal callers only) uses the explainer-level setting.
         **kwargs : Any
-            Additional arguments passed to the explanation plugin.
+            Remaining explanation options (``reject_confidence``, ``verbose``) and
+            plugin-specific extension parameters, forwarded as request extras.
 
         Returns
         -------
@@ -1048,7 +1068,12 @@ class ExplanationOrchestrator:
         if discretizer is not None:
             self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
 
-        multi_labels_enabled = bool(kwargs.get("multi_labels_enabled", False))
+        # T12 (#206, ADR-038 graduation gate): both controls arrive as explicit,
+        # already-validated arguments from the public boundary; they are never
+        # rediscovered from the plugin-forwarded kwargs.
+        effective_summary = (
+            interval_summary if interval_summary is not None else self.explainer.interval_summary
+        )
         if multi_labels_enabled:
             from ...explanations.explanations import (  # pylint: disable=import-outside-toplevel
                 MultiClassCalibratedExplanations,
@@ -1085,9 +1110,7 @@ class ExplanationOrchestrator:
                         bins,
                         labels=labels,
                         features_to_ignore=features_to_ignore,
-                        interval_summary=kwargs.get(
-                            "interval_summary", self.explainer.interval_summary
-                        ),
+                        interval_summary=effective_summary,
                     )
                     for i, explanation in enumerate(explanations):
                         multi_label_explanations[i][int(cls)] = explanation
@@ -1114,10 +1137,7 @@ class ExplanationOrchestrator:
                             inner_kw.get("bins", bins),
                             labels=labels,
                             features_to_ignore=features_to_ignore,
-                            interval_summary=inner_kw.get(
-                                "interval_summary",
-                                kwargs.get("interval_summary", self.explainer.interval_summary),
-                            ),
+                            interval_summary=inner_kw.get("interval_summary", effective_summary),
                         )
 
                     return _explain_fn
@@ -1148,9 +1168,7 @@ class ExplanationOrchestrator:
                             bins,
                             labels=labels,
                             features_to_ignore=features_to_ignore,
-                            interval_summary=kwargs.get(
-                                "interval_summary", self.explainer.interval_summary
-                            ),
+                            interval_summary=effective_summary,
                         )
                         for i, explanation in enumerate(explanations):
                             multi_label_explanations[i][int(cls)] = explanation
@@ -1189,7 +1207,7 @@ class ExplanationOrchestrator:
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
-                interval_summary=kwargs.get("interval_summary", self.explainer.interval_summary),
+                interval_summary=effective_summary,
             )
 
         return self.invoke(
@@ -1200,6 +1218,7 @@ class ExplanationOrchestrator:
             bins=bins,
             features_to_ignore=features_to_ignore,
             extras=kwargs,
+            interval_summary=effective_summary,
             **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
@@ -1213,6 +1232,9 @@ class ExplanationOrchestrator:
         discretizer: str | None = None,
         _use_plugin: bool = True,
         reject_policy: Any | None = None,
+        *,
+        multi_labels_enabled: bool = False,
+        interval_summary: IntervalSummary | None = None,
         **kwargs: Any,
     ) -> Any:
         """Execute alternative explanation with automatic discretizer setting.
@@ -1236,8 +1258,15 @@ class ExplanationOrchestrator:
             Discretizer type to set (e.g., "entropy" for classification).
         _use_plugin : bool, default=True
             Whether to use the plugin system.
+        multi_labels_enabled : bool, default=False
+            Validated public control; when ``True`` one explanation per class is
+            produced and a ``MultiClassCalibratedExplanations`` is returned.
+        interval_summary : IntervalSummary or None, default=None
+            Canonical interval-summary strategy resolved at the public boundary.
+            ``None`` (internal callers only) uses the explainer-level setting.
         **kwargs : Any
-            Additional arguments passed to the explanation plugin.
+            Remaining explanation options (``reject_confidence``, ``verbose``) and
+            plugin-specific extension parameters, forwarded as request extras.
 
         Returns
         -------
@@ -1247,7 +1276,12 @@ class ExplanationOrchestrator:
         if discretizer is not None:
             self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
 
-        multi_labels_enabled = bool(kwargs.get("multi_labels_enabled", False))
+        # T12 (#206, ADR-038 graduation gate): both controls arrive as explicit,
+        # already-validated arguments from the public boundary; they are never
+        # rediscovered from the plugin-forwarded kwargs.
+        effective_summary = (
+            interval_summary if interval_summary is not None else self.explainer.interval_summary
+        )
         if multi_labels_enabled:
             from ...explanations.explanations import (  # pylint: disable=import-outside-toplevel
                 MultiClassCalibratedExplanations,
@@ -1284,9 +1318,7 @@ class ExplanationOrchestrator:
                         bins,
                         labels=labels,
                         features_to_ignore=features_to_ignore,
-                        interval_summary=kwargs.get(
-                            "interval_summary", self.explainer.interval_summary
-                        ),
+                        interval_summary=effective_summary,
                     )
                     for i, explanation in enumerate(explanations):
                         multi_label_explanations[i][int(cls)] = explanation
@@ -1312,10 +1344,7 @@ class ExplanationOrchestrator:
                             inner_kw.get("bins", bins),
                             labels=labels,
                             features_to_ignore=features_to_ignore,
-                            interval_summary=inner_kw.get(
-                                "interval_summary",
-                                kwargs.get("interval_summary", self.explainer.interval_summary),
-                            ),
+                            interval_summary=inner_kw.get("interval_summary", effective_summary),
                         )
 
                     return _explain_fn
@@ -1344,9 +1373,7 @@ class ExplanationOrchestrator:
                             bins,
                             labels=labels,
                             features_to_ignore=features_to_ignore,
-                            interval_summary=kwargs.get(
-                                "interval_summary", self.explainer.interval_summary
-                            ),
+                            interval_summary=effective_summary,
                         )
                         for i, explanation in enumerate(explanations):
                             multi_label_explanations[i][int(cls)] = explanation
@@ -1385,7 +1412,7 @@ class ExplanationOrchestrator:
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
-                interval_summary=kwargs.get("interval_summary", self.explainer.interval_summary),
+                interval_summary=effective_summary,
             )
 
         return self.invoke(
@@ -1396,6 +1423,7 @@ class ExplanationOrchestrator:
             bins=bins,
             features_to_ignore=features_to_ignore,
             extras=kwargs,
+            interval_summary=effective_summary,
             **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 

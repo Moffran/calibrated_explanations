@@ -22,6 +22,31 @@
 
 ### Changed
 
+- **`multi_labels_enabled` and `interval_summary` are explicit keyword-only
+  parameters (ADR-038 graduation gate, #206, v1.1.0):**
+  `CalibratedExplainer.explain_factual`/`explore_alternatives` and the
+  `WrapCalibratedExplainer` methods of the same names now declare
+  `multi_labels_enabled: bool = False` and
+  `interval_summary: IntervalSummary | str | None = None` instead of reading
+  them from `**kwargs`. Both are no longer experimental. Existing keyword calls
+  such as `explain_factual(x, multi_labels_enabled=True, interval_summary="lower")`
+  keep working. `interval_summary` is now validated at the public boundary
+  (`ValidationError`, `details["param"] == "interval_summary"`), and `None` keeps
+  the explainer-level strategy. The plugin receives the canonical
+  `IntervalSummary` only through `ExplanationRequest.interval_summary`. The two
+  names no longer appear in `ExplanationRequest.extras`. Other plugin extension
+  kwargs are unchanged.
+  - *Behaviour change:* `multi_labels_enabled=True` on a regression explainer
+    now raises `ValidationError`. Previously it returned a multiclass collection
+    with one entry per distinct calibration target.
+  - *Behaviour change:* passing `multi_labels_enabled=True` or an
+    `interval_summary` together with `guarded_options` now emits a `UserWarning`
+    (and an INFO log) saying that the guarded path ignores it. Previously it was
+    ignored silently.
+  - *Fix:* with the FAST feature filter enabled (`CE_FEATURE_FILTER=on`), a
+    call-time `interval_summary` was dropped when the filtered request was
+    rebuilt, so explanation probabilities did not match
+    `predict_proba(..., interval_summary=...)`. It is now preserved.
 - **Behaviour change: unrecognised `CE_CACHE` / `CE_PARALLEL` tokens raise
   `ConfigurationError` (#225):** the v1.0.2 warning-and-ignore behaviour
   announced in #219 is now fail-fast. A typo (`CE_PARALLEL=enable,thread`), a

@@ -172,8 +172,13 @@ _PREDICT_PROBA_KWARGS: frozenset[str] = frozenset(
 )
 
 # used by: explain_factual() and explore_alternatives() (identical surface).
-# guarded_options/reject_policy/_use_plugin are already explicit named
-# parameters and never reach **kwargs; listed here only for readers.
+# guarded_options/multi_labels_enabled/interval_summary/_use_plugin are explicit
+# keyword-only parameters on CalibratedExplainer and never reach **kwargs; they
+# stay listed because WrapCalibratedExplainer derives its explain gate from this
+# set (ADR-038 D3 rule 2, single source of truth) and the cross-surface check
+# needs them as "known on the explain surface". multi_labels_enabled and
+# interval_summary graduated from the ADR-038 §3 experimental **kwargs route
+# in v1.1.0 (T12, #206).
 _EXPLAIN_KWARGS: frozenset[str] = frozenset(
     {
         "threshold",
@@ -183,8 +188,8 @@ _EXPLAIN_KWARGS: frozenset[str] = frozenset(
         "guarded_options",
         "reject_policy",
         "reject_confidence",  # active only when reject_policy is set
-        "multi_labels_enabled",  # EXPERIMENTAL, ADR-038 §3
-        "interval_summary",  # EXPERIMENTAL, ADR-038 §3
+        "multi_labels_enabled",  # explicit keyword-only parameter (T12)
+        "interval_summary",  # explicit keyword-only parameter (T12)
         "verbose",
     }
 )
@@ -208,6 +213,36 @@ _CLOSED_SURFACE_KWARGS: frozenset[str] = (
         "calibrated",
     }
 )
+
+
+def _warn_guarded_ignores_explain_controls(
+    surface: str,
+    *,
+    multi_labels_enabled: bool,
+    interval_summary: IntervalSummary | str | None,
+) -> None:
+    """Make guarded-path non-support of the promoted controls visible.
+
+    Guarded explanations (ADR-032) build a single explanation per instance and
+    predict with the explainer-level ``interval_summary``. They have never
+    consumed ``multi_labels_enabled`` or a call-time ``interval_summary``; now
+    that both are explicit public parameters (ADR-038 graduation gate, T12) the
+    non-support must not be silent.
+    """
+    ignored: list[str] = []
+    if multi_labels_enabled:
+        ignored.append("multi_labels_enabled")
+    if interval_summary is not None:
+        ignored.append("interval_summary")
+    if not ignored:
+        return
+    message = (
+        f"{surface}: {', '.join(ignored)} is not supported together with guarded_options "
+        "and is ignored; guarded explanations produce one explanation per instance using "
+        "the explainer-level interval_summary."
+    )
+    warnings.warn(message, UserWarning, stacklevel=3)
+    logging.getLogger(__name__).info(message)
 
 
 def _log_forwarded_explain_kwargs(
@@ -1707,6 +1742,34 @@ class CalibratedExplainer:
         """Return the interval calibrator from the prediction orchestrator."""
         return self.prediction_orchestrator.obtain_interval_calibrator(fast=fast, metadata=metadata)
 
+    def _resolve_explain_controls(
+        self,
+        multi_labels_enabled: Any,
+        interval_summary: Any,
+    ) -> tuple[bool, IntervalSummary]:
+        """Validate the explicit explain controls and resolve the effective summary.
+
+        This is the single public-boundary validation point for
+        ``multi_labels_enabled`` and ``interval_summary`` (ADR-038 graduation gate,
+        ADR-002 CE-owned errors). ``interval_summary=None`` means "no call-time
+        override": the explainer-level strategy configured at construction wins.
+        Downstream orchestration receives only the canonical values.
+        """
+        enabled = validate_bool_parameter(multi_labels_enabled, param="multi_labels_enabled")
+        if enabled and "regression" in self.mode:
+            # Per-class explanations have no meaning for a continuous target: the
+            # multi-label loop would treat every distinct calibration target as a
+            # "class". Fail fast instead of returning a misleading collection.
+            raise ValidationError(
+                "multi_labels_enabled=True is only supported for classification; "
+                f"this explainer is in {self.mode!r} mode.",
+                details={"param": "multi_labels_enabled", "value": True, "mode": self.mode},
+            )
+        effective = coerce_interval_summary(
+            self.interval_summary if interval_summary is None else interval_summary
+        )
+        return enabled, effective
+
     def explain_factual(
         self,
         x,
@@ -1716,6 +1779,8 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         guarded_options=None,
+        multi_labels_enabled: bool = False,
+        interval_summary: IntervalSummary | str | None = None,
         _use_plugin: bool = True,
         **kwargs,
     ) -> CalibratedExplanations:
@@ -1752,19 +1817,32 @@ class CalibratedExplainer:
             type is :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`
             rather than :class:`.CalibratedExplanations`.
         multi_labels_enabled : bool, default=False
-            **[EXPERIMENTAL]** When ``True``, generates one explanation per class for
-            multi-class problems (3+ classes). Passed via ``**kwargs``. This parameter
-            surface is under active development; its signature will be promoted to an
-            explicit typed argument before graduation out of experimental status.
-            Unknown additional kwargs are forwarded to the explanation plugin and
-            silently ignored if not recognised (ADR-038 §3 experimental exception).
-        interval_summary : str or None, default=None
-            **[EXPERIMENTAL]** Controls the interval summary mode forwarded to the
-            explanation plugin. Passed via ``**kwargs``. Subject to the same
-            experimental-graduation constraint as ``multi_labels_enabled``.
+            Keyword-only. When ``True`` (classification), generate one factual
+            explanation per class and return a
+            :class:`~calibrated_explanations.explanations.explanations.MultiClassCalibratedExplanations`
+            collection indexed as ``[instance, class]``. Intended for problems with
+            three or more classes; a ``UserWarning`` is emitted when the calibration
+            targets look binary. Must be a real ``bool``; any other type raises
+            :class:`~calibrated_explanations.utils.exceptions.ValidationError`. Not
+            supported together with ``guarded_options`` (ignored with a
+            ``UserWarning``).
+        interval_summary : IntervalSummary, str or None, default=None
+            Keyword-only. How each calibrated probability interval is summarised into
+            the point estimate used by the explanation: an
+            :class:`~calibrated_explanations.core.prediction.IntervalSummary` member or
+            one of its string values (``"regularized_mean"``, ``"mean"``, ``"lower"``,
+            ``"upper"``). ``None`` keeps the explainer-level setting (the
+            ``interval_summary`` passed at construction, default
+            ``IntervalSummary.REGULARIZED_MEAN``). Invalid values raise
+            :class:`~calibrated_explanations.utils.exceptions.ValidationError`. Not
+            supported together with ``guarded_options`` (ignored with a
+            ``UserWarning``).
         **kwargs : dict
-            **[EXPERIMENTAL]** Additional keyword arguments forwarded to the explanation plugin.
-            Silently ignored if not recognised (ADR-038 §3 experimental exception).
+            Remaining recognised explanation options (``reject_policy``,
+            ``reject_confidence``, ``verbose``). Names recognised on another
+            ``CalibratedExplainer`` surface raise ``ConfigurationError``; any other
+            name is forwarded to the explanation plugin, which must declare it in
+            ``plugin_meta['explain_kwargs_schema']`` (ADR-038).
 
         Returns
         -------
@@ -1774,6 +1852,16 @@ class CalibratedExplainer:
             :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedFactualExplanation`.
             When ``reject_policy`` is non-``None``, returns
             :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`.
+            When ``multi_labels_enabled=True`` (without ``guarded_options``), returns
+            :class:`~calibrated_explanations.explanations.explanations.MultiClassCalibratedExplanations`.
+
+        Raises
+        ------
+        ValidationError
+            If ``multi_labels_enabled`` is not a ``bool`` or ``interval_summary`` is
+            not a recognised strategy.
+        ConfigurationError
+            If a keyword argument recognised on another surface is passed.
         """
         reject_removed_aliases(kwargs)
         reject_removed_guarded_kwargs(kwargs)
@@ -1791,11 +1879,9 @@ class CalibratedExplainer:
             kwargs,
             allowed=_EXPLAIN_KWARGS,
         )
-        if "multi_labels_enabled" in kwargs:
-            kwargs["multi_labels_enabled"] = validate_bool_parameter(
-                kwargs["multi_labels_enabled"],
-                param="multi_labels_enabled",
-            )
+        multi_labels_enabled, effective_summary = self._resolve_explain_controls(
+            multi_labels_enabled, interval_summary
+        )
         if features_to_ignore is not None:
             features_to_ignore = validate_features_to_ignore(
                 features_to_ignore,
@@ -1813,6 +1899,11 @@ class CalibratedExplainer:
                     UserWarning,
                     stacklevel=2,
                 )
+            _warn_guarded_ignores_explain_controls(
+                "CalibratedExplainer.explain_factual",
+                multi_labels_enabled=multi_labels_enabled,
+                interval_summary=interval_summary,
+            )
             ctx = (
                 self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
             )
@@ -1841,6 +1932,8 @@ class CalibratedExplainer:
                 "features_to_ignore": features_to_ignore,
                 "discretizer": discretizer,
                 "_use_plugin": _use_plugin,
+                "multi_labels_enabled": multi_labels_enabled,
+                "interval_summary": effective_summary,
                 **kwargs,
             }
             if reject_policy is not None:
@@ -1856,6 +1949,8 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         guarded_options=None,
+        multi_labels_enabled: bool = False,
+        interval_summary: IntervalSummary | str | None = None,
         _use_plugin: bool = True,
         **kwargs,
     ) -> AlternativeExplanations:
@@ -1891,25 +1986,32 @@ class CalibratedExplainer:
             type is :class:`~calibrated_explanations.explanations.reject.RejectAlternativeExplanations`
             rather than :class:`.AlternativeExplanations`.
         multi_labels_enabled : bool, default=False
-            **[EXPERIMENTAL]** When ``True``, generates one explanation per class for
-            multi-class problems (3+ classes). Passed via ``**kwargs``. This parameter
-            surface is under active development; its signature will be promoted to an
-            explicit typed argument before graduation out of experimental status.
-            Unknown additional kwargs are forwarded to the explanation plugin and
-            silently ignored if not recognised (ADR-038 §3 experimental exception).
-        interval_summary : str or None, default=None
-            **[EXPERIMENTAL]** Controls the interval summary mode forwarded to the
-            explanation plugin. Passed via ``**kwargs``. Subject to the same
-            experimental-graduation constraint as ``multi_labels_enabled``.
+            Keyword-only. When ``True`` (classification), generate one alternative
+            explanation per class and return a
+            :class:`~calibrated_explanations.explanations.explanations.MultiClassCalibratedExplanations`
+            collection indexed as ``[instance, class]``. Same value contract as
+            :meth:`explain_factual`.
+        interval_summary : IntervalSummary, str or None, default=None
+            Keyword-only. Interval-summary strategy for this call; ``None`` keeps the
+            explainer-level setting. Same value contract as :meth:`explain_factual`.
         **kwargs : dict
-            **[EXPERIMENTAL]** Additional keyword arguments forwarded to the explanation plugin.
-            Silently ignored if not recognised (ADR-038 §3 experimental exception).
+            Remaining recognised explanation options; see :meth:`explain_factual`.
 
         Returns
         -------
         AlternativeExplanations : :class:`.AlternativeExplanations`
             When ``reject_policy`` is non-``None``, returns
             :class:`~calibrated_explanations.explanations.reject.RejectAlternativeExplanations`.
+            When ``multi_labels_enabled=True`` (without ``guarded_options``), returns
+            :class:`~calibrated_explanations.explanations.explanations.MultiClassCalibratedExplanations`.
+
+        Raises
+        ------
+        ValidationError
+            If ``multi_labels_enabled`` is not a ``bool`` or ``interval_summary`` is
+            not a recognised strategy.
+        ConfigurationError
+            If a keyword argument recognised on another surface is passed.
 
         Notes
         -----
@@ -1933,11 +2035,9 @@ class CalibratedExplainer:
             kwargs,
             allowed=_EXPLAIN_KWARGS,
         )
-        if "multi_labels_enabled" in kwargs:
-            kwargs["multi_labels_enabled"] = validate_bool_parameter(
-                kwargs["multi_labels_enabled"],
-                param="multi_labels_enabled",
-            )
+        multi_labels_enabled, effective_summary = self._resolve_explain_controls(
+            multi_labels_enabled, interval_summary
+        )
         if features_to_ignore is not None:
             features_to_ignore = validate_features_to_ignore(
                 features_to_ignore,
@@ -1955,6 +2055,11 @@ class CalibratedExplainer:
                     UserWarning,
                     stacklevel=2,
                 )
+            _warn_guarded_ignores_explain_controls(
+                "CalibratedExplainer.explore_alternatives",
+                multi_labels_enabled=multi_labels_enabled,
+                interval_summary=interval_summary,
+            )
             ctx = (
                 self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
             )
@@ -1983,6 +2088,8 @@ class CalibratedExplainer:
                 "features_to_ignore": features_to_ignore,
                 "discretizer": discretizer,
                 "_use_plugin": _use_plugin,
+                "multi_labels_enabled": multi_labels_enabled,
+                "interval_summary": effective_summary,
                 **kwargs,
             }
             if reject_policy is not None:

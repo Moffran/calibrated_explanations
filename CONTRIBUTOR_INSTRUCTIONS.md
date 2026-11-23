@@ -31,6 +31,11 @@ or explanation output.
     explainer.explain_factual(X, guarded_options=GuardedOptions())
     explainer.explore_alternatives(X, guarded_options=GuardedOptions())
     ```
+    Per-class output (classification only) and the probability point estimate are
+    explicit keyword-only parameters, not `**kwargs`:
+    `explain_factual(X, multi_labels_enabled=True, interval_summary="lower")`
+    (`interval_summary`: `IntervalSummary` member or `"regularized_mean"`/`"mean"`/
+    `"lower"`/`"upper"`; `None` keeps the explainer-level setting).
     `GuardedOptions` fields: `confidence` (default 0.9), `n_neighbors`, `normalize`,
     `merge_adjacent`. Do NOT use the REMOVED methods `explain_guarded_factual(X)` /
     `explore_guarded_alternatives(X)` (deleted v0.11.3) or the removed `guarded=True`
