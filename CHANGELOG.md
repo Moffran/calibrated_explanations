@@ -47,6 +47,13 @@
     call-time `interval_summary` was dropped when the filtered request was
     rebuilt, so explanation probabilities did not match
     `predict_proba(..., interval_summary=...)`. It is now preserved.
+- **Fix: platform-dependent conjunction candidates:** batched conjunction
+  predictions averaged with `np.mean` (pairwise summation) and could differ by
+  one ULP from the per-combination accumulation of the legacy path. Because
+  ADR-042 ranks on exact scores, that drift reordered near-tied rules and, on
+  some CI runners, changed which size-3 conjunctions `add_conjunctions` built.
+  The batched path now accumulates in the same order, so both paths are
+  bit-identical. Values change by at most one ULP.
 - **Behaviour change: unrecognised `CE_CACHE` / `CE_PARALLEL` tokens raise
   `ConfigurationError` (#225):** the v1.0.2 warning-and-ignore behaviour
   announced in #219 is now fail-fast. A typo (`CE_PARALLEL=enable,thread`), a

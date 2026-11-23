@@ -95,6 +95,23 @@ def _log_forwarded_plot_kwargs(surface: str, kwargs: dict[str, Any], *, allowed:
     warnings.warn(message, UserWarning, stacklevel=3)
 
 
+def _sequential_mean(values: Any) -> float:
+    """Average *values* by left-to-right accumulation, then one division.
+
+    Conjunction predictions feed the ADR-042 ranking, which orders by exact
+    score (D5). ``np.mean`` uses pairwise summation, and Python 3.12+ ``sum``
+    compensates, so either can differ from the legacy per-combination ``+=``
+    accumulation by one ULP. That is enough to flip near-tied rules and select
+    different conjunction candidates depending on platform. Accumulating in
+    the same order as the legacy path keeps both paths bit-identical.
+    """
+    flat = np.ravel(np.asarray(values, dtype=float))
+    total = 0.0
+    for value in flat:
+        total += float(value)
+    return total / len(flat) if len(flat) else 0.0
+
+
 def _rank_alternative_rules(
     explanation: Any,
     rules: Dict[str, Any],
@@ -1378,9 +1395,9 @@ class CalibratedExplanation(ABC):
         )
 
         return (
-            float(np.mean(p_value)),
-            float(np.mean(low)),
-            float(np.mean(high)),
+            _sequential_mean(p_value),
+            _sequential_mean(low),
+            _sequential_mean(high),
         )
 
     def _predict_conjunctive(
