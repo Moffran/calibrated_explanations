@@ -132,7 +132,7 @@ Whitespace around a token is ignored.
 | Disable: ``0``, ``false``, ``off``, ``no``, ``disable`` | yes | yes |
 | ``namespace=``, ``version=`` | yes | — |
 | ``max_items=``, ``max_bytes=``, ``ttl=`` (numbers) | yes | — |
-| Strategy: ``threads``, ``processes``, ``joblib``, ``sequential`` | — | yes |
+| Strategy: ``threads``, ``processes``, ``joblib``, ``sequential`` (``auto`` is recognised but cannot be combined with enabling) | — | yes |
 | ``workers=``, ``min_batch=``, ``min_instances=``, ``tiny=``, ``instance_chunk=``, ``feature_chunk=``, ``task_bytes=`` (integers) | — | yes |
 | ``force_serial=`` followed by an enable or disable label | — | yes |
 | ``granularity=instance`` | — | yes |
@@ -142,12 +142,38 @@ position, so ``CE_PARALLEL=threads,1`` and ``CE_PARALLEL=1,threads`` are
 equivalent. When a list holds more than one enable/disable label, the last one
 wins.
 
-A token that matches none of these, for example the typo in
-``CE_PARALLEL=enable,thread``, is ignored and CE emits a ``UserWarning`` plus an
-INFO log naming the variable and the token. From v1.1.0 such tokens raise
-``ConfigurationError``. A ``key=value`` directive whose value is not a number,
-such as ``workers=two``, and ``granularity=feature`` already raise
-``ConfigurationError``.
+Since v1.1.0 a token that matches none of these raises ``ConfigurationError``
+(#225); v1.0.2 ignored it with a ``UserWarning``. The error message names the
+variable and the token, and ``error.details`` carries ``env_var`` and
+``token``. Errors raised through ``ExplainerBuilder.build_config()`` or
+``WrapCalibratedExplainer.from_config()`` also keep ``capability``,
+``source`` and ``cause``, and chain the parser error as ``__cause__``.
+
+| Setting | Result |
+|---|---|
+| ``CE_PARALLEL=threads,on`` | valid |
+| ``CE_PARALLEL=threads,force_serial=on`` | valid |
+| ``CE_PARALLEL=threads,granularity=instance`` | valid |
+| ``CE_CACHE=max_items=512,on`` | valid |
+| ``CE_PARALLEL=enable,thread`` | ``ConfigurationError``: typo, use ``threads`` |
+| ``CE_PARALLEL=threads,granularity=row`` | ``ConfigurationError``: only ``instance`` is supported |
+| ``CE_PARALLEL=threads,force_serial=maybe`` | ``ConfigurationError``: use an enable or disable label |
+| ``CE_PARALLEL=enable,threads,worker=3`` | ``ConfigurationError``: use ``workers=3`` |
+| ``CE_CACHE=enable,max_item=5`` | ``ConfigurationError``: use ``max_items=5`` |
+| ``CE_CACHE=on,threads`` | ``ConfigurationError``: ``threads`` belongs in ``CE_PARALLEL`` |
+| ``CE_CACHE=enable,max_items=on`` | ``ConfigurationError``: numeric directives need a number |
+
+To fix an error, correct or remove the token named in the message, or move it to
+the variable that owns it. A disable label does not excuse an invalid token:
+``CE_CACHE=off,bogus`` still fails. ``granularity=feature`` remains explicitly
+rejected.
+
+When the error surfaces depends on the entry point: ``build_config()`` for the
+builder path, ``from_config()`` for a hand-built ``ExplainerConfig``, ``calibrate()`` for ``WrapCalibratedExplainer(model)``, and the
+constructor for ``CalibratedExplainer(...)``. On the constructor paths an
+explicitly supplied ``perf_cache`` or ``perf_parallel`` primitive takes
+precedence over the environment, so the matching variable is not read there. Unknown
+``CE_*`` variable *names* still only warn (see {doc}`configure_runtime`).
 
 ## What is guaranteed and what is a hint
 

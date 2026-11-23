@@ -83,10 +83,13 @@ programmatic-only for this release cycle.
 Unknown `CE_*` variables emit a `UserWarning` rather than aborting, because
 environment namespaces can contain stale or mistyped settings.
 
-Unrecognised *tokens inside* `CE_CACHE` or `CE_PARALLEL` are ignored and emit a
-`UserWarning` plus an INFO log naming the variable and the token; from v1.1.0
-they raise `ConfigurationError`. The accepted tokens are listed in
-{doc}`tune_runtime_performance`.
+Unrecognised *tokens inside* `CE_CACHE` or `CE_PARALLEL` are different: the
+variable is recognised, but the requested directive cannot be applied. From
+v1.1.0 such a token raises `ConfigurationError` whose `details` contain
+`env_var` and `token` (v1.0.2 ignored it with a `UserWarning`). For example,
+`CE_PARALLEL=enable,thread` and `CE_CACHE=on,threads` both fail; correct the
+token (`threads`) or move it to the right variable. The accepted tokens are
+listed in {doc}`tune_runtime_performance`.
 
 ## pyproject.toml sections
 

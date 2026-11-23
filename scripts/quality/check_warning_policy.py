@@ -96,19 +96,6 @@ FALLBACK_SITE_REGISTRY: Final[tuple[FallbackSiteSpec, ...]] = (
         ),
     ),
     FallbackSiteSpec(
-        site_id="runtime_env_unrecognised_token_ignored",
-        rel_path="core/config_manager.py",
-        context="warn_unrecognised_env_token",
-        message_pattern=r"contains unrecognised token .*it is ignored",
-        disposition="user_visible",
-        required_warning=True,
-        reason=(
-            "ADR-034 / #219: an unrecognised CE_CACHE or CE_PARALLEL token is ignored, "
-            "so the requested behaviour is not applied and the drop must be "
-            "user-visible. Escalates to ConfigurationError in v1.1.0 (#225)."
-        ),
-    ),
-    FallbackSiteSpec(
         site_id="calibrator_primitive_unverified_checksum_load",
         rel_path="calibration/primitive_checksum.py",
         context="verify_primitive_checksum",
