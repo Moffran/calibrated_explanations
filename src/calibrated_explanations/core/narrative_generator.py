@@ -227,6 +227,19 @@ def has_wide_prediction_interval(feat: Dict, threshold: float = 0.20) -> bool:
     return False
 
 
+def _weight_sign(rule: Dict) -> int:
+    """Return the sign of a serialized rule's weight; 0 for zero, missing or NaN."""
+    try:
+        weight = float(rule.get("weight"))
+    except (TypeError, ValueError):
+        return 0
+    if weight > 0:
+        return 1
+    if weight < 0:
+        return -1
+    return 0
+
+
 class NarrativeGenerator:
     """Generate human-readable narratives from calibrated explanations."""
 
@@ -250,8 +263,18 @@ class NarrativeGenerator:
         feature_names: Optional[List[str]] = None,
         conjunction_separator: str = " AND ",
         align_weights: bool = True,
+        rnk_metric: Optional[str] = None,
+        rnk_weight: float = 0.5,
+        filter_top: Optional[int] = None,
     ) -> str:
-        """Generate narrative for a single explanation."""
+        """Generate narrative for a single explanation.
+
+        Rules are selected and ordered exactly as the plot of the same
+        explanation with the same ``rnk_metric``, ``rnk_weight`` and
+        ``filter_top`` (ADR-042 D16): one canonical ranking, a strongest-first
+        ``filter_top`` prefix, then the plot's filtering. Positive/negative and
+        certain/uncertain groups are presentation over that ordered selection.
+        """
         from ..utils.exceptions import ValidationError
 
         if self.templates is None:
@@ -433,13 +456,15 @@ class NarrativeGenerator:
         if reject_insert:
             template = reject_insert + template
 
-        # Phase 2: Use canonical rules for consistency if available
+        # ADR-042 D9/D16: one canonical ranking, a global top-k prefix and the
+        # plot's filtering; grouping below only partitions that ordered selection.
+        from ..explanations._ranking import rank_rules, validate_top_k
+
+        kind = "alternative" if explanation_type == "alternative" else "factual"
+        top_k = validate_top_k(filter_top)
         if hasattr(explanation, "_rules_with_impact"):
-            canonical_rules = explanation._rules_with_impact()
-            pos_features = []
-            neg_features = []
-            for cr in canonical_rules:
-                flat = {
+            ordered = [
+                {
                     "rule": cr.text,
                     "value": cr.value,
                     "weight": cr.impact,
@@ -452,43 +477,41 @@ class NarrativeGenerator:
                     "predict_high": cr.predict_high,
                     "is_conjunctive": " & " in (cr.text or ""),
                 }
-                if cr.direction == "positive":
-                    pos_features.append(flat)
-                elif cr.direction == "negative":
-                    neg_features.append(flat)
-            # Canonical rules are implicitly sorted by impact
+                for cr in explanation._rules_with_impact(
+                    rnk_metric=rnk_metric, rnk_weight=rnk_weight
+                )
+            ]
         else:
-            # Get feature rules with proper feature names
+            # Explanations without canonical rule objects.
             rules = self.serialize_rules(rules_dict, feature_names)
+            order = rank_rules(
+                rules_dict,
+                kind=kind,
+                rnk_metric=rnk_metric,
+                rnk_weight=rnk_weight,
+                base_predict=bp,
+                probability_task=problem_type in probability_problem_types,
+            )
+            ordered = [rules[i] for i in order]
 
-            # Split features by weight sign
-            pos_features = [r for r in rules if r.get("weight", 0) > 0]
-            neg_features = [r for r in rules if r.get("weight", 0) < 0]
+        if top_k is not None:
+            ordered = ordered[:top_k]
+        if kind == "alternative" and None not in (bp, bl, bh):
+            # The alternative plot drops rules identical to the base prediction
+            # after selection (ADR-042 D7, D16.3); so does the narrative.
+            ordered = [
+                r
+                for r in ordered
+                if not (
+                    np.isclose(r["predict"], bp)
+                    and np.isclose(r["predict_low"], bl)
+                    and np.isclose(r["predict_high"], bh)
+                )
+            ]
 
-            # Sort using same logic as rank_features in __repr__:
-            # Primary: absolute weight (descending)
-            # Secondary: width = weight_high - weight_low (descending, larger uncertainty last)
-            def rank_key(r):
-                w = r.get("weight", 0)
-                wl = r.get("weight_low")
-                wh = r.get("weight_high")
-                width = 0.0
-                if wl is not None and wh is not None:
-                    try:
-                        width = float(wh) - float(wl)
-                    except (ValueError, TypeError):
-                        width = 0.0
-                return (abs(w), width)
-
-            pos_features.sort(key=rank_key, reverse=True)
-            neg_features.sort(key=rank_key, reverse=True)
-
-        # Take top features (min 3)
-        min_features = 3
-        max_features = max(min_features, len(pos_features))
-        pos_features = pos_features[:max_features]
-        max_features = max(min_features, len(neg_features))
-        neg_features = neg_features[:max_features]
+        # Rules with zero (or undefined) weight belong to neither template group.
+        pos_features = [r for r in ordered if _weight_sign(r) > 0]
+        neg_features = [r for r in ordered if _weight_sign(r) < 0]
 
         # For advanced level: split by prediction interval width
         # (Exclude standard regression because absolute width threshold 0.20 is not applicable)

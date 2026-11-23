@@ -180,7 +180,7 @@ trusted_plugins = (trusted_plugin,)
 
 ## Status table
 
-**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** before v1.0.0.
+**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** no later than its Removal ETA. (v1.0.0 shipped with no active deprecations; v1.1.0 adds the ADR-042 rows below.)
 
 ### Task 21 inventory (v0.11.1): core-surface LIME/SHAP deprecations
 
@@ -189,10 +189,10 @@ All ten now emit `deprecate()` warnings and are assigned to explicit pre-v1.0 re
 
 ### Active deprecations
 
-All active deprecations were removed in v0.11.5. The Active deprecations section is intentionally empty.
-
 | Deprecated symbol | Replacement | Deprecated since | Removal ETA | Notes |
 |---|---|---:|---:|---|
+| `rank_features(num_to_show <= 0)` legacy result | `num_to_show=None` for all indices; a positive count for a top-k | v1.1.0 | v1.3.0 | ADR-042 D10. Until then `0` returns every index and `-m` drops the `m` weakest; afterwards `0` returns none and negatives raise `ValidationError`. Uses `deprecate()`. |
+| Factual `plot(rnk_metric=...)` other than `"feature_weight"` | `rnk_metric="feature_weight"` (default) | v1.1.0 | v2.0.0 | ADR-042 D11; the legacy factual `ensured`/`uncertainty` ranking is kept until removal (ADR-020 legacy contract). Uses `deprecate()`. |
 
 ### Removed deprecations (history)
 

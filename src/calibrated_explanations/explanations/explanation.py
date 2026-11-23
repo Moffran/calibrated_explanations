@@ -25,6 +25,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from copy import copy
 from dataclasses import dataclass
+from numbers import Integral
 from types import MappingProxyType
 from typing import Any, Dict, Literal, Optional, Tuple
 
@@ -53,12 +54,25 @@ from ..utils import (
     safe_first_element,
     safe_mean,
 )
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import CalibratedError, ValidationError
 from ..utils.helper import assign_threshold as normalize_threshold
 from ..utils.int_utils import collect_ints
 from ._conjunctions import ConjunctionState
+from ._ranking import rank_rules, rank_scores, resolve_metric, validate_top_k
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _warn_noncanonical_factual_plot_metric(surface: str, rnk_metric: Any) -> None:
+    """ADR-042 D11: factual plots keep non-feature_weight ranking with a warning."""
+    deprecate(
+        f"{surface}(rnk_metric={rnk_metric!r}) is deprecated: factual "
+        "explanations are ranked by feature_weight only (ADR-042 D11). The legacy "
+        "ranking is kept until v2.0.0; use rnk_metric='feature_weight'.",
+        key="adr042:factual_plot_rnk_metric",
+        stacklevel=4,
+    )
 
 
 def _log_forwarded_plot_kwargs(surface: str, kwargs: dict[str, Any], *, allowed: set[str]) -> None:
@@ -79,6 +93,34 @@ def _log_forwarded_plot_kwargs(surface: str, kwargs: dict[str, Any], *, allowed:
     )
     _LOGGER.info(message)
     warnings.warn(message, UserWarning, stacklevel=3)
+
+
+def _rank_alternative_rules(
+    explanation: Any,
+    rules: Dict[str, Any],
+    *,
+    rnk_metric: Optional[str] = None,
+    rnk_weight: float = 0.5,
+    top_k: Optional[int] = None,
+) -> list[int]:
+    """Rank an alternative explanation's rule table strongest first (ADR-042 D1.2, D9).
+
+    Probabilistic tasks (classification and thresholded regression) orient the
+    ``ensured`` score to the predicted class, exactly as the plots do. Shared by
+    ``__repr__``, plots, narratives and both conjunction implementations.
+    """
+    base_predict = explanation.prediction["predict"]
+    if isinstance(base_predict, (list, tuple, np.ndarray)):
+        base_predict = np.ravel(base_predict)[0] if np.size(base_predict) else None
+    return rank_rules(
+        rules,
+        kind="alternative",
+        rnk_metric=rnk_metric,
+        rnk_weight=rnk_weight,
+        base_predict=base_predict,
+        probability_task=explanation.get_mode() == "classification" or explanation.is_thresholded(),
+        top_k=top_k,
+    )
 
 
 @dataclass
@@ -483,21 +525,50 @@ class CalibratedExplanation(ABC):
         return ignored
 
     def rank_features(self, feature_weights=None, width=None, num_to_show=None):
-        """Rank the features based on their weights.
+        """Rank features by the ADR-042 canonical order, returned strongest LAST.
+
+        This public adapter keeps its historical **ascending** orientation: the
+        last index is the strongest rule, the reverse of CE's internal
+        strongest-first ranking (ADR-042 D10).
 
         Parameters
         ----------
-        feature_weights : dict, optional
-            A mapping of feature weights.
-        width : dict, optional
-            A mapping of feature widths.
+        feature_weights : array-like, optional
+            Feature weights. The primary key is ``abs(weight)``; sign does not
+            affect rank.
+        width : array-like, optional
+            With ``feature_weights``: interval widths, used only to break exact
+            magnitude ties (narrower ranks stronger). Without
+            ``feature_weights``: a precomputed score, higher is stronger.
         num_to_show : int, optional
-            The number of features to show.
+            Number of strongest indices to return. ``None`` or a value at or
+            above the number of features returns all of them.
 
         Returns
         -------
-        list
-            The sorted indices of the features.
+        list of int
+            Feature indices, strongest last. Exact ties rank the lower index
+            stronger; a ``NaN`` primary key ranks weakest, and a ``NaN`` or
+            infinite width loses width ties.
+
+        Warns
+        -----
+        DeprecationWarning
+            If ``num_to_show <= 0``. v1.1.0 keeps the legacy result (``0``
+            returns all indices, ``-m`` drops the ``m`` weakest). From the second
+            minor release after v1.1.0, ``0`` returns no indices and a negative
+            value raises :class:`ValidationError`.
+
+        Raises
+        ------
+        ValidationError
+            If neither input is given, or ``num_to_show`` is not an integer.
+
+        Notes
+        -----
+        A ranking is a deterministic function of one explanation's estimates
+        and intervals. It carries no statistical guarantee and does not measure
+        global feature importance.
         """
         if not (feature_weights is not None or width is not None):
             from ..utils.exceptions import ValidationError
@@ -512,42 +583,32 @@ class CalibratedExplanation(ABC):
                 },
             )
         num_features = len(feature_weights) if feature_weights is not None else len(width)
-        if num_to_show is None or num_to_show > num_features:
-            num_to_show = num_features
+        if (
+            isinstance(num_to_show, (Integral, np.integer))
+            and not isinstance(num_to_show, (bool, np.bool_))
+            and num_to_show <= 0
+        ):
+            deprecate(
+                "rank_features(num_to_show <= 0) is deprecated (ADR-042 D10): 0 currently "
+                "returns every index and a negative value drops the weakest ones. From "
+                "the second minor release after v1.1.0, 0 returns no indices and a "
+                "negative value raises ValidationError.",
+                key="adr042:rank_features_nonpositive_num_to_show",
+                stacklevel=3,
+            )
+            # Legacy cardinality: seq[-0:] is the whole sequence, seq[m:] drops m.
+            selected = num_features if num_to_show == 0 else max(0, num_features + int(num_to_show))
+        else:
+            selected = validate_top_k(num_to_show)
 
-        # Robust ranking: handle NaN/inf
         if feature_weights is not None:
-            feature_weights = np.nan_to_num(
-                feature_weights,
-                nan=0.0,
-                posinf=np.finfo(float).max,
-                neginf=-np.finfo(float).max,
-            )
-        if width is not None:
-            width = np.nan_to_num(
-                width,
-                nan=0.0,
-                posinf=np.finfo(float).max,
-                neginf=-np.finfo(float).max,
-            )
-
-        # handle case where there are same weight but different uncertainty
-        if feature_weights is not None and width is not None:
-            # get the indices by first sorting on the absolute value of the
-            # feature_weight and then on the width
-            sorted_indices = [
-                i
-                for i, x in sorted(
-                    enumerate(list(zip(np.abs(feature_weights), width, strict=False))),
-                    key=lambda x: (x[1][0], x[1][1]),
-                )
-            ]
-            return sorted_indices[-num_to_show:]  # pylint: disable=invalid-unary-operand-type
-        if width is not None:
-            sorted_indices = np.argsort(width)
-            return sorted_indices[-num_to_show:]  # pylint: disable=invalid-unary-operand-type
-        sorted_indices = np.argsort(np.abs(feature_weights))
-        return sorted_indices[-num_to_show:]  # pylint: disable=invalid-unary-operand-type
+            primary = [abs(float(value)) for value in np.ravel(feature_weights)]
+            widths = None if width is None else list(np.ravel(width))
+        else:
+            # Width only: a precomputed score (how alternative plots passed ensured).
+            primary = list(np.ravel(width))
+            widths = None
+        return list(reversed(rank_scores(primary, widths=widths, top_k=selected)))
 
     def is_one_sided(self) -> bool:
         """Test if a regression explanation is one-sided.
@@ -623,6 +684,9 @@ class CalibratedExplanation(ABC):
         output_format="dataframe",
         conjunction_separator=" AND ",
         align_weights=True,
+        rnk_metric=None,
+        rnk_weight=0.5,
+        filter_top=None,
         **kwargs,
     ):
         """
@@ -650,6 +714,18 @@ class CalibratedExplanation(ABC):
             For factual explanations this aligns the weight marker ("— weight …").
             For alternative explanations this aligns the "then" keyword in rule lines.
             If False, no alignment is applied.
+        rnk_metric : str or None, default=None
+            ADR-042 ranking metric, as for :meth:`plot`. ``None`` means
+            ``"feature_weight"`` for factual explanations (the only accepted
+            value for them) and ``"ensured"`` for alternatives, which
+            also accept ``"feature_weight"`` and ``"uncertainty"`` (``ensured``
+            with weight 0, most certain first).
+        rnk_weight : float, default=0.5
+            The ``ensured`` weight in ``[-1, 1]`` for alternatives.
+        filter_top : int or None, default=None
+            Number of strongest rules to describe; ``None`` describes all rules,
+            matching :meth:`plot`. The narrative describes the same rules, in the
+            same order, as the plot with the same ranking arguments.
         **kwargs : dict
             Additional keyword arguments passed to the narrative plugin.
 
@@ -724,6 +800,9 @@ class CalibratedExplanation(ABC):
             output=output_format,
             conjunction_separator=conjunction_separator,
             align_weights=align_weights,
+            rnk_metric=rnk_metric,
+            rnk_weight=rnk_weight,
+            filter_top=filter_top,
             **kwargs,
         )
 
@@ -1881,12 +1960,19 @@ class FactualExplanation(CalibratedExplanation):
             )
 
     def _rules_with_impact(
-        self, *, top_k: Optional[int] = None, sort: bool = True
+        self,
+        *,
+        top_k: Optional[int] = None,
+        sort: bool = True,
+        rnk_metric: Optional[str] = None,
+        rnk_weight: float = 0.5,
     ) -> list[RuleWithImpact]:
         """Extract canonical rules with explicit signed impact.
 
         This method is the source of truth for narrative and plotting consistency.
         It defines 'impact' for FactualExplanation as the weight (delta from baseline).
+        With ``sort=True`` rules follow the ADR-042 canonical order (``|w|``);
+        ``sort=False`` keeps native rule-table order. ``top_k`` is a prefix.
         """
         rules_dict = self.get_rules()
         canonical_rules = []
@@ -1946,14 +2032,13 @@ class FactualExplanation(CalibratedExplanation):
                 )
             )
 
-        # Stable sort by absolute impact
         if sort:
-            canonical_rules.sort(key=lambda r: (-abs(r.impact), r.text))
-
-        if top_k is not None:
-            canonical_rules = canonical_rules[:top_k]
-
-        return canonical_rules
+            order = rank_rules(
+                rules_dict, kind="factual", rnk_metric=rnk_metric, rnk_weight=rnk_weight
+            )
+            canonical_rules = [canonical_rules[i] for i in order]
+        k = validate_top_k(top_k)
+        return canonical_rules if k is None else canonical_rules[:k]
 
     # -- Convenience retrieval API -------------------------------------------------
     def _factual_rule_to_dict(self, rules: Dict[str, Any], idx: int) -> Dict[str, Any]:
@@ -2085,7 +2170,9 @@ class FactualExplanation(CalibratedExplanation):
         return self.rules
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
+    def add_conjunctions(
+        self, n_top_features=5, max_rule_size=2, *, rnk_metric=None, rnk_weight=0.5, **kwargs
+    ):
         """Add conjunctive factual rules.
 
         Builds conjunctions by iterating over feature combinations from
@@ -2098,10 +2185,23 @@ class FactualExplanation(CalibratedExplanation):
 
         Parameters
         ----------
-        n_top_features : int, optional
-            Number of top features to consider when ranking candidates.
+        n_top_features : int or None, optional
+            Number of candidates: the canonical top ``n_top_features`` rules of
+            the current rule set, ranked by ``|weight|`` (ADR-042 D9). ``None``
+            uses every rule and ``0`` none.
         max_rule_size : int, optional
             Maximum number of features in a single conjunctive rule.
+        rnk_metric : str or None, default=None
+            Only ``None`` or ``"feature_weight"`` is valid for factual
+            explanations (ADR-042 D11).
+        rnk_weight : float, default=0.5
+            Accepted for signature parity with alternatives; unused here.
+
+        Raises
+        ------
+        ValidationError
+            If ``rnk_metric`` is not ``"feature_weight"``, or ``n_top_features``
+            is negative or not an integer. Raised before any state changes.
 
         Other Parameters
         ----------------
@@ -2131,6 +2231,9 @@ class FactualExplanation(CalibratedExplanation):
         ``"skipped"`` (:class:`~collections.Counter`), and
         ``"predict_errors"`` (list of up to 5 captured exception messages).
         """
+        # ADR-042 D8/D11: validate the ranking arguments before any mutation.
+        resolve_metric("factual", rnk_metric, rnk_weight)
+        validate_top_k(n_top_features)
         use_batched = kwargs.get("_use_batched", True)
         limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
         dedupe_by_feature_only = kwargs.get("_dedupe_by_feature_only", True)
@@ -2154,7 +2257,11 @@ class FactualExplanation(CalibratedExplanation):
             from .legacy_conjunctions import add_conjunctions_factual_legacy
 
             add_conjunctions_factual_legacy(
-                self, n_top_features=n_top_features, max_rule_size=max_rule_size
+                self,
+                n_top_features=n_top_features,
+                max_rule_size=max_rule_size,
+                rnk_metric=rnk_metric,
+                rnk_weight=rnk_weight,
             )
             return self
 
@@ -2177,15 +2284,6 @@ class FactualExplanation(CalibratedExplanation):
         base_weight_array = (
             np.asarray(factual["weight"], dtype=float) if factual["weight"] else np.array([])
         )
-        base_width_array = (
-            np.asarray(factual["weight_high"], dtype=float)
-            - np.asarray(factual["weight_low"], dtype=float)
-            if factual["weight"]
-            else np.array([])
-        )
-
-        if n_top_features is None:
-            n_top_features = len(factual["rule"])
 
         def _feature_length(candidate: Any) -> int:
             if isinstance(candidate, (list, tuple, np.ndarray)):
@@ -2223,33 +2321,15 @@ class FactualExplanation(CalibratedExplanation):
             if num_rules == 0:
                 break
 
-            weights_array = state_helper.get_weights()
-            width_array = state_helper.get_widths()
-
-            top_n = min(num_rules, n_top_features)
-            top_conjunctives = list(
-                self.rank_features(
-                    weights_array,
-                    width=width_array,
-                    num_to_show=max(2, top_n) if num_rules >= 2 else top_n,
-                )
+            # ADR-042 D9: candidates are the canonical top-k of the current rule set.
+            top_conjunctives = rank_rules(
+                state_helper.get_state(), kind="factual", top_k=n_top_features
             )
-            if not top_conjunctives and num_rules > 0:
-                top_conjunctives = list(range(num_rules))
 
             # Determine outer loop candidates
             # Legacy behavior: iterate all features
             if limit_outer_to_ranked:
-                num_outer = min(num_rules, n_top_features)
-                outer_indices = list(
-                    self.rank_features(
-                        base_weight_array,
-                        width=base_width_array if base_width_array.size else None,
-                        num_to_show=max(2, num_outer) if num_rules >= 2 else num_outer,
-                    )
-                )
-                if not outer_indices and num_rules > 0:
-                    outer_indices = list(range(num_rules))
+                outer_indices = rank_rules(factual, kind="factual", top_k=n_top_features)
             else:
                 outer_indices = range(len(factual["feature"]))
 
@@ -2354,7 +2434,11 @@ class FactualExplanation(CalibratedExplanation):
                 from .legacy_conjunctions import add_conjunctions_factual_legacy
 
                 return add_conjunctions_factual_legacy(
-                    self, n_top_features=n_top_features, max_rule_size=max_rule_size
+                    self,
+                    n_top_features=n_top_features,
+                    max_rule_size=max_rule_size,
+                    rnk_metric=rnk_metric,
+                    rnk_weight=rnk_weight,
                 )
 
             if kwargs.get("verbose", False):
@@ -2390,11 +2474,15 @@ class FactualExplanation(CalibratedExplanation):
                 intervals.
               * 'narrative' - generate human-readable narrative explanations.
 
-            - rnk_metric (str): default='feature_weight'. The metric used to
-              rank the features. Supported metrics are 'ensured',
-              'feature_weight', and 'uncertainty'.
-            - rnk_weight (float): default=0.5. The weight of the uncertainty in
-              the ranking. Used with the 'ensured' ranking metric.
+            - rnk_metric (str): default='feature_weight'. Factual rules rank by
+              ``abs(weight)``, ties to the narrower weight interval, then
+              native rule order (ADR-042). 'ensured' and 'uncertainty' are
+              deprecated for factual explanations: they emit a
+              ``DeprecationWarning`` and keep their legacy ranking until v2.0.0.
+            - rnk_weight (float): default=0.5. Used only by the deprecated
+              'ensured' factual ranking.
+
+        The ranking is deterministic and carries no statistical guarantee.
         """
         # Third-party styles dispatch before any built-in option consumption,
         # ranking, filtering, or transport rewriting (the plugin owns those).
@@ -2442,8 +2530,10 @@ class FactualExplanation(CalibratedExplanation):
         if rnk_metric is None:
             rnk_metric = "feature_weight"
         rnk_weight = kwargs.pop("rnk_weight", 0.5)
+        if rnk_metric != "feature_weight":
+            _warn_noncanonical_factual_plot_metric(f"{type(self).__name__}.plot", rnk_metric)
         if rnk_metric == "uncertainty":
-            rnk_weight = 1.0
+            rnk_weight = 1.0  # legacy factual behaviour, kept until v2.0.0 (ADR-042 D11)
             rnk_metric = "ensured"
         _log_forwarded_plot_kwargs(
             f"{type(self).__name__}.plot",
@@ -2675,24 +2765,27 @@ class AlternativeExplanation(CalibratedExplanation):
             f"{alternative['base_predict'][0]:5.3f} [{alternative['base_predict_low'][0]:5.3f}, {alternative['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Prediction':10} [{' Low':6}, {' High':6}]",
         ]
-        feature_order = self.rank_features(
-            alternative["weight"],
-            width=np.array(alternative["weight_high"]) - np.array(alternative["weight_low"]),
-            num_to_show=len(alternative["rule"]),
-        )
+        feature_order = _rank_alternative_rules(self, alternative)
         output.extend(
             f"{alternative['value'][f]:6}: {alternative['rule'][f]:40s} {alternative['predict'][f]:>6.3f}     [{alternative['predict_low'][f]:>6.3f}, {alternative['predict_high'][f]:>6.3f}]"
-            for f in reversed(feature_order)
+            for f in feature_order
         )
         return "\n".join(output) + "\n"
 
     def _rules_with_impact(
-        self, *, top_k: Optional[int] = None, sort: bool = True
+        self,
+        *,
+        top_k: Optional[int] = None,
+        sort: bool = True,
+        rnk_metric: Optional[str] = None,
+        rnk_weight: float = 0.5,
     ) -> list[RuleWithImpact]:
         """Extract canonical rules with explicit signed impact for alternative explanations.
 
         For alternative explanations, impact represents the change in prediction
         from the base instance prediction to the alternative scenario prediction.
+        With ``sort=True`` rules follow the ADR-042 canonical order (``ensured``
+        by default); ``sort=False`` keeps native order. ``top_k`` is a prefix.
         """
         rules_dict = self.get_rules()
         canonical_rules = []
@@ -2751,14 +2844,13 @@ class AlternativeExplanation(CalibratedExplanation):
                 )
             )
 
-        # Stable sort by absolute impact
         if sort:
-            canonical_rules.sort(key=lambda r: (-abs(r.impact), r.text))
-
-        if top_k is not None:
-            canonical_rules = canonical_rules[:top_k]
-
-        return canonical_rules
+            order = _rank_alternative_rules(
+                self, rules_dict, rnk_metric=rnk_metric, rnk_weight=rnk_weight
+            )
+            canonical_rules = [canonical_rules[i] for i in order]
+        k = validate_top_k(top_k)
+        return canonical_rules if k is None else canonical_rules[:k]
 
     def build_rules_payload(self) -> Dict[str, Any]:
         """Return structured payload describing alternative feature rules."""
@@ -3667,16 +3759,28 @@ class AlternativeExplanation(CalibratedExplanation):
             pareto_cost=pareto_cost,
         )
 
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
+    def add_conjunctions(
+        self, n_top_features=5, max_rule_size=2, *, rnk_metric=None, rnk_weight=0.5, **kwargs
+    ):
         """
         Add conjunctive alternative rules.
 
         Parameters
         ----------
-        n_top_features : int, optional
-            Number of top features to combine.
+        n_top_features : int or None, optional
+            Number of candidates: the canonical top ``n_top_features`` rules of
+            the current rule set (ADR-042 D9). ``None`` uses every rule and ``0``
+            none.
         max_rule_size : int, optional
             Maximum size of the conjunctions.
+        rnk_metric : str or None, default=None
+            Ranking used to choose candidates; same meaning and default as
+            :meth:`plot` (``"ensured"``). Candidates are fixed when this method
+            runs, so pass the same ``rnk_metric``/``rnk_weight`` you will later
+            plot or narrate with. ``"feature_weight"`` reproduces the v1.0.x
+            candidate sets.
+        rnk_weight : float, default=0.5
+            The ``ensured`` weight in ``[-1, 1]``.
         **kwargs : dict
             Internal controls for batching, deduplication, and diagnostics.
 
@@ -3702,7 +3806,16 @@ class AlternativeExplanation(CalibratedExplanation):
         -------
         self : :class:`.AlternativeExplanation`
             Returns a self reference, to allow for method chaining
+
+        Raises
+        ------
+        ValidationError
+            If the ranking arguments are invalid, or ``n_top_features`` is
+            negative or not an integer. Raised before any state changes.
         """
+        # ADR-042 D8/D11: validate the ranking arguments before any mutation.
+        resolve_metric("alternative", rnk_metric, rnk_weight)
+        validate_top_k(n_top_features)
         # Two-phase conjunction search:
         # 1) Rank features to select candidate rules for the inner loop.
         # 2) Combine outer rules with ranked candidates to build conjunctions.
@@ -3731,7 +3844,11 @@ class AlternativeExplanation(CalibratedExplanation):
             from .legacy_conjunctions import add_conjunctions_alternative_legacy
 
             add_conjunctions_alternative_legacy(
-                self, n_top_features=n_top_features, max_rule_size=max_rule_size
+                self,
+                n_top_features=n_top_features,
+                max_rule_size=max_rule_size,
+                rnk_metric=rnk_metric,
+                rnk_weight=rnk_weight,
             )
             return self
 
@@ -3756,15 +3873,6 @@ class AlternativeExplanation(CalibratedExplanation):
             if alternative["weight"]
             else np.array([])
         )
-        base_width_array = (
-            np.asarray(alternative["weight_high"], dtype=float)
-            - np.asarray(alternative["weight_low"], dtype=float)
-            if alternative["weight"]
-            else np.array([])
-        )
-
-        if n_top_features is None:
-            n_top_features = len(alternative["rule"])
 
         def _feature_length(candidate: Any) -> int:
             if isinstance(candidate, (list, tuple, np.ndarray)):
@@ -3801,33 +3909,26 @@ class AlternativeExplanation(CalibratedExplanation):
             if num_rules == 0:
                 break
 
-            weights_array = state_helper.get_weights()
-            width_array = state_helper.get_widths()
-
-            top_n = min(num_rules, n_top_features)
-            top_conjunctives = list(
-                self.rank_features(
-                    weights_array,
-                    width=width_array,
-                    num_to_show=max(2, top_n) if num_rules >= 2 else top_n,
-                )
+            # ADR-042 D9: candidates are the canonical top-k of the current rule set,
+            # ranked like the alternative plot (ensured by default).
+            top_conjunctives = _rank_alternative_rules(
+                self,
+                state_helper.get_state(),
+                rnk_metric=rnk_metric,
+                rnk_weight=rnk_weight,
+                top_k=n_top_features,
             )
-            if not top_conjunctives and num_rules > 0:
-                top_conjunctives = list(range(num_rules))
 
             # Determine outer loop candidates
             # Legacy behavior: iterate all features
             if limit_outer_to_ranked:
-                num_outer = min(num_rules, n_top_features)
-                outer_indices = list(
-                    self.rank_features(
-                        base_weight_array,
-                        width=base_width_array if base_width_array.size else None,
-                        num_to_show=max(2, num_outer) if num_rules >= 2 else num_outer,
-                    )
+                outer_indices = _rank_alternative_rules(
+                    self,
+                    alternative,
+                    rnk_metric=rnk_metric,
+                    rnk_weight=rnk_weight,
+                    top_k=n_top_features,
                 )
-                if not outer_indices and num_rules > 0:
-                    outer_indices = list(range(num_rules))
             else:
                 outer_indices = range(len(alternative["feature"]))
 
@@ -3936,7 +4037,11 @@ class AlternativeExplanation(CalibratedExplanation):
                 from .legacy_conjunctions import add_conjunctions_alternative_legacy
 
                 return add_conjunctions_alternative_legacy(
-                    self, n_top_features=n_top_features, max_rule_size=max_rule_size
+                    self,
+                    n_top_features=n_top_features,
+                    max_rule_size=max_rule_size,
+                    rnk_metric=rnk_metric,
+                    rnk_weight=rnk_weight,
                 )
 
             if kwargs.get("verbose", False):
@@ -3976,9 +4081,19 @@ class AlternativeExplanation(CalibratedExplanation):
                 * 'triangular' - a triangular plot for alternative explanations highlighting the interplay between the prediction and the uncertainty intervals
                 * 'ensured' - alias for 'triangular' (intended for ensured-style alternative interpretation)
             rnk_metric : str, default='ensured'
-                The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
+                The ADR-042 ranking metric. 'ensured' scores
+                ``(1 - w)(1 - u) + w * p``, where ``u`` is the alternative's
+                interval width and ``p`` its prediction (oriented to the
+                predicted class for probabilistic tasks). 'feature_weight' ranks
+                by ``abs(alternative - base prediction)``. 'uncertainty' is
+                'ensured' with ``w = 0`` and puts the most certain (narrowest)
+                alternatives first. For plain regression, ``p`` and ``u`` are in
+                target units and are not normalised; choose ``w`` for your task.
             rnk_weight : float, default=0.5
-                The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
+                The 'ensured' weight ``w`` in ``[-1, 1]``. A negative value puts
+                counter-alternatives first.
+
+        The ranking is deterministic and carries no statistical guarantee.
         """
         # Third-party styles dispatch before built-in ranking, identical-to-base
         # filtering, and ensured/triangular rewriting (the plugin owns those).
@@ -4020,14 +4135,10 @@ class AlternativeExplanation(CalibratedExplanation):
 
         filename = kwargs.pop("filename", "")
         show = kwargs.pop("show", filename == "")
-        rnk_metric = kwargs.pop("rnk_metric", "ensured")
-        if rnk_metric is None:
-            rnk_metric = "ensured"
+        rnk_metric = kwargs.pop("rnk_metric", None)
         rnk_weight = kwargs.pop("rnk_weight", 0.5)
-        # Put the most uncertain rules at the top
-        if rnk_metric == "uncertainty":
-            rnk_weight = 1.0
-            rnk_metric = "ensured"
+        # Fail fast on invalid knobs ('uncertainty' means ensured with w = 0).
+        resolve_metric("alternative", rnk_metric, rnk_weight)
         _log_forwarded_plot_kwargs(
             f"{type(self).__name__}.plot",
             kwargs,
@@ -4056,11 +4167,6 @@ class AlternativeExplanation(CalibratedExplanation):
             "low": alternative["predict_low"],
             "high": alternative["predict_high"],
         }
-        feature_weights = np.reshape(alternative["weight"], (len(alternative["weight"])))
-        width = np.reshape(
-            np.array(alternative["weight_high"]) - np.array(alternative["weight_low"]),
-            (len(alternative["weight"])),
-        )
         num_rules = len(alternative["rule"])
         if filter_top is None:
             filter_top = num_rules
@@ -4072,29 +4178,10 @@ class AlternativeExplanation(CalibratedExplanation):
             )
             return
 
-        if rnk_metric == "feature_weight":
-            features_to_plot = self.rank_features(
-                feature_weights, width=width, num_to_show=num_to_show_
-            )
-        else:
-            # Always rank base on predicted class
-            prediction = alternative["predict"]
-            if self.get_mode() == "classification" or self.is_thresholded():
-                prediction = prediction if predict["predict"] > 0.5 else [1 - p for p in prediction]
-            ranking = calculate_metrics(
-                uncertainty=[
-                    alternative["predict_high"][i] - alternative["predict_low"][i]
-                    for i in range(num_rules)
-                ],
-                prediction=prediction,
-                w=rnk_weight,
-                metric=rnk_metric,
-            )
-            features_to_plot = self.rank_features(width=ranking, num_to_show=num_to_show_)
-
-        # Display highest-impact rules at the top: reverse the index order returned by
-        # rank_features (which yields ascending by design).
-        features_to_plot = list(reversed(features_to_plot))
+        # ADR-042: canonical strongest-first top-k; the strongest rule is drawn at the top.
+        features_to_plot = _rank_alternative_rules(
+            self, alternative, rnk_metric=rnk_metric, rnk_weight=rnk_weight, top_k=int(num_to_show_)
+        )
 
         # Filter out rules that don't change the prediction or uncertainty (exactly identical to base).
         # Keep ordering from the ranking.
@@ -4250,15 +4337,10 @@ class FastExplanation(CalibratedExplanation):
             f"   {fast['base_predict'][0]:5.3f}   [{fast['base_predict_low'][0]:5.3f}, {fast['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]",
         ]
-        feature_order = self.rank_features(
-            fast["weight"],
-            width=np.array(fast["weight_high"]) - np.array(fast["weight_low"]),
-            num_to_show=len(fast["rule"]),
-        )
-        # feature_order = range(len(fast['rule']))
+        feature_order = rank_rules(fast, kind="fast")
         output.extend(
             f"{fast['value'][f]:6}: {fast['rule'][f]:40s} {fast['weight'][f]:>6.3f} [{fast['weight_low'][f]:>6.3f}, {fast['weight_high'][f]:>6.3f}]"
-            for f in reversed(feature_order)
+            for f in feature_order
         )
         # sum_weights = np.sum((fast['weight']))
         # sum_weights_low = np.sum((fast['weight_low']))
@@ -4415,9 +4497,12 @@ class FastExplanation(CalibratedExplanation):
 
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
             rnk_metric : str, default='feature_weight'
-                The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
+                FAST rules rank by ``abs(weight)``, ties to the narrower weight
+                interval, then native rule order (ADR-042). 'ensured' and
+                'uncertainty' are deprecated here: they emit a
+                ``DeprecationWarning`` and keep their legacy ranking until v2.0.0.
             rnk_weight : float, default=0.5
-                The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
+                Used only by the deprecated 'ensured' ranking.
         """
         # Ensure style_override gets passed through
         style_override = kwargs.get("style_override")
@@ -4430,8 +4515,10 @@ class FastExplanation(CalibratedExplanation):
         if rnk_metric is None:
             rnk_metric = "feature_weight"
         rnk_weight = kwargs.get("rnk_weight", 0.5)
+        if rnk_metric != "feature_weight":
+            _warn_noncanonical_factual_plot_metric(f"{type(self).__name__}.plot", rnk_metric)
         if rnk_metric == "uncertainty":
-            rnk_weight = 1.0
+            rnk_weight = 1.0  # legacy factual behaviour, kept until v2.0.0 (ADR-042 D11)
             rnk_metric = "ensured"
         _log_forwarded_plot_kwargs(
             f"{type(self).__name__}.plot",

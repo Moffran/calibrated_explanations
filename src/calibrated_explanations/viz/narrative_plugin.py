@@ -94,6 +94,9 @@ class NarrativePlotPlugin:
         output: str = "dataframe",
         conjunction_separator: str = " AND ",
         align_weights: bool = True,
+        rnk_metric: Optional[str] = None,
+        rnk_weight: float = 0.5,
+        filter_top: Optional[int] = None,
         **kwargs,
     ) -> Union[Any, str, List[Dict[str, Any]]]:
         """Generate narratives for a collection of explanations.
@@ -118,6 +121,14 @@ class NarrativePlotPlugin:
         align_weights : bool, default=True
             If True, vertically align weight columns in the narrative output.
             If False, no alignment is applied.
+        rnk_metric : str or None, default=None
+            ADR-042 ranking metric; ``feature_weight`` for factual
+            explanations (the only accepted value), ``ensured`` by default for
+            alternatives.
+        rnk_weight : float, default=0.5
+            The ``ensured`` weight in ``[-1, 1]`` for alternatives.
+        filter_top : int or None, default=None
+            Canonical top-k prefix of rules per instance; ``None`` keeps all.
         **kwargs : dict
             Additional keyword arguments (currently unused, reserved for future extensions).
 
@@ -221,6 +232,13 @@ class NarrativePlotPlugin:
         problem_type = self.detect_problem_type(explanations)
         explanation_type = "alternative" if self.is_alternative(explanations) else "factual"
 
+        # ADR-042 D11/D8: reject invalid ranking arguments before the per-level,
+        # best-effort generation below can turn them into an error string.
+        from ..explanations._ranking import resolve_metric, validate_top_k
+
+        resolve_metric(explanation_type, rnk_metric, rnk_weight)
+        validate_top_k(filter_top)
+
         # Get feature names
         feature_names = self.get_feature_names(explanations)
 
@@ -247,6 +265,9 @@ class NarrativePlotPlugin:
                         feature_names=feature_names,
                         conjunction_separator=conjunction_separator,
                         align_weights=align_weights,
+                        rnk_metric=rnk_metric,
+                        rnk_weight=rnk_weight,
+                        filter_top=filter_top,
                     )
                     row[f"{explanation_type}_explanation_{level}"] = narrative
                 except BaseException:

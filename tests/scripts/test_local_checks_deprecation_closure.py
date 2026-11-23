@@ -1,4 +1,4 @@
-"""Tests for the pre-v1.0 deprecation-closure local lane."""
+"""Tests for the deprecation-closure lane and the ADR-011 deprecation ledger gate."""
 
 from __future__ import annotations
 
@@ -113,3 +113,52 @@ def test_should_report_active_deprecation_rows_as_blocking_when_eta_targets_v1_0
     assert ledger["active_rows_count"] == 1
     assert ledger["blocking_rows_count"] == 1
     assert ledger["blocking_symbols"] == ["`old_api()`"]
+
+
+def _run_ledger_gate(monkeypatch, tmp_path: Path, row: str, current: str) -> dict:
+    write_deprecation_ledger(tmp_path, row)
+    (tmp_path / "pyproject.toml").write_text(
+        f'[project]\nname = "x"\nversion = "{current}"\n', encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(local_checks, "_utc_now_iso", lambda: "2026-11-23T00:00:00+00:00")
+    rc = local_checks.run_deprecation_ledger_gate()
+    ledger = json.loads(
+        Path("reports/deprecations/active_deprecations_check.json").read_text(encoding="utf-8")
+    )
+    ledger["rc"] = rc
+    return ledger
+
+
+def test_should_pass_post_v1_deprecation_with_two_minor_removal_eta(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """ADR-011 default policy: an active row with a future two-minor ETA does not block."""
+    ledger = _run_ledger_gate(
+        monkeypatch, tmp_path, "| `old()` | `new()` | v1.1.0 | v1.3.0 | Active. |", "1.1.0-dev"
+    )
+
+    assert ledger["rc"] == 0
+    assert ledger["status"] == "pass"
+    assert ledger["active_symbols"] == ["`old()`"]
+    assert ledger["blocking_rows_count"] == 0
+
+
+def test_should_block_removal_eta_inside_two_minor_window(monkeypatch, tmp_path: Path) -> None:
+    ledger = _run_ledger_gate(
+        monkeypatch, tmp_path, "| `old()` | `new()` | v1.1.0 | v1.2.0 | Too soon. |", "1.1.0-dev"
+    )
+
+    assert ledger["rc"] == 1
+    assert ledger["blocking_symbols"] == ["`old()`"]
+
+
+def test_should_block_deprecation_once_its_removal_eta_is_reached(
+    monkeypatch, tmp_path: Path
+) -> None:
+    ledger = _run_ledger_gate(
+        monkeypatch, tmp_path, "| `old()` | `new()` | v1.1.0 | v1.3.0 | Overdue. |", "1.3.0-dev"
+    )
+
+    assert ledger["rc"] == 1
+    assert "reached" in ledger["blocking_reasons"]["`old()`"]

@@ -21,8 +21,9 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping
 
-from ..utils import calculate_metrics, median_containment_sides
+from ..utils import median_containment_sides
 from ..utils.exceptions import ValidationError
+from ._ranking import rank_rules, resolve_metric
 
 NARRATIVE_SPEC_VERSION = "1.0.0"
 
@@ -416,76 +417,45 @@ def _canonical_order(
     rnk_metric: str | None,
     rnk_weight: float,
 ) -> tuple[dict[str, Any], list[NarrativeRuleFact]]:
-    """Order rules strongest first by the ADR-042 D1, D5 and D6 total order.
+    """Order rules strongest first through the single ADR-042 ranking (D9, D15).
 
-    #204 (v1.1.0 T9) makes one internal implementation authoritative for every
-    ranking consumer; this function is to delegate to it once that lands.
+    Unbounded endpoints (ADR-021) rank as infinitely wide, so the bounded flags
+    are passed to the ranker rather than the reported placeholder values.
     """
-    if explanation_type != "alternative":
-        if rnk_metric not in (None, "feature_weight"):
-            raise ValidationError(
-                "Factual and FAST explanations are ranked by feature_weight only (ADR-042 D11)",
-                details={"param": "rnk_metric", "value": rnk_metric},
-            )
-
-        def factual_key(item: tuple[int, NarrativeRuleFact]):
-            index, fact = item
-            width = abs(fact.weight.high - fact.weight.low)
-            return (-abs(fact.weight.predict), _width(width, fact.weight), index)
-
-        ordered = sorted(enumerate(rules), key=factual_key)
-        return {"metric": "feature_weight"}, [fact for _, fact in ordered]
-
-    metric = rnk_metric or "ensured"
-    if metric not in ("ensured", "feature_weight", "uncertainty"):
-        raise ValidationError(
-            "Unknown ranking metric for alternative explanations",
-            details={"param": "rnk_metric", "value": rnk_metric},
-        )
-
-    def uncertainty(fact: NarrativeRuleFact) -> float:
-        interval = fact.prediction
-        return _width(interval.high - interval.low, interval)
-
-    if metric == "feature_weight":
-        ordered = sorted(
-            enumerate(rules),
-            key=lambda item: (-abs(item[1].weight.predict), uncertainty(item[1]), item[0]),
-        )
-        return {"metric": "feature_weight"}, [fact for _, fact in ordered]
-
-    weight = 0.0 if metric == "uncertainty" else float(rnk_weight)
-    if task == "classification" or problem_type == "probabilistic_regression":
-        oriented = prediction.predict > 0.5
-    elif problem_type == "regression":
-        oriented = None
-    else:
+    metric, weight = resolve_metric(explanation_type, rnk_metric, rnk_weight)
+    probability_task = task == "classification" or problem_type == "probabilistic_regression"
+    if metric == "ensured" and not probability_task and problem_type != "regression":
         raise ValidationError(
             "The ensured ranking of a regression alternative needs "
             "metadata.narrative_context to know whether it is thresholded",
             details={"param": "rnk_metric", "value": metric},
         )
 
-    def score(fact: NarrativeRuleFact) -> float:
-        p = fact.prediction.predict
-        if oriented is False:
-            p = 1.0 - p
-        return float(calculate_metrics(uncertainty(fact), p, w=weight, metric="ensured"))
+    def _prediction(fact: NarrativeRuleFact) -> NarrativeInterval:
+        return fact.prediction if fact.prediction is not None else prediction
 
-    def ensured_key(item: tuple[int, NarrativeRuleFact]):
-        index, fact = item
-        value = score(fact)
-        return (math.isnan(value), 0.0 if math.isnan(value) else -value, uncertainty(fact), index)
-
-    ordered = sorted(enumerate(rules), key=ensured_key)
-    return {"metric": "ensured", "weight": weight}, [fact for _, fact in ordered]
-
-
-def _width(width: float, interval: NarrativeInterval) -> float:
-    # ADR-042 D6: an unknown or unbounded width ranks as maximally uncertain.
-    if not _bounded(interval) or not math.isfinite(width):
-        return math.inf
-    return width
+    table = {
+        "weight": [fact.weight.predict for fact in rules],
+        "weight_low": [fact.weight.low for fact in rules],
+        "weight_high": [fact.weight.high for fact in rules],
+        "predict": [_prediction(fact).predict for fact in rules],
+        "predict_low": [_prediction(fact).low for fact in rules],
+        "predict_high": [_prediction(fact).high for fact in rules],
+    }
+    order = rank_rules(
+        table,
+        kind=explanation_type,
+        rnk_metric=rnk_metric,
+        rnk_weight=rnk_weight,
+        base_predict=prediction.predict,
+        probability_task=probability_task,
+        weight_bounded=[_bounded(fact.weight) for fact in rules],
+        prediction_bounded=[_bounded(_prediction(fact)) for fact in rules],
+    )
+    ranking: dict[str, Any] = {"metric": metric}
+    if metric == "ensured":
+        ranking["weight"] = weight
+    return ranking, [rules[i] for i in order]
 
 
 def _freeze(value: Any) -> Any:

@@ -174,7 +174,8 @@ def test_alternative__raise_on_predict_error():
     f.prediction = {"predict": 0.5}
     f.bin = None
 
-    f.rank_features = MagicMock(return_value=[0, 1])
+    # Candidate ranking (ADR-042 ensured) orients to the class for classification.
+    f.get_mode = MagicMock(return_value="classification")
     f.predict_conjunctive = MagicMock(side_effect=ValueError("alt broken"))
 
     with pytest.raises(ValueError, match="alt broken"):

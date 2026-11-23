@@ -87,8 +87,15 @@ alt0.plot(
 
 Notes:
 
-- ``rnk_metric="ensured"`` combines output and uncertainty interval width.
-- ``rnk_weight`` shifts the trade-off between output and uncertainty.
+- ``rnk_metric="ensured"`` (the default for alternatives) scores
+  ``(1 - w)(1 - u) + w * p`` from the alternative's prediction ``p`` and
+  interval width ``u``; ``w = rnk_weight`` in ``[-1, 1]`` shifts the trade-off.
+  For plain regression both terms are in target units and are not normalised.
+- ``rnk_metric="uncertainty"`` is ``ensured`` with ``w = 0``: the most certain
+  alternatives come first. Before v1.1.0 it used ``w = 1`` and ignored the width.
+- ``__repr__``, plots, ``to_narrative()`` and ``add_conjunctions()`` all use this
+  ranking. Pass the same ``rnk_metric``/``rnk_weight`` to ``add_conjunctions()``
+  as to the plot you will read. Rankings carry no statistical guarantee.
 - Use ``show=False`` in headless environments.
 
 ## Setting Uncertainty Thresholds

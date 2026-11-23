@@ -32,7 +32,7 @@
       "allowed_reason": "approved_helper_split_bridge",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 57,
+      "line": 59,
       "symbol": "utils.helper",
       "violation_kind": "utility_import_bridge",
       "workstream": "utility_split"
@@ -41,7 +41,7 @@
       "allowed_reason": "approved_helper_split_bridge",
       "file": "calibrated_explanations/explanations/explanations.py",
       "is_allowed": true,
-      "line": 32,
+      "line": 33,
       "symbol": "utils.helper",
       "violation_kind": "utility_import_bridge",
       "workstream": "utility_split"
@@ -50,7 +50,7 @@
       "allowed_reason": "approved_helper_split_bridge",
       "file": "calibrated_explanations/explanations/legacy_conjunctions.py",
       "is_allowed": true,
-      "line": 14,
+      "line": 15,
       "symbol": "utils.helper",
       "violation_kind": "utility_import_bridge",
       "workstream": "utility_split"

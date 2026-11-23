@@ -3,8 +3,9 @@ Legacy conjunction implementations.
 
 This module contains the legacy implementations of add_conjunctions for
 FactualExplanation and AlternativeExplanation, as well as the helper
-_predict_conjunctive. These are preserved for parity testing and must
-NOT be modified.
+_predict_conjunctive. They are preserved for parity testing; the only change
+since v1.0.x is that candidate selection delegates to the single ADR-042
+ranking implementation (D9), like the batched path.
 """
 
 from typing import Any, Dict, Tuple
@@ -12,6 +13,7 @@ from typing import Any, Dict, Tuple
 import numpy as np
 
 from ..utils.helper import safe_first_element
+from ._ranking import rank_rules, resolve_metric, validate_top_k
 
 
 def _predict_conjunctive_legacy(
@@ -126,8 +128,12 @@ def _predict_conjunctive_legacy(
     return rule_predict, rule_low, rule_high
 
 
-def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
+def add_conjunctions_factual_legacy(
+    self, n_top_features=5, max_rule_size=2, *, rnk_metric=None, rnk_weight=0.5
+):
     """Add conjunctive factual rules (Legacy)."""
+    resolve_metric("factual", rnk_metric, rnk_weight)
+    validate_top_k(n_top_features)
     if max_rule_size >= 4:
         from ..utils.exceptions import ConfigurationError
 
@@ -185,16 +191,8 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
         if num_rules == 0:
             break
 
-        weights_array = np.asarray(conjunctive_state["weight"], dtype=float)
-        width_array = np.asarray(conjunctive_state["weight_high"], dtype=float) - np.asarray(
-            conjunctive_state["weight_low"], dtype=float
-        )
-        top_conjunctives = list(
-            self.rank_features(
-                weights_array,
-                width=width_array,
-                num_to_show=min(num_rules, n_top_features),
-            )
+        top_conjunctives = rank_rules(
+            conjunctive_state, kind="factual", top_k=min(num_rules, n_top_features)
         )
 
         covered_combinations = {
@@ -273,7 +271,9 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
     return self
 
 
-def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2):
+def add_conjunctions_alternative_legacy(
+    self, n_top_features=5, max_rule_size=2, *, rnk_metric=None, rnk_weight=0.5
+):
     """
     Add conjunctive alternative rules (Legacy).
 
@@ -283,12 +283,20 @@ def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2)
         Number of top features to combine.
     max_rule_size : int, optional
         Maximum size of the conjunctions.
+    rnk_metric : str or None, default=None
+        Candidate ranking metric (ADR-042; ``ensured`` by default).
+    rnk_weight : float, default=0.5
+        The ``ensured`` weight in ``[-1, 1]``.
 
     Returns
     -------
     self : :class:`.AlternativeExplanation`
         Returns a self reference, to allow for method chaining
     """
+    from .explanation import _rank_alternative_rules
+
+    resolve_metric("alternative", rnk_metric, rnk_weight)
+    validate_top_k(n_top_features)
     if max_rule_size >= 4:
         from ..utils.exceptions import ConfigurationError
 
@@ -346,16 +354,12 @@ def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2)
         if num_rules == 0:
             break
 
-        weights_array = np.asarray(conjunctive_state["weight"], dtype=float)
-        width_array = np.asarray(conjunctive_state["weight_high"], dtype=float) - np.asarray(
-            conjunctive_state["weight_low"], dtype=float
-        )
-        top_conjunctives = list(
-            self.rank_features(
-                weights_array,
-                width=width_array,
-                num_to_show=min(num_rules, n_top_features),
-            )
+        top_conjunctives = _rank_alternative_rules(
+            self,
+            conjunctive_state,
+            rnk_metric=rnk_metric,
+            rnk_weight=rnk_weight,
+            top_k=min(num_rules, n_top_features),
         )
 
         covered_combinations = {

@@ -66,12 +66,19 @@ def test_explore_guarded_alternatives_absent_from_wrap_explainer():
 
 
 # ---------------------------------------------------------------------------
-# Active-deprecations table must be empty in v1.0.0
+# Active-deprecations table lists exactly the live deprecations
 # ---------------------------------------------------------------------------
 
+# v1.0.0 left the table empty. v1.1.0 (ADR-042, #204) adds two deprecations;
+# each row must stay in sync with a live ``deprecate()`` key in the source.
+_ACTIVE_DEPRECATIONS = {
+    "adr042:rank_features_nonpositive_num_to_show": "`rank_features(num_to_show <= 0)`",
+    "adr042:factual_plot_rnk_metric": "Factual `plot(rnk_metric=...)`",
+}
 
-def test_active_deprecations_table_is_empty():
-    """Active-deprecations table must be empty: all deprecations were removed in 1.0.0."""
+
+def test_active_deprecations_table_matches_live_deprecations():
+    """Each active row maps to a live deprecate() key, and each key has a row."""
     text = _load_deprecations_md()
 
     # Find the Active deprecations section and extract the table rows
@@ -92,9 +99,14 @@ def test_active_deprecations_table_is_empty():
     # Filter out the header row (contains "Deprecated symbol")
     data_rows = [r for r in data_rows if "Deprecated symbol" not in r]
 
-    assert not data_rows, (
-        "Active deprecations table must be empty in v1.0.0 but still contains rows: "
-        + str(data_rows)
+    source = "\n".join(path.read_text(encoding="utf-8") for path in SRC_ROOT.rglob("*.py"))
+    for key, symbol in _ACTIVE_DEPRECATIONS.items():
+        assert f'"{key}"' in source, f"deprecate() key {key!r} no longer exists in src"
+        assert any(row.startswith(f"| {symbol}") for row in data_rows), (
+            f"Active deprecations table is missing the row for {symbol}"
+        )
+    assert len(data_rows) == len(_ACTIVE_DEPRECATIONS), (
+        "Active deprecations table has rows without a tracked live deprecation: " + str(data_rows)
     )
 
 

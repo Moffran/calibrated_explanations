@@ -1,8 +1,13 @@
 {
-  "active_rows_count": 0,
+  "active_rows_count": 2,
+  "active_symbols": [
+    "`rank_features(num_to_show <= 0)` legacy result",
+    "Factual `plot(rnk_metric=...)` other than `\"feature_weight\"`"
+  ],
+  "blocking_reasons": {},
   "blocking_rows_count": 0,
   "blocking_symbols": [],
-  "generated_at": "2026-10-20T20:52:40.773643+00:00",
+  "generated_at": "2026-11-23T15:03:43.550288+00:00",
   "schema_version": 1,
   "status": "pass"
 }

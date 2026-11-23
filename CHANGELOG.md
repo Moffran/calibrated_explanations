@@ -22,6 +22,48 @@
 
 ### Changed
 
+- **Behaviour change: canonical rule ranking (ADR-042, #204, v1.1.0):** one
+  internal ranking now orders rules for `__repr__`, plots (single, collection
+  and multiclass), `to_narrative()` and its fallback, `build_narrative_spec`,
+  and conjunction candidates (batched and legacy). Order is strongest first and
+  deterministic; serialized payloads keep native rule order.
+  - *Factual:* still ranked by `abs(weight)`. Exact ties now go to the
+    **narrower** weight interval (was: wider), then the lower rule index (was:
+    rule text or highest index). `NaN` weights rank last; `NaN` or infinite
+    widths count as maximally uncertain.
+  - *Alternatives:* `__repr__`, narratives and `add_conjunctions()` now use the
+    plot's `ensured` ranking (`rnk_weight=0.5`) instead of
+    `abs(prediction - base prediction)`, so their order and the generated
+    conjunctions can change. `rnk_metric="feature_weight"` reproduces the v1.0.x
+    order in plots and narratives and the v1.0.x candidate sets in
+    `add_conjunctions()`.
+  - *`rnk_metric="uncertainty"`* now means `ensured` with `rnk_weight=0`, so the
+    most certain (narrowest-interval) alternatives rank first. It used
+    `rnk_weight=1`, which ignored the interval width entirely. Factual plots
+    keep their old handling, with a deprecation warning (below).
+  - *Narratives follow plots:* `to_narrative()` accepts `rnk_metric`,
+    `rnk_weight` and `filter_top` with the plot defaults, and describes the same
+    rules in the same order as the plot. A single explanation describes all
+    rules; **a collection now describes at most 10 rules per instance**, as
+    `CalibratedExplanations.plot` does (pass `filter_top=None` for all). The
+    former "top features (min 3)" cut kept every rule and is gone. Alternatives
+    identical to the current prediction are dropped, as in the plot.
+    `plot(style="narrative")` forwards its ranking arguments.
+  - *`add_conjunctions()`* accepts `rnk_metric` and `rnk_weight` and takes the
+    canonical top `n_top_features` candidates of the current rules. It no longer
+    forces at least two candidates. Candidates are fixed when it runs, so pass
+    the ranking arguments you will later plot or narrate with.
+  - *Validation:* invalid ranking arguments raise `ValidationError` before any
+    change on `add_conjunctions()`, `to_narrative()` and alternative plots,
+    including a negative or non-integer `filter_top`/`n_top_features`; factual
+    `to_narrative()`/`add_conjunctions()` reject any `rnk_metric` other than
+    `"feature_weight"`.
+  - Rankings are deterministic functions of point estimates and intervals; they
+    carry no statistical guarantee and do not measure global feature importance.
+    For plain regression, `ensured` mixes predictions and widths in target units
+    without normalisation; choose `rnk_weight` for your task.
+  - FAST explanations are ranked, narrated and deprecated exactly as factual
+    ones throughout.
 - **One-sided CPS intervals now expose unbounded endpoints (#237, v1.1.0):**
   percentile requests with an open end return `-inf` or `inf` instead of a
   finite calibration-target minimum or maximum. Existing interval keys and
@@ -34,7 +76,20 @@
 - **Narrative provider plans withdrawn (#231, #233, #234):** the narrative
   provider plugin family, provider API and provider verification chain are not
   planned. `to_narrative()`, `to_dataframe()`, `narrate()` and
-  `plot(style="narrative")` are unchanged and keep working offline (#232).
+  `plot(style="narrative")` keep working offline (#232); their rule selection
+  and order now follow ADR-042 (see the canonical ranking entry above).
+
+### Deprecated
+
+- **`rank_features(num_to_show <= 0)` (ADR-042 D10, #204):** emits
+  `DeprecationWarning` and keeps the legacy result (`0` returns every index, a
+  negative value drops the weakest). From v1.3.0, `0` returns no indices and a
+  negative value raises `ValidationError`. `rank_features` keeps returning
+  indices strongest **last**.
+- **Factual plot `rnk_metric` other than `"feature_weight"` (ADR-042 D11,
+  #204):** `"ensured"` and `"uncertainty"` emit `DeprecationWarning` and
+  keep their legacy factual ranking until v2.0.0. Use the default
+  `rnk_metric="feature_weight"`.
 
 ## [v1.0.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.2) - 2026-10-20
 

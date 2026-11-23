@@ -454,28 +454,97 @@ def _active_deprecation_rows(ledger_path: Path) -> list[dict[str, str]]:
     return rows
 
 
-def _write_active_deprecations_report(rows: list[dict[str, str]], output_path: Path) -> int:
+def _ledger_version(text: str) -> tuple[int, ...] | None:
+    """Return the numeric release tuple of a ledger cell such as ``v1.3.0``."""
+    try:
+        from packaging.version import InvalidVersion, Version  # noqa: PLC0415
+    except ImportError:  # pragma: no cover - packaging ships with pip/setuptools
+        return None
+    try:
+        return Version(text.strip().strip("`").lstrip("vV")).release
+    except InvalidVersion:
+        return None
+
+
+def _current_package_version() -> tuple[int, ...] | None:
+    """Return the release tuple of the working tree, or of the installed package."""
+    raw: str | None = None
+    if Path("pyproject.toml").is_file():
+        raw = _pyproject_release_version()
+    else:
+        try:
+            from importlib.metadata import PackageNotFoundError, version  # noqa: PLC0415
+
+            raw = version("calibrated-explanations")
+        except PackageNotFoundError:
+            return None
+    return _ledger_version(raw)
+
+
+def _deprecation_blocking_reason(
+    row: dict[str, str], current: tuple[int, ...] | None
+) -> str | None:
+    """Return why an Active ledger row blocks under ADR-011, or ``None``.
+
+    v1.0.0 shipped with zero active deprecations (ADR-011 finalization
+    exception). After it the default policy applies: a row needs a parseable
+    ``Deprecated since`` and ``Removal ETA``; the ETA must leave at least two
+    minor releases (or be a later major); and the ETA must not be overdue for
+    the current version.
+    """
+    since = _ledger_version(row["deprecated_since"])
+    eta = _ledger_version(row["removal_eta"])
+    if since is None or eta is None:
+        return "unparsable 'Deprecated since' or 'Removal ETA' version"
+    since_major, since_minor = (since + (0, 0))[:2]
+    eta_major, eta_minor = (eta + (0, 0))[:2]
+    if eta_major == since_major and eta_minor < since_minor + 2:
+        return "removal ETA is inside the two-minor deprecation window"
+    if eta_major < since_major:
+        return "removal ETA precedes the deprecation"
+    if current is None:
+        return "current package version is unknown"
+    if current >= eta:
+        return "removal ETA has been reached; remove the deprecated surface"
+    return None
+
+
+def _write_active_deprecations_report(
+    rows: list[dict[str, str]],
+    output_path: Path,
+    current_version: tuple[int, ...] | None = None,
+) -> int:
     """Write the active-deprecation ledger artifact and return its gate code.
 
-    Any row present in the Active deprecations section is blocking for 1.0.0rc1.
-    The Active deprecations section must be empty before the RC gate passes.
+    Active rows are reported. A row blocks only when it breaks the ADR-011
+    lifecycle (see :func:`_deprecation_blocking_reason`), so deprecations
+    introduced after v1.0.0 can stay active until their removal ETA.
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    reasons = {
+        row["deprecated_symbol"]: reason
+        for row in rows
+        if (reason := _deprecation_blocking_reason(row, current_version)) is not None
+    }
     payload = {
         "schema_version": 1,
         "generated_at": _utc_now_iso(),
-        "status": "pass" if not rows else "fail",
+        "status": "pass" if not reasons else "fail",
         "active_rows_count": len(rows),
-        "blocking_rows_count": len(rows),
-        "blocking_symbols": [r["deprecated_symbol"] for r in rows],
+        "active_symbols": [r["deprecated_symbol"] for r in rows],
+        "blocking_rows_count": len(reasons),
+        "blocking_symbols": list(reasons),
+        "blocking_reasons": reasons,
     }
     output_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )
-    if rows:
-        print("ERROR: Active deprecations remain in docs/migration/deprecations.md:")
-        for row in rows:
-            print(f"  {row['deprecated_symbol']} (ETA: {row['removal_eta']})")
+    for row in rows:
+        print(f"Active deprecation: {row['deprecated_symbol']} (ETA: {row['removal_eta']})")
+    if reasons:
+        print("ERROR: Active deprecations break the ADR-011 lifecycle:")
+        for symbol, reason in reasons.items():
+            print(f"  {symbol}: {reason}")
         return 1
     return 0
 
@@ -523,13 +592,13 @@ def deprecation_closure_steps() -> list[Step]:
 
 
 def run_deprecation_ledger_gate() -> int:
-    """Fail when any active deprecation remains in the ledger.
+    """Fail when an active deprecation breaks the ADR-011 lifecycle.
 
-    This is the v1 zero-active-deprecation enforcement folded into the PR
-    profile by v0.11.6 Task 60 (it replaces the removed
-    ``deprecation-check.yml`` workflow, which re-ran the full unit suite on
-    every PR). The heavier focused-test lane remains available via
-    ``--deprecation-closure``.
+    Folded into the PR profile by v0.11.6 Task 60 (it replaces the removed
+    ``deprecation-check.yml`` workflow). Until v1.0.0 it enforced zero active
+    deprecations; from v1.1.0 active rows are allowed while they keep a valid
+    two-minor removal ETA that has not been reached. The heavier focused-test
+    lane remains available via ``--deprecation-closure``.
     """
     try:
         rows = _active_deprecation_rows(Path("docs/migration/deprecations.md"))
@@ -537,7 +606,9 @@ def run_deprecation_ledger_gate() -> int:
         print(f"ERROR: {exc}")
         return 1
     return _write_active_deprecations_report(
-        rows, Path("reports/deprecations/active_deprecations_check.json")
+        rows,
+        Path("reports/deprecations/active_deprecations_check.json"),
+        _current_package_version(),
     )
 
 
@@ -551,7 +622,7 @@ def run_deprecation_closure() -> int:
     step_started_at = time.monotonic()
     try:
         rows = _active_deprecation_rows(Path("docs/migration/deprecations.md"))
-        rc = _write_active_deprecations_report(rows, ledger_report)
+        rc = _write_active_deprecations_report(rows, ledger_report, _current_package_version())
     except RuntimeError as exc:
         print(f"ERROR: {exc}")
         rc = 1
@@ -771,7 +842,7 @@ def _pr_steps(
                 _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
             ),
             Step(
-                "Zero-active-deprecation ledger gate (v1)",
+                "Deprecation ledger gate (ADR-011)",
                 _python_cmd("scripts/local_checks.py", "--deprecation-ledger"),
             ),
             Step(
@@ -2751,7 +2822,7 @@ def main() -> int:
     parser.add_argument(
         "--deprecation-ledger",
         action="store_true",
-        help="Run only the zero-active-deprecation ledger gate (v1 PR-profile check).",
+        help="Run only the ADR-011 deprecation ledger gate (PR-profile check).",
     )
     parser.add_argument(
         "--release-prepare-files",

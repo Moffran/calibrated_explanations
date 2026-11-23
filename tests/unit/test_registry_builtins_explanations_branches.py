@@ -417,8 +417,12 @@ def test_add_conjunctions_alternative_legacy_simple():
                 "is_conjunctive": [False, False],
             }
 
-        def rank_features(self, *a, **k):
-            return [1]
+        # Candidate ranking (ADR-042 ensured) orients to the class for classification.
+        def get_mode(self):
+            return "classification"
+
+        def is_thresholded(self):
+            return False
 
     s = S()
     res = legacy_conjunctions.add_conjunctions_alternative_legacy(

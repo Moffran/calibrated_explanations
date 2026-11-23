@@ -270,6 +270,7 @@ def test_generate_narrative_should_not_crash_for_alternative_conjunctive_feature
 
     exp = AltStub()
     exp.prediction = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    exp.y_threshold = 0.5  # probabilistic regression is thresholded
 
     res = gen.generate_narrative(
         exp,
