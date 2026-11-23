@@ -731,7 +731,8 @@ class CalibratedExplainer:
         Raises
         ------
         ConfigurationError
-            If a numeric ``CE_CACHE`` directive does not carry a number.
+            If ``CE_CACHE`` contains an unrecognised token or a numeric
+            directive that does not carry a number.
         """
         from ..cache import CacheConfig, CalibratorCache
 
@@ -755,8 +756,9 @@ class CalibratedExplainer:
         Raises
         ------
         ConfigurationError
-            If ``CE_PARALLEL`` enables parallel execution without naming an
-            explicit strategy (ADR-004 forbids the removed ``auto`` strategy).
+            If ``CE_PARALLEL`` contains an unrecognised token, or enables
+            parallel execution without naming an explicit strategy (ADR-004
+            forbids the removed ``auto`` strategy).
         """
         from ..parallel import ParallelConfig, ParallelExecutor
         from ..parallel.parallel import _require_explicit_strategy

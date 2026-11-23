@@ -10,7 +10,7 @@ import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Callable, ClassVar, Mapping
+from typing import Any, Callable, ClassVar, Mapping, NoReturn
 
 from ..utils.exceptions import CalibratedError, ConfigurationError
 from .config_helpers import read_pyproject_section
@@ -117,23 +117,23 @@ ENV_ENABLE_LABELS: frozenset[str] = frozenset({"1", "true", "on", "yes", "enable
 ENV_DISABLE_LABELS: frozenset[str] = frozenset({"0", "false", "off", "no", "disable"})
 
 
-def warn_unrecognised_env_token(env_var: str, token: str) -> None:
-    """Surface an ignored ``CE_CACHE``/``CE_PARALLEL`` token (UserWarning + INFO).
+def raise_unrecognised_env_token(env_var: str, token: str) -> NoReturn:
+    """Reject an unrecognised ``CE_CACHE``/``CE_PARALLEL`` directive token.
 
-    The token is ignored in v1.0.x; v1.1.0 escalates it to ``ConfigurationError``
-    (#225).
+    Since v1.1.0 (#225) an unrecognised token inside a recognised variable is a
+    configuration error rather than an ignored token (v1.0.2, #219). Unknown
+    ``CE_*`` variable *names* are unaffected and still warn (ADR-034).
+
+    Raises
+    ------
+    ConfigurationError
+        Always. ``details`` carries ``env_var`` and ``token``.
     """
-    args = (env_var, token)
-    _LOGGER.info(
-        "%s contains unrecognised token %r; it is ignored. "
-        "From v1.1.0 unrecognised tokens raise ConfigurationError.",
-        *args,
-    )
-    warnings.warn(
-        "%s contains unrecognised token %r; it is ignored. "
-        "From v1.1.0 unrecognised tokens raise ConfigurationError." % args,
-        UserWarning,
-        stacklevel=3,
+    raise ConfigurationError(
+        f"{env_var} contains unrecognised token {token!r}; this directive is not "
+        f"supported. Remove or correct the token (see the {env_var} token reference "
+        "in the runtime configuration guide).",
+        details={"env_var": env_var, "token": token},
     )
 
 

@@ -40,7 +40,7 @@ from ..core.config_manager import (
     ENV_ENABLE_LABELS,
     ConfigManager,
     get_process_config_manager,
-    warn_unrecognised_env_token,
+    raise_unrecognised_env_token,
 )
 from ..utils.exceptions import ConfigurationError
 
@@ -190,13 +190,11 @@ class ParallelConfig:
         ------
         ConfigurationError
             If a numeric directive (for example ``workers=``) does not carry an
-            integer, or ``granularity=feature`` is requested.
-
-        Warns
-        -----
-        UserWarning
-            For each token that is not a recognised CE_PARALLEL directive; the token is
-            ignored. From v1.1.0 such tokens raise ``ConfigurationError``.
+            integer, ``granularity=feature`` is requested, or a token is not a
+            recognised CE_PARALLEL directive (including unknown ``granularity=``
+            and ``force_serial=`` values). Since v1.1.0 (#225) unrecognised tokens
+            are rejected instead of ignored; ``details`` name the ``env_var`` and
+            the offending ``token``.
         """
         mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = ParallelConfig(**(base.__dict__ if base is not None else {}))
@@ -243,7 +241,7 @@ class ParallelConfig:
                 elif val in ENV_DISABLE_LABELS:
                     cfg.force_serial_on_failure = False
                 else:
-                    warn_unrecognised_env_token("CE_PARALLEL", token)
+                    raise_unrecognised_env_token("CE_PARALLEL", token)
                 continue
             if token.startswith("granularity="):
                 value = token.split("=", 1)[1].strip().lower()
@@ -252,6 +250,8 @@ class ParallelConfig:
                     raise ConfigurationError(
                         "CE_PARALLEL granularity='feature' is not supported. Use granularity='instance'.",
                         details={
+                            "env_var": "CE_PARALLEL",
+                            "token": token,
                             "param": "granularity",
                             "received": "feature",
                             "allowed": ["instance"],
@@ -260,9 +260,9 @@ class ParallelConfig:
                 if value == "instance":
                     cfg.granularity = "instance"
                 else:
-                    warn_unrecognised_env_token("CE_PARALLEL", token)
+                    raise_unrecognised_env_token("CE_PARALLEL", token)
                 continue
-            warn_unrecognised_env_token("CE_PARALLEL", token)
+            raise_unrecognised_env_token("CE_PARALLEL", token)
         return cfg
 
 

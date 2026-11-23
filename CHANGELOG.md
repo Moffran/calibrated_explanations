@@ -22,6 +22,16 @@
 
 ### Changed
 
+- **Behaviour change: unrecognised `CE_CACHE` / `CE_PARALLEL` tokens raise
+  `ConfigurationError` (#225):** the v1.0.2 warning-and-ignore behaviour
+  announced in #219 is now fail-fast. A typo (`CE_PARALLEL=enable,thread`), a
+  directive for the other variable (`CE_CACHE=on,threads`), an unknown
+  `granularity=` value or a non-boolean `force_serial=` value raises
+  `ConfigurationError` with `details["env_var"]` and `details["token"]`; builder
+  errors also expose both alongside `capability`/`source`/`cause`. Valid tokens,
+  opt-in defaults and precedence are unchanged, and unknown `CE_*` variable names
+  still only warn (ADR-034). *Migration:* fix or remove the token named in the
+  error.
 - **Behaviour change: canonical rule ranking (ADR-042, #204, v1.1.0):** one
   internal ranking now orders rules for `__repr__`, plots (single, collection
   and multiclass), `to_narrative()` and its fallback, `build_narrative_spec`,

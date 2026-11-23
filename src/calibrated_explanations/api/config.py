@@ -353,6 +353,12 @@ def _perf_initialization_error(
         The underlying cause.
     requested_by : str, optional
         Activation source recorded by the perf factory, when known.
+
+    Notes
+    -----
+    When ``exc`` is a :class:`ConfigurationError` raised by a ``CE_CACHE``/
+    ``CE_PARALLEL`` parser, its ``env_var`` and ``token`` details are copied
+    into the returned error's ``details``.
     """
     details: dict[str, Any] = {
         "capability": capability,
@@ -361,6 +367,13 @@ def _perf_initialization_error(
     }
     if requested_by is not None:
         details["requested_by"] = requested_by
+    # Surface the parser diagnostics (``env_var``/``token``) at the public boundary
+    # so callers need not walk ``__cause__`` to find the offending directive.
+    inner = getattr(exc, "details", None)
+    if isinstance(exc, ConfigurationError) and isinstance(inner, dict):
+        for key in ("env_var", "token"):
+            if key in inner:
+                details[key] = inner[key]
     label = _PERF_CAPABILITY_LABELS[capability]
     return ConfigurationError(f"Cannot initialize the {label} ({source}): {exc}", details=details)
 

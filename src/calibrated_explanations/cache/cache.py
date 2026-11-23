@@ -38,7 +38,7 @@ from ..core.config_manager import (
     ENV_ENABLE_LABELS,
     ConfigManager,
     get_process_config_manager,
-    warn_unrecognised_env_token,
+    raise_unrecognised_env_token,
 )
 
 try:  # pragma: no cover - behaviour varies by environment
@@ -411,13 +411,10 @@ class CacheConfig:
         ------
         ConfigurationError
             If a numeric directive (``max_items=``, ``max_bytes=``, ``ttl=``)
-            does not carry a number.
-
-        Warns
-        -----
-        UserWarning
-            For each token that is not a recognised CE_CACHE directive; the token is
-            ignored. From v1.1.0 such tokens raise ``ConfigurationError``.
+            does not carry a number, or a token is not a recognised CE_CACHE
+            directive. Since v1.1.0 (#225) unrecognised tokens are rejected
+            instead of ignored; ``details`` name the ``env_var`` and the
+            offending ``token``.
         """
         mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = CacheConfig(**(base.__dict__ if base is not None else {}))
@@ -448,7 +445,7 @@ class CacheConfig:
             if token.startswith("ttl="):
                 cfg.ttl_seconds = max(0.0, _parse_env_number(token, float))
                 continue
-            warn_unrecognised_env_token("CE_CACHE", token)
+            raise_unrecognised_env_token("CE_CACHE", token)
         return cfg
 
     def __reduce__(self):
