@@ -69,6 +69,7 @@ from .calibrated_explainer import (
 from .calibrated_explainer import (
     CalibratedExplainer,
 )
+from .prediction.interval_summary import IntervalSummary
 from .prediction_helpers import (
     _apply_conditional_categorizer,
     _normalize_conditional_bins,
@@ -112,6 +113,9 @@ _CALIBRATE_KWARGS: frozenset[str] = (
 # used by: explain_factual() and explore_alternatives() (identical kwarg surface
 # at the CalibratedExplainer level; threshold/low_high_percentiles/bins/
 # features_to_ignore/guarded_options bind explicit formals there).
+# multi_labels_enabled/interval_summary are explicit keyword-only formals on
+# both classes (T12, #206) and never reach **kwargs; they remain in the derived
+# set so the "known on another method" check keeps recognising them.
 _EXPLAIN_KWARGS: frozenset[str] = _CE_EXPLAIN_KWARGS
 
 # used by: explain_fast() only. CalibratedExplainer.explain_fast has no **kwargs
@@ -640,7 +644,14 @@ class WrapCalibratedExplainer:
             return getattr(self.explainer, "feature_filter_config", None)
         return None
 
-    def explain_factual(self, x: Any, **kwargs: Any) -> Any:
+    def explain_factual(
+        self,
+        x: Any,
+        *,
+        multi_labels_enabled: bool = False,
+        interval_summary: IntervalSummary | str | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Generate factual explanations for provided instances.
 
         Parameters
@@ -648,13 +659,31 @@ class WrapCalibratedExplainer:
         x : array-like
             Instances to explain (single or batch). Shape should match the
             feature dimensionality used during calibration.
+        multi_labels_enabled : bool, default=False
+            Keyword-only. When ``True`` (classification), return one explanation
+            per class as a ``MultiClassCalibratedExplanations`` collection. Must
+            be a real ``bool``.
+        interval_summary : IntervalSummary, str or None, default=None
+            Keyword-only. Interval-summary strategy for this call
+            (``"regularized_mean"``, ``"mean"``, ``"lower"``, ``"upper"`` or the
+            matching :class:`~calibrated_explanations.core.prediction.IntervalSummary`
+            member). ``None`` keeps the explainer-level setting.
         **kwargs
-            Forwarded to :meth:`CalibratedExplainer.explain_factual`.
+            Remaining explanation options, validated against the explain
+            allow-list and forwarded to :meth:`CalibratedExplainer.explain_factual`.
 
         Returns
         -------
         CalibratedExplanations or mapping
             Explanation collection produced by the underlying explainer.
+
+        Raises
+        ------
+        ValidationError
+            If ``multi_labels_enabled`` is not a ``bool`` or ``interval_summary``
+            is not a recognised strategy.
+        ConfigurationError
+            If an unknown or cross-surface keyword argument is passed.
 
         Notes
         -----
@@ -694,10 +723,35 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explain_factual(x_local, **kwargs)
+        return self.explainer.explain_factual(
+            x_local,
+            multi_labels_enabled=multi_labels_enabled,
+            interval_summary=interval_summary,
+            **kwargs,
+        )
 
-    def explore_alternatives(self, x: Any, **kwargs: Any) -> Any:
+    def explore_alternatives(
+        self,
+        x: Any,
+        *,
+        multi_labels_enabled: bool = False,
+        interval_summary: IntervalSummary | str | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Generate alternative explanations for the test data.
+
+        Parameters
+        ----------
+        x : array-like
+            Instances to explain.
+        multi_labels_enabled : bool, default=False
+            Keyword-only; same contract as :meth:`explain_factual`.
+        interval_summary : IntervalSummary, str or None, default=None
+            Keyword-only; same contract as :meth:`explain_factual`.
+        **kwargs
+            Remaining explanation options, validated against the explain
+            allow-list and forwarded to
+            :meth:`CalibratedExplainer.explore_alternatives`.
 
         Notes
         -----
@@ -732,7 +786,12 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explore_alternatives(x_local, **kwargs)
+        return self.explainer.explore_alternatives(
+            x_local,
+            multi_labels_enabled=multi_labels_enabled,
+            interval_summary=interval_summary,
+            **kwargs,
+        )
 
     def explain_fast(self, x: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.

@@ -82,6 +82,34 @@ def test_alternative_conjunction_parity_max_rule_size_3(binary_dataset):
         compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
 
 
+@pytest.mark.parametrize(
+    ("explain_method", "legacy_add"),
+    [
+        ("explain_factual", add_conjunctions_factual_legacy),
+        ("explore_alternatives", add_conjunctions_alternative_legacy),
+    ],
+    ids=["factual", "alternative"],
+)
+def test_should_produce_bit_identical_conjunction_predictions_when_batched(
+    binary_dataset, explain_method, legacy_add
+):
+    """ADR-042 D5 ranks on exact scores, so a one-ULP drift between the batched
+    and legacy conjunction means reorders near-tied rules and, on some
+    platforms, selects different size-3 candidates (CI-only parity failure)."""
+    explainer, x_test = build_explainer(binary_dataset)
+    batched = getattr(explainer, explain_method)(x_test[0].reshape(1, -1))[0]
+    legacy = getattr(explainer, explain_method)(x_test[0].reshape(1, -1))[0]
+
+    batched.add_conjunctions(n_top_features=5, max_rule_size=2)
+    legacy_add(legacy, n_top_features=5, max_rule_size=2)
+
+    for key in ("predict", "predict_low", "predict_high"):
+        np.testing.assert_array_equal(
+            np.asarray(batched.conjunctive_rules[key], dtype=float),
+            np.asarray(legacy.conjunctive_rules[key], dtype=float),
+        )
+
+
 # --- Phase 4D: Strengthened parity tests ---
 
 

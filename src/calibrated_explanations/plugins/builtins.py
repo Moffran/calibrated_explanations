@@ -635,6 +635,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             bins=request.bins,
                             features_to_ignore=tuple(int(f) for f in new_request_ignore.tolist()),
                             feature_filter_per_instance_ignore=filter_result.per_instance_ignore,
+                            interval_summary=request.interval_summary,
                             extras=request.extras,
                         )
                     except (AttributeError, CalibratedError, ConfigurationError) as exc_inner:
@@ -664,6 +665,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             feature_filter_per_instance_ignore=getattr(
                                 request, "feature_filter_per_instance_ignore", None
                             ),
+                            interval_summary=request.interval_summary,
                             extras=request.extras,
                         )
             except CalibratedError as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover

@@ -58,8 +58,9 @@ For multiclass all-class explanations:
 multi_factual = explainer.explain_factual(x_test[:5], multi_labels_enabled=True)
 ```
 
-`multi_labels_enabled` remains an explicitly experimental call-time option; its
-spelling is canonical, but its contract is not part of the frozen stable surface.
+`multi_labels_enabled` is an explicit keyword-only `bool` on `explain_factual`
+and `explore_alternatives` (classification only). It returns one explanation per
+class for each instance; see [](../tasks/classification.md) for the support matrix.
 
 ## 4. Explore calibrated alternatives
 

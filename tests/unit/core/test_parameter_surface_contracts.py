@@ -36,6 +36,7 @@ from calibrated_explanations.core.calibrated_explainer import (
     _PREDICT_KWARGS as CE_PREDICT_KWARGS,
     _PREDICT_PROBA_KWARGS as CE_PREDICT_PROBA_KWARGS,
 )
+from calibrated_explanations.core.prediction.interval_summary import IntervalSummary
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.core.wrap_explainer import (
     WrapCalibratedExplainer,
@@ -45,6 +46,8 @@ from calibrated_explanations.core.wrap_explainer import (
     _PREDICT_KWARGS as WRAP_PREDICT_KWARGS,
     _PREDICT_PROBA_KWARGS as WRAP_PREDICT_PROBA_KWARGS,
 )
+from calibrated_explanations.explanations.explanations import MultiClassCalibratedExplanations
+from calibrated_explanations.explanations.guarded_options import GuardedOptions
 from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
 
 
@@ -825,3 +828,264 @@ def test_task50_cleared_controls_remain_rejected(data):
             mode="regression",
             condition_source=" prediction ",
         )
+
+
+# ---------------------------------------------------------------------------
+# 5. T12 (#206): multi_labels_enabled / interval_summary graduated from the
+#    ADR-038 §3 experimental **kwargs route to explicit keyword-only formals.
+# ---------------------------------------------------------------------------
+
+_GRADUATED_EXPLAIN_PARAMS = ("multi_labels_enabled", "interval_summary")
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        CalibratedExplainer.explain_factual,
+        CalibratedExplainer.explore_alternatives,
+        WrapCalibratedExplainer.explain_factual,
+        WrapCalibratedExplainer.explore_alternatives,
+    ],
+    ids=[
+        "core.explain_factual",
+        "core.explore_alternatives",
+        "wrap.explain_factual",
+        "wrap.explore_alternatives",
+    ],
+)
+def test_should_expose_graduated_explain_params_as_typed_keyword_only_formals(method):
+    params = inspect.signature(method).parameters
+
+    multi = params["multi_labels_enabled"]
+    summary = params["interval_summary"]
+
+    assert multi.kind is inspect.Parameter.KEYWORD_ONLY
+    assert summary.kind is inspect.Parameter.KEYWORD_ONLY
+    assert multi.default is False
+    assert summary.default is None
+    assert multi.annotation == "bool"
+    assert summary.annotation == "IntervalSummary | str | None"
+    # The graduated names stay on the explain allow-list (single source of truth
+    # for the wrapper gate and the cross-surface check).
+    assert set(_GRADUATED_EXPLAIN_PARAMS) <= CE_EXPLAIN_KWARGS
+    assert WRAP_EXPLAIN_KWARGS == CE_EXPLAIN_KWARGS
+
+
+@pytest.mark.parametrize("method_name", ["explain_factual", "explore_alternatives"])
+@pytest.mark.parametrize("bad_value", ["yes", 1, None], ids=["str", "int", "none"])
+def test_should_reject_non_bool_multi_labels_enabled_identically_on_wrapper_and_core(
+    cls_wrapper, method_name, bad_value
+):
+    wrapper, x_test = cls_wrapper
+    core = wrapper.explainer
+    assert core is not None
+
+    with pytest.raises(ValidationError) as wrap_exc:
+        getattr(wrapper, method_name)(x_test[:1], multi_labels_enabled=bad_value)
+    with pytest.raises(ValidationError) as core_exc:
+        getattr(core, method_name)(x_test[:1], multi_labels_enabled=bad_value)
+
+    assert wrap_exc.value.details == core_exc.value.details
+    assert core_exc.value.details["param"] == "multi_labels_enabled"
+    assert core_exc.value.details["actual_type"] == type(bad_value).__name__
+
+
+@pytest.mark.parametrize("method_name", ["explain_factual", "explore_alternatives"])
+@pytest.mark.parametrize("bad_value", ["median", "LOWER", 3], ids=["unknown", "wrong-case", "int"])
+def test_should_reject_invalid_interval_summary_identically_on_wrapper_and_core(
+    cls_wrapper, method_name, bad_value
+):
+    wrapper, x_test = cls_wrapper
+    core = wrapper.explainer
+    assert core is not None
+
+    with pytest.raises(ValidationError) as wrap_exc:
+        getattr(wrapper, method_name)(x_test[:1], interval_summary=bad_value)
+    with pytest.raises(ValidationError) as core_exc:
+        getattr(core, method_name)(x_test[:1], interval_summary=bad_value)
+
+    assert wrap_exc.value.details == core_exc.value.details
+    assert core_exc.value.details["param"] == "interval_summary"
+    assert core_exc.value.details["valid_values"] == [
+        "regularized_mean",
+        "mean",
+        "lower",
+        "upper",
+    ]
+
+
+@pytest.fixture(scope="module")
+def lower_summary_cls_wrapper(data):
+    """Classification wrapper whose explainer-level strategy is LOWER."""
+    x, y_cls, _ = data
+    wrapper = _fitted_classification_wrapper(data)
+    wrapper.calibrate(x[60:100], y_cls[60:100], interval_summary="lower")
+    return wrapper, x[100:]
+
+
+@pytest.mark.parametrize("method_name", ["explain_factual", "explore_alternatives"])
+def test_should_keep_explainer_level_interval_summary_when_call_omits_it(
+    lower_summary_cls_wrapper, method_name
+):
+    wrapper, x_test = lower_summary_cls_wrapper
+    lower_probability = _selected_probability_from_predict_proba(
+        wrapper.predict_proba(x_test[:1], interval_summary="lower"), class_index=1
+    )
+    regularized_probability = _selected_probability_from_predict_proba(
+        wrapper.predict_proba(x_test[:1], interval_summary="regularized_mean"), class_index=1
+    )
+    assert lower_probability != pytest.approx(regularized_probability)
+    explain = getattr(wrapper, method_name)
+
+    omitted = explain(x_test[:1])[0]
+    explicit_none = explain(x_test[:1], interval_summary=None)[0]
+    overridden = explain(x_test[:1], interval_summary=IntervalSummary.REGULARIZED_MEAN)[0]
+
+    assert_probability_surface_alignment(omitted, lower_probability)
+    assert_probability_surface_alignment(explicit_none, lower_probability)
+    assert_probability_surface_alignment(overridden, regularized_probability)
+
+
+@pytest.mark.parametrize("summary", list(IntervalSummary), ids=lambda s: s.value)
+def test_should_treat_interval_summary_enum_and_string_identically(cls_wrapper, summary):
+    wrapper, x_test = cls_wrapper
+
+    from_enum = wrapper.explain_factual(x_test[:1], interval_summary=summary)[0]
+    from_string = wrapper.explain_factual(x_test[:1], interval_summary=summary.value)[0]
+
+    assert from_enum.prediction["predict"] == pytest.approx(from_string.prediction["predict"])
+    assert np.allclose(from_enum.feature_predict["predict"], from_string.feature_predict["predict"])
+
+
+@pytest.mark.parametrize(
+    ("call_summary", "expected"),
+    [("upper", IntervalSummary.UPPER), (None, IntervalSummary.LOWER)],
+    ids=["call-override", "explainer-default"],
+)
+def test_should_deliver_canonical_interval_summary_to_plugin_request_field_only(
+    lower_summary_cls_wrapper, monkeypatch, call_summary, expected
+):
+    wrapper, x_test = lower_summary_cls_wrapper
+    core = wrapper.explainer
+    assert core is not None
+    plugin, _identifier = core.explanation_orchestrator.ensure_plugin("factual")
+    original_explain_batch = plugin.explain_batch
+    captured_requests = []
+
+    def _capturing_explain_batch(x, request):
+        captured_requests.append(request)
+        return original_explain_batch(x, request)
+
+    monkeypatch.setattr(plugin, "explain_batch", _capturing_explain_batch)
+
+    core.explain_factual(x_test[:1], interval_summary=call_summary)
+
+    assert len(captured_requests) == 1
+    request = captured_requests[0]
+    assert request.interval_summary is expected
+    assert "interval_summary" not in request.extras
+    assert "multi_labels_enabled" not in request.extras
+
+
+@pytest.mark.parametrize("method_name", ["explain_factual", "explore_alternatives"])
+def test_should_return_one_explanation_per_class_when_multi_labels_enabled(
+    multiclass_wrapper, method_name
+):
+    wrapper, x_test = multiclass_wrapper
+    core = wrapper.explainer
+    assert core is not None
+    n_classes = len(np.unique(core.y_cal))
+    assert n_classes == 3
+
+    result = getattr(wrapper, method_name)(x_test[:2], multi_labels_enabled=True)
+
+    assert isinstance(result, MultiClassCalibratedExplanations)
+    assert len(result.explanations) == 2
+    for per_instance in result.explanations:
+        assert sorted(per_instance) == list(range(n_classes))
+
+
+@pytest.mark.parametrize("method_name", ["explain_factual", "explore_alternatives"])
+def test_should_apply_interval_summary_to_each_class_when_multi_labels_enabled(
+    multiclass_wrapper, method_name
+):
+    wrapper, x_test = multiclass_wrapper
+    proba = wrapper.predict_proba(x_test[:1], interval_summary="upper")
+
+    result = getattr(wrapper, method_name)(
+        x_test[:1], multi_labels_enabled=True, interval_summary="upper"
+    )
+
+    for class_index, explanation in result.explanations[0].items():
+        expected = _selected_probability_from_predict_proba(proba, class_index=class_index)
+        assert explanation.prediction["predict"] == pytest.approx(expected)
+
+
+def test_should_warn_when_multi_labels_enabled_on_binary_problem(cls_wrapper):
+    wrapper, x_test = cls_wrapper
+
+    with pytest.warns(UserWarning, match="appears to be binary"):
+        result = wrapper.explain_factual(x_test[:1], multi_labels_enabled=True)
+
+    assert isinstance(result, MultiClassCalibratedExplanations)
+    assert sorted(result.explanations[0]) == [0, 1]
+
+
+@pytest.mark.parametrize("method_name", ["explain_factual", "explore_alternatives"])
+def test_should_reject_multi_labels_enabled_for_regression(reg_wrapper, method_name):
+    wrapper, x_test = reg_wrapper
+    core = wrapper.explainer
+    assert core is not None
+
+    with pytest.raises(ValidationError) as wrap_exc:
+        getattr(wrapper, method_name)(x_test[:1], multi_labels_enabled=True)
+    with pytest.raises(ValidationError) as core_exc:
+        getattr(core, method_name)(x_test[:1], multi_labels_enabled=True)
+
+    assert wrap_exc.value.details == core_exc.value.details
+    assert core_exc.value.details["param"] == "multi_labels_enabled"
+    assert core_exc.value.details["mode"] == "regression"
+
+
+@pytest.mark.parametrize("method_name", ["explain_factual", "explore_alternatives"])
+@pytest.mark.parametrize(
+    ("call_kwargs", "ignored"),
+    [
+        ({"multi_labels_enabled": True}, "multi_labels_enabled"),
+        ({"interval_summary": "upper"}, "interval_summary"),
+    ],
+    ids=["multi_labels", "interval_summary"],
+)
+def test_should_warn_that_guarded_path_ignores_graduated_controls(
+    multiclass_wrapper, method_name, call_kwargs, ignored
+):
+    wrapper, x_test = multiclass_wrapper
+
+    with pytest.warns(
+        UserWarning, match=rf"{ignored} is not supported together with guarded_options"
+    ):
+        result = getattr(wrapper, method_name)(
+            x_test[:1], guarded_options=GuardedOptions(), **call_kwargs
+        )
+
+    assert not isinstance(result, MultiClassCalibratedExplanations)
+    assert len(result.explanations) == 1
+
+
+def test_should_keep_call_time_interval_summary_when_fast_feature_filter_is_enabled(
+    data, monkeypatch
+):
+    """Regression: the FAST feature-filter request rebuild dropped interval_summary,
+    so explanations silently reverted to the default strategy."""
+    monkeypatch.setenv("CE_FEATURE_FILTER", "on,top_k=2")
+    x, y_cls, _ = data
+    wrapper = _fitted_classification_wrapper(data)
+    wrapper.calibrate(x[60:100], y_cls[60:100])
+    x_test = x[100:]
+    expected_probability = _selected_probability_from_predict_proba(
+        wrapper.predict_proba(x_test[:1], interval_summary="lower"), class_index=1
+    )
+
+    explanation = wrapper.explain_factual(x_test[:1], interval_summary="lower")[0]
+
+    assert explanation.prediction["predict"] == pytest.approx(expected_probability)

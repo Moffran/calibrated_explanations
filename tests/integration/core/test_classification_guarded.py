@@ -275,7 +275,8 @@ def test_multiclass_ce_multi_labels_enabled_guarded_compat(multiclass_dataset):
 
     - Verifies `multi_labels_enabled=True` works end-to-end for multiclass.
     - Ensures guarded explanation entrypoints accept the same flag without
-      crashing (even if they currently ignore it).
+      crashing; they do not support per-class output and say so with a
+      UserWarning (T12, #206).
     """
     (
         x_prop_train,
@@ -313,13 +314,16 @@ def test_multiclass_ce_multi_labels_enabled_guarded_compat(multiclass_dataset):
     multi_factual.plot(show=False, uncertainty=True)
     multi_alternative.plot(show=False)
 
-    # Guarded entrypoints should remain compatible with the same flag.
-    guarded_factual = cal_exp.explain_factual(
-        x_subset, multi_labels_enabled=True, guarded_options=GuardedOptions()
-    )
-    guarded_alternative = cal_exp.explore_alternatives(
-        x_subset, multi_labels_enabled=True, guarded_options=GuardedOptions()
-    )
+    # Guarded entrypoints remain compatible with the same flag but warn that
+    # it is ignored.
+    with pytest.warns(UserWarning, match="multi_labels_enabled is not supported"):
+        guarded_factual = cal_exp.explain_factual(
+            x_subset, multi_labels_enabled=True, guarded_options=GuardedOptions()
+        )
+    with pytest.warns(UserWarning, match="multi_labels_enabled is not supported"):
+        guarded_alternative = cal_exp.explore_alternatives(
+            x_subset, multi_labels_enabled=True, guarded_options=GuardedOptions()
+        )
     assert guarded_factual is not None
     assert guarded_alternative is not None
 

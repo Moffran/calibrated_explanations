@@ -87,6 +87,32 @@ multi_alternative = explainer.explore_alternatives(x_test, multi_labels_enabled=
 | Narrative/dataframe export | Supported | Collection-level multiclass narrative/dataframe output |
 | JSON export/import | Supported | `to_json` + multiclass-aware `from_json` restore grouped structure |
 | Binary datasets with `multi_labels_enabled=True` | Limited | Allowed with compatibility warning; use default mode when all-classes output is unnecessary |
+| `interval_summary=` together with `multi_labels_enabled=True` | Supported | The selected strategy applies to every per-class explanation |
+| `guarded_options=` together with `multi_labels_enabled=True` | Not supported | Guarded explanations return one explanation per instance; the flag is ignored with a `UserWarning` |
+| Regression explainers | Not supported | `multi_labels_enabled=True` raises `ValidationError` |
+
+`multi_labels_enabled` must be a real `bool`: values such as `"yes"`, `1` or
+`None` raise `ValidationError`.
+
+### Choosing the interval summary (`interval_summary=`)
+
+Venn-Abers returns a calibrated probability interval. `interval_summary` selects
+the point estimate that explanations report from that interval:
+
+```python
+from calibrated_explanations.core.prediction import IntervalSummary
+
+conservative = explainer.explain_factual(x_test, interval_summary="lower")
+same_thing = explainer.explain_factual(x_test, interval_summary=IntervalSummary.LOWER)
+```
+
+Accepted values are `"regularized_mean"` (default), `"mean"`, `"lower"` and
+`"upper"`, or the matching `IntervalSummary` member. Omitting the argument (or
+passing `None`) keeps the strategy configured on the explainer, for example via
+`calibrate(..., interval_summary="lower")`. Any other value raises
+`ValidationError`. Use the same value in `predict_proba(..., interval_summary=...)`
+to get matching probabilities. Guarded explanations (`guarded_options=`) always
+use the explainer-level strategy and warn if a call-time value is passed.
 
 > ℹ️ **Note:** The rule table shows contributions toward the predicted class. Negative weights reduce confidence in the prediction; positive weights increase it.
 

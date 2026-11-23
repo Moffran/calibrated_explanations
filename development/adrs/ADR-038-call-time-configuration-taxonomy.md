@@ -482,3 +482,32 @@ a signature change, at lower risk.
 
 Delivered in v0.11.6 Task 5 and its follow-ups 5A–5D
 (`development/current-work/v0.11.6_plan.md`, §5–§5D).
+
+## Addendum (2026-11-23): Graduation of `multi_labels_enabled` / `interval_summary` (v1.1.0 T12, #206)
+
+The §3 graduation gate is met for both explain-time controls:
+
+- `CalibratedExplainer.explain_factual`/`explore_alternatives` and the matching
+  `WrapCalibratedExplainer` methods declare `multi_labels_enabled: bool = False`
+  and `interval_summary: IntervalSummary | str | None = None` as explicit
+  keyword-only parameters. Neither travels through `**kwargs` any more, and
+  neither is `[EXPERIMENTAL]`.
+- A plain `bool` is enough for `multi_labels_enabled`. Fewer than three
+  parameters govern multi-label output, so §3 calls for flat keyword-only
+  arguments, not a `MultiLabelOptions` object.
+- Validation happens once, at `CalibratedExplainer` (the wrapper forwards the
+  same values): `validate_bool_parameter()` and `coerce_interval_summary()`,
+  both raising `ValidationError` (ADR-002). `interval_summary=None` means "no
+  call-time override", so the explainer-level strategy applies.
+  `multi_labels_enabled=True` on a regression explainer raises
+  `ValidationError`.
+- The explanation orchestrator receives both values as named arguments. The
+  plugin receives the canonical `IntervalSummary` through
+  `ExplanationRequest.interval_summary` only. Both names are removed from the
+  orchestrator's framework-known extras set, and the plugin extension seam for
+  other kwargs is unchanged (Addendum D3 rule 3).
+- Both names stay in `_EXPLAIN_KWARGS`, so the wrapper gate derived from it
+  (D3 rule 2) and the cross-surface check still recognise them.
+- The guarded path (ADR-032) does not consume either control. Passing one with
+  `guarded_options` emits a `UserWarning` plus an INFO log instead of being
+  silently inert.
