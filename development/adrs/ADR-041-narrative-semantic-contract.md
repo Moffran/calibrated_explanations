@@ -1,9 +1,9 @@
-> **Status note (2026-11-04):** Last edited 2026-11-04 · Archive after: Retain indefinitely as architectural record · Implementation window: v1.1.0 (#227-#230, #232).
+> **Status note (2026-11-25):** Last edited 2026-11-25 (revised: no separate `NarrativeSpec` contract, #227) · Archive after: Retain indefinitely as architectural record · Implementation window: v1.1.0 (#227-#230, #232).
 
 # ADR-041: Minimal Narrative Semantic Contract
 
 Status: Accepted
-Date: 2026-11-02
+Date: 2026-11-02 (revised 2026-11-25)
 Deciders: Core maintainers
 Reviewers: Core maintainers
 Supersedes: None
@@ -18,13 +18,55 @@ packaged YAML template through `core/narrative_generator.py` and
 `viz/narrative_plugin.py`.
 
 Describing an explanation correctly needs the calibrated prediction and its
-interval, each rule's weight, interval and kind (factual or counterfactual),
-the problem type, the class a probability refers to, the regression threshold,
-the requested percentiles and the reject state. These facts are read ad hoc
-from live objects, and the ADR-005 payload omits several of them, so a stored
-explanation cannot be described without the explainer that produced it. There
-is no deterministic record of what is true about an explanation against which
-narration can be checked.
+interval, each rule's weight and interval, the explanation type, the problem
+type, the class a probability refers to, the regression threshold, the
+requested percentiles and the reject state. Before v1.1.0 the ADR-005 payload
+omitted several of these facts, so a stored explanation could not be described
+without the explainer that produced it.
+
+### 2026-11-25 reassessment (#227)
+
+The 2026-11-02 version of this ADR also introduced `NarrativeSpec`, an
+immutable, versioned fact record with its own canonical JSON, `spec_id`
+(SHA-256), qualifiers, bounded flags and builder `build_narrative_spec`. The
+v1.1.0 scope review reopened that decision. An inventory of actual consumers
+on `main` (2026-11-25) found:
+
+| Candidate consumer | Uses `NarrativeSpec`? |
+|---|---|
+| Template narration (`core/narrative_generator.py`, `viz/narrative_plugin.py`) | No; it reads explanation objects and ADR-042 ranking directly |
+| Plots, `__repr__`, conjunction selection | No; they use the ADR-042 ranking (`explanations/_ranking.py`) |
+| Serialization (`to_json`, `from_json`, invariant check) | No; `narrative_context` and ADR-021 invariants are handled there |
+| Capability claims (`CE-CAP-NARR-001`, `CE-REQ-NARR-API-001`) | No; the claim covers `to_narrative()` only |
+| Released packages (v1.0.0-v1.0.2 tags) | Not present; never published |
+| Downstream code (public GitHub code search) | None besides forks of this repository |
+| Remaining references | Its own unit tests, one assertion in a capability test, two docs sections, the unreleased `CHANGELOG.md` entry |
+
+Each field of the spec is either already in the payload or derivable from it
+without CE-specific logic:
+
+- prediction, weight and rule-prediction intervals: copied verbatim from the
+  payload;
+- `context`: `metadata.narrative_context` itself;
+- bounded flags: since #237 (T10) open one-sided endpoints are serialized as
+  `-inf`/`inf`, so "unbounded" is `not math.isfinite(value)`; the
+  `min/max(y_cal)` placeholder the flags compensated for no longer exists;
+- qualifiers: `rejected` is `narrative_context.reject.rejected`,
+  `context_unavailable` is the absence of the key, and the zero/unbounded
+  qualifiers are one comparison each;
+- `source`: the JSON pointer is the rule's position in the payload;
+- interval validation: `to_json()` already enforces ADR-021 containment with
+  the percentile scope (`serialization._validate_invariants`), so the builder
+  duplicated it;
+- `spec_version`, `spec_id`, canonical JSON: no consumer compares or stores
+  them.
+
+The only behaviour not otherwise available is ADR-042 canonical order for a
+*stored* payload, because payloads keep native rule order and CE
+has no public ranking API. No supported consumer needs it, and the v1.1.0 plan
+excludes public ranking results. Keeping the spec would freeze a second
+schema, version and hash identity, plus a duplicate validator, to serve only
+its own tests.
 
 ## Decision
 
@@ -33,40 +75,25 @@ narration can be checked.
 Computed explanation results (ADR-005 payload, ADR-008 domain model) are the
 only source of narrative facts. Narrative code MUST NOT recompute prediction,
 calibration or explanation analysis. It MAY copy values, compare a value with
-an interval endpoint or zero, and order rules by ADR-042.
+an interval endpoint or zero, and select and order rules by ADR-042.
 
-### D2. `NarrativeSpec` is an immutable, versioned fact record
+### D2. No separate narrative fact contract
 
-`calibrated_explanations.explanations.NarrativeSpec` (frozen dataclasses in
-`explanations/narrative_spec.py`) is built by
-`build_narrative_spec(payload, *, rnk_metric=None, rnk_weight=0.5)` and
-exposes:
+*Revised 2026-11-25 (#227).* CE MUST NOT ship a separate narrative fact
+record. The self-describing ADR-005 payload (with D3) is the narrative
+semantic interface for stored explanations, and the domain model is the
+interface for live ones. The unreleased `NarrativeSpec`, `NarrativeRuleFact`,
+`NarrativeInterval`, `NARRATIVE_SPEC_VERSION` and `build_narrative_spec`, with
+their canonical JSON, `spec_id`, qualifiers and builder-side validation, are
+removed before v1.1.0 (#229, #230). Because they never appeared in a release,
+removal needs no ADR-011 deprecation.
 
-- the calibrated prediction and its interval;
-- one fact per rule: rule text, feature index or indices, feature value,
-  weight interval, rule prediction interval, and whether the rule is
-  counterfactual (alternative) or factual (factual and FAST);
-- a JSON-pointer source reference into the payload for every fact;
-- `context` (the payload's `metadata.narrative_context`) and `ranking`
-  (the ADR-042 key);
-- qualifiers narration must not omit: `rejected`, `unbounded_interval`,
-  `context_unavailable` (spec level); `weight_interval_contains_zero`,
-  `unbounded_interval` (rule level);
-- `spec_version` (`1.0.0`) and `spec_id`.
-
-Identical semantic input MUST produce identical canonical JSON
-(`NarrativeSpec.to_json()`: sorted keys, compact separators, shortest
-round-trip floats, infinities as `"inf"`/`"-inf"`); `spec_id` is the SHA-256
-of that JSON without `spec_id`. Numbers are not rounded, and equal integers and
-floats are the same input. Any change to fields or their meaning bumps
-`spec_version`.
-
-The builder raises `ValidationError` (ADR-002) for missing, non-numeric, `NaN`
-or contradictory data: unknown explanation type or task, `low > high`, a value
-outside its interval (subject to D4), `problem_type` contradicting `task`, a
-threshold present outside probabilistic regression or absent within it,
-invalid percentiles, a malformed reject record, or ranking arguments that do
-not apply.
+A narrative fact record, adapter or public ranking result MAY be proposed
+later only with a concrete consumer whose requirement the payload plus the
+existing ADR-021 validation and ADR-042 ranking cannot meet. Such a proposal
+MUST state that requirement, carry only the fields it needs, reuse the
+authoritative validation and ranking, and add a version or hash identity only
+if the consumer needs one.
 
 ### D3. `metadata.narrative_context` extends ADR-005 additively
 
@@ -83,28 +110,24 @@ every explanation for which CE knows at least one of these facts:
 
 Unavailable keys are omitted, never inferred. No existing field changes and no
 v2 schema cycle is opened. Emission is unconditional so stored payloads are
-self-describing. Older payloads remain valid: the builder records
-`context_unavailable` and raises only when a needed fact is undefined without
-context (the default `ensured` ranking of a regression alternative).
+self-describing. Payloads without `narrative_context` (written before v1.1.0)
+remain valid and load unchanged. `narrative_context` is a stable additive
+ADR-005 surface: changing a key's meaning requires an ADR-005 schema change.
 
 ### D4. Interval semantics follow ADR-021
 
-The builder checks `low <= predict <= high` for the prediction, every weight
-interval and every rule prediction, with the serialization tolerance. For
-percentile regression it applies the ADR-021 §4 percentile scope, mirrored for
-factual and FAST weights (`predict - perturbed`). An infinite endpoint, or the
-`min(y_cal)`/`max(y_cal)` placeholder for an infinite percentile, is marked
-`low_bounded=False` or `high_bounded=False` with its value unchanged.
-Narration MUST NOT present an unbounded endpoint as a numeric limit.
+Narrative facts carry ADR-021 interval semantics unchanged. `to_json()`
+enforces `low <= predict <= high` with the ADR-021 §4 percentile scope taken
+from `narrative_context.low_high_percentiles`; no second validator is added for
+narration. An open one-sided endpoint is serialized as `-inf` or `inf`
+(#237) and is not a calibrated finite bound.
 
-### D5. ADR-042 governs rule order
+### D5. ADR-042 governs rule selection and order
 
-`NarrativeSpec.rules` is in ADR-042 canonical order (D1, D5, D6), strongest
-first, and drops no rules. `ranking` records `feature_weight` for factual and
-FAST explanations, and `ensured` (with its weight) or `feature_weight` for
-alternatives; `uncertainty` is recorded as `ensured` with weight `0.0`. The
-builder delegates to the single ADR-042 ranking implementation once #204
-provides it.
+Narration selects and orders rules through the single ADR-042 ranking
+implementation (ADR-042 D9, D16). Serialized payloads keep native rule order;
+a consumer of a stored payload that needs canonical order obtains it from the
+domain model, not from a narrative-specific record.
 
 ### D6. Offline narration and its public API are preserved
 
@@ -112,8 +135,8 @@ provides it.
 keep their signatures, defaults, return types and formats, and work offline.
 Prose is not contracted byte-for-byte (ADR-020 does not list `to_narrative`),
 but wording or order changes MUST be documented and tested. ADR-042 D16 owns
-changes to narrative rule selection and order. The template engine MAY later
-read a `NarrativeSpec` if that causes no regression.
+changes to narrative rule selection and order. The template engine is not
+rewritten.
 
 ### D7. No providers or external services
 
@@ -123,9 +146,9 @@ remains a plot style under ADR-037 with no new dependency or network access.
 
 ### D8. No correctness guarantee for prose
 
-A correct `NarrativeSpec` does not make text built from it correct. CE MUST NOT
-describe narrative prose as calibrated or verified: ADR-021 guarantees attach
-to predictions and intervals, and ranks carry no guarantee (ADR-042 D14).
+Correct facts do not make text built from them correct. CE MUST NOT describe
+narrative prose as calibrated or verified: ADR-021 guarantees attach to
+predictions and intervals, and ranks carry no guarantee (ADR-042 D14).
 
 ## Governed claims
 
@@ -136,43 +159,53 @@ to predictions and intervals, and ranks carry no guarantee (ADR-042 D14).
 1. **Narrative provider plugin family.** Rejected: provider dispatch, trust
    and prose verification serve no need of offline narration and add a public
    surface to keep stable.
-2. **No spec; keep reading live objects.** Rejected: stored payloads cannot be
-   described, and narration has nothing deterministic to be tested against.
-3. **ADR-005 v2 schema cycle.** Rejected: the v1 freeze permits additive
+2. **Keep `NarrativeSpec` as a stable, versioned, hashed fact record (the
+   2026-11-02 decision).** Rejected on 2026-11-25: no supported consumer uses
+   it; every field is in the payload or a one-line derivation; it duplicates
+   the serialization invariant check; and it would freeze a second schema,
+   version and hash identity.
+3. **Reduce `NarrativeSpec` to a minimal passive adapter.** Rejected: there is
+   no consumer requirement from which to choose its fields, so any choice
+   would be speculative public surface.
+4. **No `narrative_context`; keep reading live objects.** Rejected: stored
+   payloads could not be described without the explainer.
+5. **ADR-005 v2 schema cycle.** Rejected: the v1 freeze permits additive
    `metadata` keys.
-4. **Opt-in `narrative_context`.** Rejected: adds API surface and leaves
-   payloads that can never be narrated correctly.
-5. **Rewrite placeholder endpoints to `±inf`.** Rejected: changes reported
-   values; a bounded flag records the ADR-021 meaning instead.
+6. **Opt-in `narrative_context`.** Rejected: adds API surface and leaves
+   payloads that can never be described correctly.
 
 ## Consequences
 
 ### Positive
 
 - Stored payloads carry the context needed to describe them.
-- One deterministic, versioned, source-referenced fact record for narration
-  and tests.
+- One semantic source (the payload), one interval validator (serialization)
+  and one ranking implementation (ADR-042); no parallel schema to version.
 - No new dependency, plugin family, network path or provider API.
 
 ### Negative / Risks
 
-- `metadata.narrative_context` and `NarrativeSpec` v1 are stable surfaces that
-  must be versioned when changed.
-- Until #204, `NarrativeSpec.rules` and the template narration may list rules
-  in different orders.
-- Off-centre one-sided regression queries (e.g. percentiles `(-inf, 40)`)
-  fail the serialization invariant check, so no spec can be built for them
-  (#237).
+- `metadata.narrative_context` is a stable surface that must be versioned
+  under ADR-005 when changed.
+- A consumer of a stored payload that wants ADR-042 order must rebuild the
+  domain model; CE offers no payload-level ranking. This is accepted until a
+  concrete consumer needs it (D2).
+- Code that used `build_narrative_spec` from `main` between 2026-11-02 and
+  its removal breaks; it was never released.
 
 ## Adoption & Migration
 
-- v1.1.0: #228 (`narrative_context`), #229 and #230 (`NarrativeSpec`), #232
-  (offline narration compatibility).
-- #204 makes the builder delegate ranking and changes template narration per
-  ADR-042 D16.
-- Additive only; no deprecation or migration. Changes are recorded in
-  `CHANGELOG.md`.
-- Verification: `tests/unit/explanations/test_narrative_spec.py` and
+- v1.1.0: #228 (`narrative_context`, done), #232 (offline narration
+  compatibility, done).
+- #229 removes the `NarrativeSpec` types, `NARRATIVE_SPEC_VERSION`, their
+  exports, API docs, how-to section and `CHANGELOG.md` wording.
+- #230 removes `build_narrative_spec` and its validation, ranking glue and
+  canonical-JSON helpers, rewrites spec-only tests against the payload,
+  serialization or narration where they cover behaviour that remains, and
+  updates the T9/T10 task-verification lists.
+- No deprecation: the removed names were never released.
+- Verification: `tests/unit/explanations/test_narrative_spec.py` (its
+  `narrative_context` tests, relocated as #230 decides) and
   `tests/capabilities/test_narrative_contracts.py`.
 
 ## Open Questions

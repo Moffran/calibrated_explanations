@@ -1,4 +1,4 @@
-> **Status note (2026-11-02):** Last edited 2026-11-02 (D15 amended for ADR-041) · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).
+> **Status note (2026-11-02):** Last edited 2026-11-25 (D15 amended for the ADR-041 revision, #227) · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).
 
 # ADR-042: Canonical Rule and Feature Ranking Semantics
 
@@ -286,18 +286,21 @@ Calibration guarantees (ADR-021) attach to predictions and intervals, not to
 ranks. The `ensured` score combines two calibrated quantities, but the score
 itself carries no guarantee.
 
-### D15. Interaction with ADR-041 (`NarrativeSpec`)
+### D15. Interaction with ADR-041 (narrative facts)
 
-`NarrativeSpec` (ADR-041) MUST carry rules in the canonical order produced by
-D9. It MUST also record the ranking key: `feature_weight` for factual
-explanations, or `ensured` with its `w`, or `feature_weight` for alternatives.
+*Amended 2026-11-25 (#227):* ADR-041 no longer defines a `NarrativeSpec` or
+any other separate narrative fact record. Narration obtains rule selection and
+order from D9 through D16; there is no narrative-specific ranking key to
+record and no second ordered copy of the rules. Serialized ADR-005 payloads
+keep native rule order. A future narrative record or payload-level ranking
+result is subject to ADR-041 D2 (demonstrated consumer need) and MUST then
+take its order from D9, record the ranking key it used, and treat any
+reordering by its consumers as declared presentation under D12.
 
-Consumers of a `NarrativeSpec` MUST NOT re-rank. Any reordering is
-presentation, MUST be declared, and is subject to D12. ADR-041 cites this ADR.
-
-*Amended 2026-11-02:* ADR-041 was accepted as a minimal semantic contract
-without narrative providers; the former "provider" wording is replaced by
-"consumers of a `NarrativeSpec`".
+*History:* the 2026-11-02 text required `NarrativeSpec` to carry rules in D9
+order with the ranking key, and forbade consumers of a `NarrativeSpec` to
+re-rank (amending an earlier "provider" wording). Both are void with the
+2026-11-25 revision of ADR-041.
 
 ### D16. Narratives follow plot logic
 
@@ -373,8 +376,8 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
 - The alternative default is the one users already see in plots.
 - The order is total and platform-independent, and `NaN`/`inf` have defined
   placement.
-- It gives a ranking-plugin family or `NarrativeSpec` (ADR-041) a fixed
-  contract to build on.
+- It gives any future ranking-plugin family or narrative record (ADR-041 D2) a
+  fixed contract to build on.
 
 ### Negative / Risks
 

@@ -46,7 +46,7 @@ their source is known; nothing is inferred.
 | `class_index` | classification | class whose probability `prediction.predict` reports (class `1` for binary) |
 | `class_label` | classification, when labels are known | label of `class_index` |
 | `threshold` | probabilistic regression | `t` for the event `y <= t`, or `[low, high]` for `low < y <= high` |
-| `low_high_percentiles` | percentile regression | requested `(low, high)` percentiles; an infinite value means that endpoint is a placeholder, not a calibrated bound (ADR-021) |
+| `low_high_percentiles` | percentile regression | requested `(low, high)` percentiles; an infinite value means that side is open: its interval endpoints are serialized as `-inf`/`inf` and are not calibrated finite bounds (ADR-021) |
 | `reject` | a reject policy is active | `{rejected, reject_type, prediction_set_size, confidence}` from the instance's reject context |
 
 Payloads without `narrative_context` remain valid and load unchanged.
