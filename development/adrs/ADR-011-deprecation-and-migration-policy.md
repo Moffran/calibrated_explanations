@@ -1,4 +1,4 @@
-> **Active scope:** Governing architectural decision for the two-minor deprecation window, the `deprecate()` helper contract, and the active-deprecations ledger. Remains active through v1.0.0; governs all deprecations currently in the ledger and any added before GA.
+> **Active scope:** Governing architectural decision for the two-minor deprecation window, the `deprecate()` helper contract, and the active-deprecations ledger. Remains active for post-v1.0 maintenance; the v1.0 finalization exception applies only to the historical pre-GA transition.
 
 > **Status note (2026-04-14):** Last edited 2026-04-14 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.9.0–v1.0.0 finalization window (with post-v1 maintenance).
 
@@ -38,7 +38,7 @@ To enforce that rule, maintainers must, within `v0.11.x`:
 2. Complete migration and close the deprecation, or
 3. Convert unresolved work into explicit pre-v1.0 blocking tasks assigned to a named `v0.11.x` milestone with verifiable release gates.
 
-No deprecation-removal work may be deferred to `v1.0.0`, `v1.0.0-rc`, or any post-`v1.0.0` release.
+No deprecation-removal work originating in that final pre-v1.0 transition may be deferred to `v1.0.0`, `v1.0.0-rc`, or any post-`v1.0.0` release. New post-GA deprecations follow the default policy in §1, including the ADR-020 exception.
 
 ### 3) Precedence rule
 
