@@ -81,13 +81,19 @@ Pending:
 
 **Gap 3 — Helper-placement doc drift (closed):** The ADR-009 §Decision describes `Explainer.export_mapping()` and `Explainer.import_mapping()`. The actual implementation exposes these as `WrapCalibratedExplainer.export_preprocessor_mapping()` and `WrapCalibratedExplainer.import_preprocessor_mapping()`. This naming differs from the ADR proposal text but is intentional: the wrapper is the public preprocessing API surface (ADR-001 boundary), and the more descriptive names distinguish mapping persistence from other wrapper export operations. No code change is required; this note records the deliberate divergence so future contributors do not chase a naming drift as a bug.
 
-**Post-v1.0 open item — `transform_to_numeric` root-namespace export and deprecation (deferred):**
-`transform_to_numeric` is currently exported from the root `calibrated_explanations` namespace (`__all__`). It predates the wrapper preprocessing API (this ADR) and was the only option for users who needed to encode categorical DataFrames before passing data to `CalibratedExplainer`. With `WrapCalibratedExplainer` now providing `auto_encode`, `preprocessor`, and `export_preprocessor_mapping()`/`import_preprocessor_mapping()`, the standalone utility function is largely redundant for the main user-facing workflow.
+**Post-v1.0 decision — retain the `transform_to_numeric` compatibility export (2026-11-25):**
 
-However, until the `auto_encode='auto'` path and full mapping persistence UX (pending items above) are complete, `transform_to_numeric` remains a necessary fallback for users who call `CalibratedExplainer` directly (not via the wrapper). Post-v1.0 scope:
-- Complete the `auto_encode='auto'` mapping persistence path so the wrapper is the sole recommended preprocessing entry point.
-- Deprecate `transform_to_numeric` from the root namespace (move to `calibrated_explanations.utils` for users who need it explicitly).
-- Remove from `__all__` in a v1.1+ ADR-011 deprecation cycle.
+The automatic wrapper preprocessing and mapping persistence workflow (#202) is
+complete and remains the recommended entry point. Keep the existing root
+`calibrated_explanations.transform_to_numeric` export and the explicit
+`calibrated_explanations.utils.transform_to_numeric` import. New examples should
+prefer wrapper preprocessing or the utils import for explicit transformation.
+
+This supersedes the former proposal to deprecate the root export (#203). The
+alias has negligible maintenance cost and its removal would not eliminate the
+underlying utility. A deprecation cycle or removal is not planned. Reconsider
+only on demonstrated compatibility, security or maintenance need; any future
+change follows ADR-011 and ADR-020 as applicable.
 
 ## Adoption Progress (2026-09-04, v1.0.1 T4 / issue #202)
 
