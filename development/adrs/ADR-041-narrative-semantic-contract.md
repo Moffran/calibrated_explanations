@@ -1,4 +1,4 @@
-> **Status note (2026-11-25):** Last edited 2026-11-25 (revised: no separate `NarrativeSpec` contract, #227) · Archive after: Retain indefinitely as architectural record · Implementation window: v1.1.0 (#227-#230, #232).
+> **Status note (2026-11-25):** Last edited 2026-11-25 (revised: no separate `NarrativeSpec` contract; canonical selection via ADR-042 D17; #227) · Archive after: Retain indefinitely as architectural record · Implementation window: v1.1.0 (#227-#230, #232).
 
 # ADR-041: Minimal Narrative Semantic Contract
 
@@ -61,12 +61,28 @@ without CE-specific logic:
 - `spec_version`, `spec_id`, canonical JSON: no consumer compares or stores
   them.
 
-The only behaviour not otherwise available is ADR-042 canonical order for a
-*stored* payload, because payloads keep native rule order and CE
-has no public ranking API. No supported consumer needs it, and the v1.1.0 plan
-excludes public ranking results. Keeping the spec would freeze a second
-schema, version and hash identity, plus a duplicate validator, to serve only
-its own tests.
+The only behaviour not otherwise available is ADR-042 canonical selection
+and order for a *stored* payload: payloads keep native rule order (ADR-042
+D13), and CE's only public ranking API, `rank_features`, works on
+caller-built arrays and leaves the `ensured` score, its probability
+orientation and the base-identical filter to the caller. `from_json()` returns the ADR-008
+`models.Explanation` dataclass, which has no ranking, plot or narrative
+method, and the private `_rules_with_impact` needs a live explanation bound to
+its explainer. An earlier draft of this revision said the order could be
+obtained from the deserialized domain model; that is not true.
+
+The maintainers decided on 2026-11-25 that external consumers MUST be able to
+obtain exactly the selection and order CE's own narratives and plots use,
+without private API. That need is met by a ranking interface over payload rule
+indices (ADR-042 D17), not by a narrative record: it needs none of the spec's
+other fields, and keeping the spec would freeze a second schema, version and
+hash identity plus a duplicate validator.
+
+The same review found that `to_json()` takes each rule's `rule_weight` and
+`rule_prediction` from feature-indexed arrays rather than from the rule
+itself, so for factual and alternative explanations, and for conjunctive
+rules, the serialized values can belong to another feature (#262, present in
+v1.0.2). The payload can only be authoritative (D1) once that is fixed.
 
 ## Decision
 
@@ -77,20 +93,28 @@ only source of narrative facts. Narrative code MUST NOT recompute prediction,
 calibration or explanation analysis. It MAY copy values, compare a value with
 an interval endpoint or zero, and select and order rules by ADR-042.
 
+The payload is authoritative only if it restates the explanation faithfully:
+each serialized rule's values MUST be those of the same rule-table entry as its
+`rule` text, the entry that plots and narratives use (#262).
+
 ### D2. No separate narrative fact contract
 
 *Revised 2026-11-25 (#227).* CE MUST NOT ship a separate narrative fact
 record. The self-describing ADR-005 payload (with D3) is the narrative
-semantic interface for stored explanations, and the domain model is the
-interface for live ones. The unreleased `NarrativeSpec`, `NarrativeRuleFact`,
+semantic interface for stored explanations, and the live explanation objects
+(`to_narrative()`, `plot()`) are the interface for live ones. The unreleased `NarrativeSpec`, `NarrativeRuleFact`,
 `NarrativeInterval`, `NARRATIVE_SPEC_VERSION` and `build_narrative_spec`, with
 their canonical JSON, `spec_id`, qualifiers and builder-side validation, are
 removed before v1.1.0 (#229, #230). Because they never appeared in a release,
 removal needs no ADR-011 deprecation.
 
-A narrative fact record, adapter or public ranking result MAY be proposed
-later only with a concrete consumer whose requirement the payload plus the
-existing ADR-021 validation and ADR-042 ranking cannot meet. Such a proposal
+Canonical rule selection and order for a payload is provided by ADR-042 D17
+as indices into the payload's `rules` array; it is a ranking interface, not a
+narrative record, and carries no narrative fields.
+
+A narrative fact record or adapter MAY be proposed later only with a concrete
+consumer whose requirement the payload plus the existing ADR-021 validation
+and the ADR-042 ranking, including D17, cannot meet. Such a proposal
 MUST state that requirement, carry only the fields it needs, reuse the
 authoritative validation and ranking, and add a version or hash identity only
 if the consumer needs one.
@@ -125,9 +149,14 @@ narration. An open one-sided endpoint is serialized as `-inf` or `inf`
 ### D5. ADR-042 governs rule selection and order
 
 Narration selects and orders rules through the single ADR-042 ranking
-implementation (ADR-042 D9, D16). Serialized payloads keep native rule order;
-a consumer of a stored payload that needs canonical order obtains it from the
-domain model, not from a narrative-specific record.
+implementation (ADR-042 D9, D16). Serialized payloads keep native rule order
+(ADR-042 D13). A consumer of a stored payload, including one that writes its
+own narrative text, obtains the canonical selection and order with
+`canonical_rule_indices` (ADR-042 D17) and MUST NOT re-rank (ADR-042 D15). The
+deserialized ADR-008 domain model does not provide a ranking.
+
+*Corrected 2026-11-25:* an earlier wording of this revision said that order is
+obtained from the domain model.
 
 ### D6. Offline narration and its public API are preserved
 
@@ -164,9 +193,10 @@ predictions and intervals, and ranks carry no guarantee (ADR-042 D14).
    it; every field is in the payload or a one-line derivation; it duplicates
    the serialization invariant check; and it would freeze a second schema,
    version and hash identity.
-3. **Reduce `NarrativeSpec` to a minimal passive adapter.** Rejected: there is
-   no consumer requirement from which to choose its fields, so any choice
-   would be speculative public surface.
+3. **Reduce `NarrativeSpec` to a minimal passive adapter.** Rejected: the one
+   demonstrated requirement, canonical selection for stored payloads, is met
+   by ADR-042 D17 as rule indices; no requirement justifies the other fields,
+   so they would be speculative public surface.
 4. **No `narrative_context`; keep reading live objects.** Rejected: stored
    payloads could not be described without the explainer.
 5. **ADR-005 v2 schema cycle.** Rejected: the v1 freeze permits additive
@@ -180,16 +210,18 @@ predictions and intervals, and ranks carry no guarantee (ADR-042 D14).
 
 - Stored payloads carry the context needed to describe them.
 - One semantic source (the payload), one interval validator (serialization)
-  and one ranking implementation (ADR-042); no parallel schema to version.
+  and one ranking implementation (ADR-042), exposed publicly only as rule
+  indices (ADR-042 D17); no parallel schema to version.
 - No new dependency, plugin family, network path or provider API.
 
 ### Negative / Risks
 
 - `metadata.narrative_context` is a stable surface that must be versioned
   under ADR-005 when changed.
-- A consumer of a stored payload that wants ADR-042 order must rebuild the
-  domain model; CE offers no payload-level ranking. This is accepted until a
-  concrete consumer needs it (D2).
+- Narrative correctness for stored payloads depends on the #262 fix;
+  payloads written before it carry misaligned rule values for factual and
+  alternative explanations, and ADR-042 D17 cannot restore plot parity for
+  them.
 - Code that used `build_narrative_spec` from `main` between 2026-11-02 and
   its removal breaks; it was never released.
 
@@ -199,10 +231,12 @@ predictions and intervals, and ranks carry no guarantee (ADR-042 D14).
   compatibility, done).
 - #229 removes the `NarrativeSpec` types, `NARRATIVE_SPEC_VERSION`, their
   exports, API docs, how-to section and `CHANGELOG.md` wording.
-- #230 removes `build_narrative_spec` and its validation, ranking glue and
-  canonical-JSON helpers, rewrites spec-only tests against the payload,
-  serialization or narration where they cover behaviour that remains, and
-  updates the T9/T10 task-verification lists.
+- #262 makes serialized rule values come from the rule itself (D1).
+- #204 adds `canonical_rule_indices` (ADR-042 D17) and moves the spec's
+  ranking, tie, unbounded-endpoint and missing-context tests onto it.
+- #230 then removes `build_narrative_spec` and its validation, ranking glue
+  and canonical-JSON helpers, deletes the spec-only tests and updates the
+  T9/T10 task-verification lists.
 - No deprecation: the removed names were never released.
 - Verification: `tests/unit/explanations/test_narrative_spec.py` (its
   `narrative_context` tests, relocated as #230 decides) and

@@ -1,4 +1,4 @@
-> **Status note (2026-11-02):** Last edited 2026-11-25 (D15 amended for the ADR-041 revision, #227) · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).
+> **Status note (2026-11-02):** Last edited 2026-11-25 (D17 public canonical rule selection added; D9, D13, D15 amended; #227, #204) · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).
 
 # ADR-042: Canonical Rule and Feature Ranking Semantics
 
@@ -208,6 +208,9 @@ explanation type:
   first. With `|delta|` candidates, `n_top_features` would mean something
   different from the "top features" a user sees in the plot.
 
+The public selection function (D17) is a further consumer and MUST delegate to
+the same implementation.
+
 A consumer that has to deviate MUST record a justified alternative as an
 amendment to this ADR.
 
@@ -270,7 +273,8 @@ PlotSpec builders' `sort_by` remains a presentation-only override.
 
 The order of rules in serialized explanation payloads (ADR-005) is the native
 rule-table order. This ADR does not change it. A consumer that needs a ranked
-view MUST compute one with D9.
+view MUST compute one with D9; outside CE it does so through the public D17
+function, which returns indices into the unchanged `rules` array.
 
 ### D14. No ranking guarantees
 
@@ -288,19 +292,19 @@ itself carries no guarantee.
 
 ### D15. Interaction with ADR-041 (narrative facts)
 
-*Amended 2026-11-25 (#227):* ADR-041 no longer defines a `NarrativeSpec` or
-any other separate narrative fact record. Narration obtains rule selection and
-order from D9 through D16; there is no narrative-specific ranking key to
-record and no second ordered copy of the rules. Serialized ADR-005 payloads
-keep native rule order. A future narrative record or payload-level ranking
-result is subject to ADR-041 D2 (demonstrated consumer need) and MUST then
-take its order from D9, record the ranking key it used, and treat any
-reordering by its consumers as declared presentation under D12.
+*Amended 2026-11-25 (#227):* ADR-041 defines no `NarrativeSpec` or other
+separate narrative fact record. CE's own narration obtains rule selection and
+order from D9 through D16. Any consumer outside CE, including one that writes
+its own narrative text from a stored payload, obtains the same selection and
+order through D17. A consumer MAY regroup the selected rules as presentation
+(D3.4) but MUST NOT re-rank them, and any reordering it shows MUST be declared
+as presentation (D12).
 
 *History:* the 2026-11-02 text required `NarrativeSpec` to carry rules in D9
 order with the ranking key, and forbade consumers of a `NarrativeSpec` to
-re-rank (amending an earlier "provider" wording). Both are void with the
-2026-11-25 revision of ADR-041.
+re-rank (amending an earlier "provider" wording). The record itself is void
+with the 2026-11-25 revision of ADR-041; its no-re-ranking rule now applies to
+consumers of D17.
 
 ### D16. Narratives follow plot logic
 
@@ -326,6 +330,87 @@ arguments:
    Examples are positive/negative and, at the advanced level,
    certain/uncertain.
 
+### D17. Public canonical rule selection
+
+*Added 2026-11-25 (#227, implemented by #204).* External consumers MUST be
+able to obtain exactly the rule selection and order that CE's own plots and
+narratives use, from a stored explanation and without private API, the
+explainer, the model or calibration data.
+
+1. **Interface.** CE MUST expose one public function,
+   `calibrated_explanations.explanations.canonical_rule_indices(payload, *,
+   rnk_metric=None, rnk_weight=0.5, filter_top=None) -> list[int]`. `payload`
+   is one ADR-005 explanation payload: an entry of
+   `to_json()["explanations"]`, also after a JSON round trip. The result is
+   the selected indices into that payload's `rules` array, strongest first.
+2. **One implementation.** The function MUST delegate to the D9
+   implementation, including its knob and `top_k` validation. It MUST NOT
+   contain a second ranking, scoring or tie-breaking algorithm.
+3. **Inputs.** It reads only `explanation_type`, `task`,
+   `prediction.{predict, low, high}`, each rule's `rule_weight` and
+   `rule_prediction` `{predict, low, high}` (with the serialized `"-inf"`/`"inf"`
+   strings), and `metadata.narrative_context.problem_type`. The ranked quantity
+   follows D1: `|rule_weight.predict|` with the weight-interval tie-break for
+   factual and FAST explanations; for alternatives, `ensured` on
+   `rule_prediction` with `u` its interval width, or `|rule_weight.predict|`
+   under `feature_weight`. The probability orientation of D1.2 applies when
+   `task` is `classification` or `problem_type` is `probabilistic_regression`,
+   oriented by `prediction.predict`.
+4. **Selection.** The result is the canonical order (D1-D6), then the
+   `filter_top` prefix (D8; `None` selects all), then, for alternatives only,
+   the removal of rules whose `rule_prediction` `predict`, `low` and `high`
+   all equal the payload `prediction`'s, with the same tolerance as the plot
+   (D7). The order of the retained rules is unchanged, so an alternative
+   result can be shorter than `filter_top`. Factual and FAST results keep
+   zero-weight rules (D7). This is exactly the selection of the
+   single-explanation `plot()` of the same type with the same arguments, and
+   therefore of `to_narrative()` (D16).
+5. **Knobs.** D11 applies: factual and FAST payloads accept only `None` or
+   `"feature_weight"`. The deprecated non-canonical factual plot metrics
+   (D11.2) have no counterpart. Alternatives accept `"ensured"` (default,
+   `rnk_weight` in `[-1, 1]`), `"uncertainty"` (`ensured` with `w = 0.0`) and
+   `"feature_weight"`.
+6. **Determinism, ties and unbounded intervals.** D5 and D6 apply with the
+   rule's position in `rules` as the native index. A non-finite interval
+   endpoint, including an open one-sided CPS endpoint serialized as `-inf` or
+   `inf` (ADR-021), gives an infinite width. Identical payloads give identical
+   results on every platform.
+7. **Single explanations and collections.** The function ranks one
+   explanation. Its default `filter_top=None` matches
+   `CalibratedExplanation.plot`; a consumer reproducing
+   `CalibratedExplanations.plot` or collection-level `to_narrative()` passes
+   `filter_top=10` (D16.1). A multiclass collection serializes one payload per
+   (instance, class); each is ranked on its own. Where a collection plot path
+   does not apply this selection (the multiclass multi-label plot currently
+   ranks each class over all rules and skips the base-identical filter), #204
+   MUST either align it with this decision or record it here as a declared
+   exception.
+8. **Errors.** Invalid knobs or `filter_top`, an unknown `explanation_type`,
+   and missing or non-numeric rule values raise `ValidationError` (ADR-002).
+   The `ensured` ranking (including `"uncertainty"`) of a `regression`
+   alternative payload without `metadata.narrative_context` raises
+   `ValidationError`, because whether it is thresholded is unknown;
+   `feature_weight` still works. No other payload validation is added:
+   interval invariants are enforced when the payload is written (ADR-021).
+9. **Result type and stability.** The result is a plain `list[int]`: no
+   scores, ranking schema, version or hash. Serialized payloads keep their
+   rule order (D13). The function is public API under ADR-011 and is not part
+   of the ADR-020 legacy contract. D14 applies to its documentation.
+10. **Payload fidelity precondition.** Parity requires each payload rule's
+    `rule_weight` and `rule_prediction` to come from the same rule-table entry
+    as its `rule` text (`conjunctive_rules` when present, otherwise
+    `get_rules()`), which is what plots and narratives rank. Up to
+    v1.1.0-dev, `to_json()` takes them from feature-indexed arrays, so for
+    factual and alternative explanations, and for every conjunctive rule, the
+    serialized values can belong to another feature (#262; the rule order and
+    count were already aligned). #204 depends on that fix. For payloads
+    written before it the function ranks the stored values and parity with
+    the original plot is not guaranteed; the documentation MUST say so.
+11. **Verification.** #204 MUST verify parity against the live plot selection
+    for factual, FAST, alternative, conjunctive, multiclass, thresholded and
+    one-sided regression explanations, with the D11 knobs, `filter_top`, ties
+    and non-finite values, before and after a JSON round trip.
+
 ## Governed claims
 
 This ADR constrains the rule order that these capabilities produce. They do
@@ -337,6 +422,9 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
 - `CE-CAP-EXPL-002` — alternative explanations; `ensured` order in every consumer (D1.2, D2-D9).
 - `CE-CAP-EXPL-CONJ-001` — conjunctive rules; candidate selection via the canonical ranking of each type (D9).
 - `CE-CAP-NARR-001` — narratives; same rules and order as plots, grouping as presentation (D3, D9, D15, D16).
+
+#204 decides whether a dedicated claim for the D17 public selection is added
+under ADR-040; D17.11 lists the behaviour it would verify.
 
 ## Alternatives Considered
 
@@ -366,6 +454,17 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
    Appendix A show that they have already drifted.
 7. **Record the contract as a Standard rather than an ADR.** Rejected: it is a
    cross-cutting behavioural contract with ADR-011 and ADR-020 consequences.
+8. **Use public `rank_features` as the external contract (D17).** Rejected:
+   it works on caller-built arrays, returns strongest last, and leaves the
+   `ensured` score, its probability orientation and the base-identical filter
+   to the caller, who would have to re-implement them.
+9. **Publish a typed ranking result with scores, key and version, or a
+   narrative fact record (D17).** Rejected: no consumer needs scores or a
+   ranking schema, and ADR-041 D2 forbids a separate narrative record.
+   Indices into the payload's own `rules` array are the smallest interface
+   that reproduces CE's selection.
+10. **Store rules in canonical order in the payload (D17).** Rejected: the
+    order depends on caller-chosen knobs, and D13 keeps native order.
 
 ## Consequences
 
@@ -378,6 +477,8 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
   placement.
 - It gives any future ranking-plugin family or narrative record (ADR-041 D2) a
   fixed contract to build on.
+- External consumers obtain CE's exact rule selection from a stored payload
+  through one public function, without private API or the model (D17).
 
 ### Negative / Risks
 
@@ -404,6 +505,9 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
   anyone who relied on the current behaviour.
 - `rank_features` keeps the opposite orientation (strongest-last) to the
   canonical result, and its docstring must say so explicitly.
+- D17 adds a public function that must be kept under ADR-011. Payloads written
+  before the D17.10 fix (#262) give no plot parity, and the base-identical
+  filter of D17.4 compares serialized floats with the plot's tolerance.
 
 ## Adoption & Migration
 
@@ -418,6 +522,8 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
   - Add `rnk_metric`/`rnk_weight` to `add_conjunctions()` (D9, D11), and add
     `rnk_metric`/`rnk_weight`/`filter_top` to `to_narrative()` (D16).
   - Rewrite the Appendix A tests to match this contract.
+  - Add the D17 public selection function and verify D17.11 parity, after the
+    D17.10 payload fidelity fix (#262).
 - **Compatibility classification:**
   - These are behaviour changes. No existing parameter is removed or renamed.
     The D9, D11 and D16 additions are new keyword arguments on methods that
@@ -445,9 +551,8 @@ claim is added in v1.1.0, once there is canonical behaviour to verify.
 
 ## Open Questions
 
-None. Whether the D9 typed ranking result is exposed publicly in v1.1.0 is
-an implementation decision tracked in #204; until it is decided there, the
-result stays internal.
+None. *Resolved 2026-11-25:* the D9 implementation stays internal; its
+public surface is the D17 index function only, with no typed ranking result.
 
 ## Appendix A: Current behaviour (v1.0.x) and its disposition
 
