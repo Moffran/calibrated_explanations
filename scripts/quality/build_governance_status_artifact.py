@@ -16,7 +16,8 @@ Usage (CI, with lint status flags)::
         --output reports/governance/governance_status.json --validate \\
         --lint-local-checks-pr passed --lint-mypy passed --lint-ruff passed
 
-See ``docs/improvement/governance_status_artifact.md`` for full documentation.
+Operational usage is documented in ``CONTRIBUTOR_INSTRUCTIONS.md`` and the
+``Makefile`` governance-status targets.
 """
 
 from __future__ import annotations

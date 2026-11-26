@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the explanation cache key design and eviction policy. Remains active as long as the cache key contract governs performance-sensitive explain paths; superseded when the caching strategy is revised.
-
+---
+id: "ADR-003"
+title: "Caching Key & Eviction Strategy"
+status: "accepted"
+description: "Governing architectural decision for the explanation cache key design and eviction policy. Remains active as long as the cache key contract governs performance-sensitive explain paths; superseded when the caching strategy is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-07-21):** Last edited 2026-07-21 · Implementation: Fully completed in v0.10.0; caching remains opt-in (`CE_CACHE`) pending a clean `1.0.1` telemetry regression sweep (see `development/current-work/v1.0.1_plan.md`) · Historical ADR-003 gate closure evidence is in `development/finished-work/RELEASE_PLAN_status_appendix.md`.
 
 # ADR-003: Caching Key & Eviction Strategy
 
-Status: Accepted (implemented in v0.10.0)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

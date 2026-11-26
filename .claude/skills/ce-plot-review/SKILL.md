@@ -4,6 +4,7 @@ description: >
   Review visualization code for ADR-compliant PlotSpec behavior, lazy imports, and
   renderer correctness.
 ---
+<!-- Generated from skills/ce-plot-review/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Plot Review
 

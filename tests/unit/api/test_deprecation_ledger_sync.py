@@ -69,11 +69,13 @@ def test_explore_guarded_alternatives_absent_from_wrap_explainer():
 # Active-deprecations table lists exactly the live deprecations
 # ---------------------------------------------------------------------------
 
-# v1.0.0 left the table empty. v1.1.0 (ADR-042, #204) adds two deprecations;
-# each row must stay in sync with a live ``deprecate()`` key in the source.
+# v1.0.0 left the table empty. v1.1.0 adds two ADR-042 deprecations (#204) and
+# the module-level ``ce_agent_utils`` deprecation (#263); each row must stay in
+# sync with a live ``deprecate()`` key in the source.
 _ACTIVE_DEPRECATIONS = {
     "adr042:rank_features_nonpositive_num_to_show": "`rank_features(num_to_show <= 0)`",
     "adr042:factual_plot_rnk_metric": "Factual `plot(rnk_metric=...)`",
+    "calibrated_explanations.ce_agent_utils": "`calibrated_explanations.ce_agent_utils`",
 }
 
 

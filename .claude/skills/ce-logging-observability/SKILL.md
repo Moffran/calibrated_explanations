@@ -4,6 +4,7 @@ description: >
   Apply ADR-028 and STD-005 logging and observability rules, including governance
   versus operational separation.
 ---
+<!-- Generated from skills/ce-logging-observability/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Logging and Observability
 

@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the interval calibrator plugin contract (`IntervalCalibratorPlugin`) and calibrator registration strategy. Remains active as long as these contracts govern calibrator plugins; superseded when the calibrator plugin strategy is revised.
-
+---
+id: "ADR-013"
+title: "Interval Calibrator Plugin Strategy"
+status: "accepted"
+description: "Governing architectural decision for the interval calibrator plugin contract (`IntervalCalibratorPlugin`) and calibrator registration strategy. Remains active as long as these contracts govern calibrator plugins; superseded when the calibrator plugin strategy is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-10-15):** Last edited 2026-10-15 (§4 recalibration-operation contract) · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-013: Interval Calibrator Plugin Strategy
 
-Status: Accepted
 Date: 2025-09-16 (revised 2025-10-02)
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: ADR-013-interval-and-plot-plugin-strategy
-Superseded-by: None
 Related: ADR-006-plugin-registry-trust-model, ADR-015-explanation-plugin
 
 ## Context

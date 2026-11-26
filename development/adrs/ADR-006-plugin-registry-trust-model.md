@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for plugin trust levels, the `trusted` flag contract, and plugin registry security policy. Remains active as long as the plugin registry governs plugin loading; superseded when the trust model is revised.
-
+---
+id: "ADR-006"
+title: "Plugin Registry Trust Model"
+status: "accepted"
+description: "Governing architectural decision for plugin trust levels, the `trusted` flag contract, and plugin registry security policy. Remains active as long as the plugin registry governs plugin loading; superseded when the trust model is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-006: Plugin Registry Trust Model
 
-Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

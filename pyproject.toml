@@ -173,6 +173,13 @@ exclude_lines = [
 [tool.coverage.html]
 directory = "coverage_html"
 
+[tool.skill-packages]
+source = "skills"
+targets = [
+    ".claude/skills",
+    ".agents/skills",
+]
+
 [tool.setuptools.packages.find]
 where = [
     "src",

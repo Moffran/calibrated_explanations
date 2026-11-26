@@ -4,7 +4,7 @@ This checker enforces deterministic guardrails for instruction drift:
 1. no `.coveragerc` usage in agent docs/templates
 2. no bare `should_<behavior>_when_<condition>` naming guidance
 3. platform overlays must reference canonical `CONTRIBUTOR_INSTRUCTIONS.md`
-4. repo-local path references in instruction docs must exist
+4. repo-local path references in instruction docs and canonical skills must exist
 5. feedback log schema fields must be present
 """
 
@@ -39,7 +39,9 @@ FEEDBACK_LOG = Path(".github/copilot-feedback-log.md")
 PATH_PREFIXES = (
     ".github/",
     ".claude/",
+    ".agents/",
     ".ai/",
+    "skills/",
     "docs/",
     "src/",
     "tests/",
@@ -72,9 +74,11 @@ def _read_text(path: Path) -> str:
 def _collect_instruction_files(root: Path) -> list[Path]:
     prompt_files = sorted((root / ".github/prompts").glob("*.prompt.md"))
     instruction_files = sorted((root / ".github/instructions").glob("*.instructions.md"))
+    skill_files = sorted((root / "skills").glob("*/SKILL.md"))
     files = [root / rel for rel in REQUIRED_DOCS]
     files.extend(prompt_files)
     files.extend(instruction_files)
+    files.extend(skill_files)
     return files
 
 

@@ -1,12 +1,10 @@
 ---
 name: ce-tif-author
 description: >
-  Author CE TIF (Test Interface Framework) specification files
-  (CE-TIF-AREA-NNN.md) and their Python scenario implementations
-  (tif_area.py) in development/capabilities/verification/tif/; use when
-  creating a new TIF interface or updating observation fields and
-  acceptance mappings.
+  Create or revise CE TIF specifications and scenarios with structured
+  public-API observations.
 ---
+<!-- Generated from skills/ce-tif-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE TIF Author
 

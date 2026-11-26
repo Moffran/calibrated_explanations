@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the `Explanation` dataclass as the authoritative domain model and the `legacy_to_domain`/`domain_to_legacy` compatibility layer. Remains active through the serialization boundary migration and v1.0.0; superseded when the domain-authority migration to core pipelines is complete.
-
+---
+id: "ADR-008"
+title: "Explanation Domain Model & Legacy-Compatibility Strategy"
+status: "accepted"
+description: "Governing architectural decision for the `Explanation` dataclass as the authoritative domain model and the `legacy_to_domain`/`domain_to_legacy` compatibility layer. Remains active through the serialization boundary migration and v1.0.0; superseded when the domain-authority migration to core pipelines is complete."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2025-12-02):** Last edited 2025-12-02 · Archive after: Retain indefinitely as architectural record · Implementation window: Completed in v0.11.0.
 
 # ADR-008: Explanation Domain Model & Legacy-Compatibility Strategy
 
-Status: Accepted (completed in v0.11.0)
 Date: 2025-08-22
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 Updated: 2025-10-31
 Update Note: Added Paper-aligned semantics for clarification

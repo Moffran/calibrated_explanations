@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the Sphinx HTML/linkcheck docs CI policy and gallery build governance. The `ci-nightly.yml` linkcheck wiring (Gap 1, v0.11.4) is an implementation milestone within this ADR's lifecycle.
-
+---
+id: "ADR-012"
+title: "Documentation & Gallery Build Policy"
+status: "accepted"
+description: "Governing architectural decision for the Sphinx HTML/linkcheck docs CI policy and gallery build governance. The `ci-nightly.yml` linkcheck wiring (Gap 1, v0.11.4) is an implementation milestone within this ADR's lifecycle."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-04-09):** Last edited 2026-04-09 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-012: Documentation & Gallery Build Policy
 
-Status: Accepted
 Date: 2025-09-03
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 Related: ADR-010, ADR-035
 
 ## Context

@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the exception taxonomy (`ValidationError`, `CalibrationError`, etc.) and validation contract at system boundaries. Remains active as long as these conventions govern CE error handling; superseded when the exception design is revised.
-
+---
+id: "ADR-002"
+title: "Validation & Exception Design"
+status: "accepted"
+description: "Governing architectural decision for the exception taxonomy (`ValidationError`, `CalibrationError`, etc.) and validation contract at system boundaries. Remains active as long as these conventions govern CE error handling; superseded when the exception design is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-002: Validation & Exception Design
 
-Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

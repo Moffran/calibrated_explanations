@@ -1,9 +1,10 @@
 ---
 name: ce-release-task
 description: >
-  Identify the next release deliverable from the active vX.Y.Z_plan.md,
-  plan implementation, execute it, and verify closure with tests and gates.
+  Implement and verify one active-plan deliverable with its ADRs, tests, gates,
+  and closure evidence.
 ---
+<!-- Generated from skills/ce-release-task/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Release Task
 

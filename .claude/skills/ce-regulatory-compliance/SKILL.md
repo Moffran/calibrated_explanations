@@ -1,10 +1,10 @@
 ---
 name: ce-regulatory-compliance
 description: >
-  Map calibrated_explanations capabilities to EU AI Act, GDPR, AI Liability
-  Directive, and Product Liability Directive obligations for compliance documentation
-  and presentation materials.
+  Map CE capabilities to EU AI Act, GDPR, and product-liability obligations for
+  compliance materials.
 ---
+<!-- Generated from skills/ce-regulatory-compliance/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Regulatory Compliance
 

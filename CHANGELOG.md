@@ -22,6 +22,25 @@
 
 ### Changed
 
+- **Self-maintaining instruction indexes (#263, v1.1.0):** ADRs, engineering
+  standards and canonical skills now carry minimal machine-readable metadata and
+  generate their discovery indexes through
+  `scripts/quality/sync_instruction_indexes.py --write/--check`. The read-only
+  check runs in the quick and PR profiles and pre-commit, while
+  `make instruction-index-sync` performs local regeneration. Contributor and
+  platform instructions now delegate to generated catalogs, `ce-skill-registry-sync`
+  is retired, and focused tests cover source additions/changes/removals, malformed
+  metadata, stale indexes, supersession links, determinism and non-mutating checks.
+  The canonical skill catalogue moved from `.claude/skills/` to the
+  platform-neutral `skills/`. `.claude/skills/` (Claude Code) and
+  `.agents/skills/` (Codex, GitHub Copilot, Gemini CLI) are now complete
+  generated packages, reconciled by `scripts/quality/sync_skill_packages.py`
+  (`make skills-sync` / `make skills-check`; configured in
+  `[tool.skill-packages]`) with an ownership manifest that leaves unmanaged
+  directories untouched. The reference-only `.codex/skills/` and
+  `.github/skills/` shim trees, the manual `ce-doc-navigator` inventory and
+  externally owned skill copies (including two that described private
+  workspaces) were removed. No runtime behavior changes.
 - **`multi_labels_enabled` and `interval_summary` are explicit keyword-only
   parameters (ADR-038 graduation gate, #206, v1.1.0):**
   `CalibratedExplainer.explain_factual`/`explore_alternatives` and the
@@ -132,6 +151,14 @@
   #204):** `"ensured"` and `"uncertainty"` emit `DeprecationWarning` and
   keep their legacy factual ranking until v2.0.0. Use the default
   `rnk_metric="feature_weight"`.
+- **`calibrated_explanations.ce_agent_utils` (ADR-011, #263):** importing the
+  module emits `DeprecationWarning` (an error under `CE_DEPRECATIONS=error`);
+  importing `calibrated_explanations` does not. All 20 helpers keep working
+  until removal in v1.3.0. Use `WrapCalibratedExplainer` and the documented
+  public API directly; per-helper migration paths are in
+  `docs/migration/deprecations.md`. Agent instructions, skills, the CE-first
+  agent guide and `notebooks/quickstart_guarded.ipynb` no longer use or mention
+  the module.
 
 ## [v1.0.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v1.0.2) - 2026-10-20
 

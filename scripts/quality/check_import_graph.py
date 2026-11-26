@@ -139,6 +139,8 @@ class BoundaryConfig:
     # Files to ignore entirely for ADR-001 checks (whitelist)
     ignored_files: Set[str] = field(
         default_factory=lambda: {
+            # Deprecated since v1.1.0; drop this entry when the module is
+            # removed in v1.3.0 (docs/migration/deprecations.md).
             "ce_agent_utils.py",
         }
     )

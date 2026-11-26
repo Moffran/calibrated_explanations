@@ -47,7 +47,7 @@ Your process designs must prioritize:
 Read and analyze:
 
 - `development/standards/test-quality-method/README.md` -- the canonical workflow
-- `docs/improvement/archived/over_testing_method.md` -- archived stub (historical pointer)
+- `scripts/over_testing/README.md` -- current over-testing pipeline reference
 - `scripts/over_testing/finalize_over_testing.md` -- finalization process
 - `reports/over_testing/remedy_list.md` -- current remediation status
 - ADR-030 (search in `development/adrs/` for the test quality
@@ -193,7 +193,7 @@ Write your proposal as a message to `devils-advocate` containing:
 ## Key Files
 
 - `development/standards/test-quality-method/README.md`
-- `docs/improvement/archived/over_testing_method.md` (archived stub)
+- `scripts/over_testing/README.md` (current pipeline reference)
 - `scripts/over_testing/finalize_over_testing.md`
 - `scripts/over_testing/README.md`
 - All scripts in `scripts/over_testing/`
@@ -203,7 +203,6 @@ Write your proposal as a message to `devils-advocate` containing:
 - `reports/over_testing/` (all report files)
 - `reports/anti-pattern-analysis/` (all report files)
 - `development/adrs/` (ADR-030 and related)
-- `docs/improvement/anti_pattern_gap_analysis.ipynb` (analysis notebook)
 - `pyproject.toml` (pytest config, coverage config, CI-related settings)
 - `.github/workflows/` (CI workflow definitions)
 - `.github/private_member_allowlist.json`

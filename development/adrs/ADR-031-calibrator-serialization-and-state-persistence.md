@@ -1,5 +1,11 @@
-> **Active scope:** Governing architectural decision for the calibrator save/load serialization contract and the state-persistence trust boundary. Remains active as long as this contract governs calibrator state persistence; superseded when the persistence strategy is revised.
-
+---
+id: "ADR-031"
+title: "Calibrator Serialization & Explainer State Persistence"
+status: "accepted"
+description: "Governing architectural decision for the calibrator save/load serialization contract and the state-persistence trust boundary. Remains active as long as this contract governs calibrator state persistence; superseded when the persistence strategy is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-07-22):** Last edited 2026-07-22 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x (initial), security hardening in this revision.
 >
 > **Security hardening addendum (2026-07-22):** The original decision below
@@ -19,12 +25,9 @@
 
 # ADR-031: Calibrator Serialization & Explainer State Persistence
 
-Status: Accepted (security-hardened, schema v3)
 Date: 2026-02-27 (security addendum: 2026-07-22)
 Deciders: Core maintainers
 Reviewers: Core maintainers
-Supersedes: None
-Superseded-by: None
 Related: ADR-009-input-preprocessing-and-mapping-policy, ADR-021-calibrated-interval-semantics
 
 ## Context

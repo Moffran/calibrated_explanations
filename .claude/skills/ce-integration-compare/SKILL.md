@@ -4,6 +4,7 @@ description: >
   Guide CE integration with SHAP and LIME, compare explanation outputs, and
   configure the calibrated-explanations integration adapters.
 ---
+<!-- Generated from skills/ce-integration-compare/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Integration Compare
 

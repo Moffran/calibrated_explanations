@@ -108,7 +108,7 @@ Allowed exceptions: `ValidationError`, `ConfigurationError`, `SerializationError
 
 ---
 
-## Dimension 6 — Fallback visibility (mandatory §7 copilot-instructions.md) CRITICAL
+## Dimension 6 — Fallback visibility (CONTRIBUTOR_INSTRUCTIONS.md §4) CRITICAL
 
 ```python
 # FAIL — silent fallback
@@ -123,7 +123,9 @@ if parallel_failed:
     use_sequential()
 ```
 
-Every fallback decision must have both `_LOGGER.info(...)` and `warnings.warn(..., UserWarning)`.
+Every user-visible fallback must have both `_LOGGER.info(...)` and
+`warnings.warn(..., UserWarning)`. A narrow internal exception must be recorded
+in `scripts/quality/check_warning_policy.py`.
 
 ---
 

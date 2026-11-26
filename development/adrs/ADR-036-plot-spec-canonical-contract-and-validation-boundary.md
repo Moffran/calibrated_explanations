@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the `PlotSpec` IR contract and the plugin-side validation boundary for plot definitions. Remains active as long as `PlotSpec` governs the CE visualization pipeline; superseded when the plot-spec contract is revised.
-
+---
+id: "ADR-036"
+title: "PlotSpec Canonical Contract and Validation Boundary"
+status: "accepted"
+description: "Governing architectural decision for the `PlotSpec` IR contract and the plugin-side validation boundary for plot definitions. Remains active as long as `PlotSpec` governs the CE visualization pipeline; superseded when the plot-spec contract is revised."
+supersedes: ["ADR-007", "ADR-016"]
+superseded_by: []
+---
 > **Status note (2026-05-15):** Last edited 2026-05-15 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.1+. v0.11.3 Task 6 promotes PlotSpec to the default user-facing plotting path after v0.11.2 semantic/visual mending evidence and human acceptance.
 
 # ADR-036: PlotSpec Canonical Contract and Validation Boundary
 
-Status: Accepted
 Date: 2026-03-20
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: ADR-007-visualization-abstraction-layer, ADR-016-plot-spec-separation
-Superseded-by: None
 Related: ADR-037-visualization-extension-and-rendering-governance, ADR-023-matplotlib-coverage-exemption
 
 ## Context

@@ -1,10 +1,10 @@
 ---
 name: ce-test-creator
 description: >
-  Design tests to close documented coverage gaps identified by gap analysis,
-  without padding. Adapts recommendations for Option A/B/C in the Test Quality
-  Method. Use ce-test-author to write tests for already-known targets.
+  Design high-value CE tests for documented coverage gaps without padding or
+  redundant cases.
 ---
+<!-- Generated from skills/ce-test-creator/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Test Creator
 

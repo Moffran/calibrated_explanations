@@ -1,15 +1,20 @@
+---
+id: "ADR-014"
+title: "Plot Plugin Strategy"
+status: "superseded"
+description: "Historical plot-plugin strategy superseded by the current plugin and visualization governance decisions."
+supersedes: []
+superseded_by: ["ADR-036", "ADR-037"]
+---
 > **Supersession note (2026-03-20):** This ADR is retained as a historical record. Visualization extension and rendering governance authority moved to ADR-037; canonical PlotSpec semantics and validation moved to ADR-036.
 
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-014: Plot Plugin Strategy
 
-Status: Superseded
 Date: 2025-09-16 (updated 2025-10-02)
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: ADR-013-interval-and-plot-plugin-strategy
-Superseded-by: ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-037-visualization-extension-and-rendering-governance
 Related: ADR-006-plugin-registry-trust-model, ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-037-visualization-extension-and-rendering-governance
 
 ## Context

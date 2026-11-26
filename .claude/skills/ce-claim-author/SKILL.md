@@ -1,10 +1,10 @@
 ---
 name: ce-claim-author
 description: >
-  Author or revise CE capability claim files (CE-CAP-AREA-NNN.yaml) in
-  development/capabilities/claims/; use when adding a new capability claim,
-  updating claim status, or linking a claim to new requirements.
+  Create or revise CE capability claims with stable identifiers, scoped status,
+  and requirement links.
 ---
+<!-- Generated from skills/ce-claim-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Claim Author
 

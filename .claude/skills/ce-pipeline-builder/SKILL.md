@@ -4,6 +4,7 @@ description: >
   Build CE-first end-to-end pipelines using WrapCalibratedExplainer with fit,
   calibrate, and explain or predict sequencing.
 ---
+<!-- Generated from skills/ce-pipeline-builder/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Pipeline Builder
 
@@ -17,8 +18,10 @@ for quick reference.
    ```python
    pip install calibrated-explanations
    ```
-2. **Wrapper** — always use `WrapCalibratedExplainer`. Never invent a new wrapper
-   class; never use `CalibratedExplainer` directly in user-facing code.
+2. **Wrapper** — always use `WrapCalibratedExplainer` directly. A subclass is
+   acceptable only when it is an intentional, verified extension preserving the
+   wrapper contract; never invent an ad-hoc wrapper or use
+   `CalibratedExplainer` directly in user-facing workflows.
 3. **Fit** — `explainer.fit(x_proper, y_proper)`.
    Assert `explainer.fitted is True` before proceeding.
 4. **Calibrate** — `explainer.calibrate(x_cal, y_cal)`.
@@ -105,24 +108,9 @@ explanations = explainer.explain_factual(X_query, low_high_percentiles=(10, 90))
 explanations = explainer.explain_factual(X_query, threshold=my_threshold)
 ```
 
-## Using `ce_agent_utils` helpers
+## Direct public API only
 
-Prefer the validated helpers from `src/calibrated_explanations/ce_agent_utils.py`
-for end-to-end pipelines in agent code:
-
-```python
-from calibrated_explanations.ce_agent_utils import (
-    ensure_ce_first_wrapper,
-    fit_and_calibrate,
-    explain_and_narrate,
-    wrap_and_explain,
-)
-
-# Full pipeline in one call:
-explanations = wrap_and_explain(
-    model, x_proper, y_proper, x_cal, y_cal, X_query
-)
-```
+Use `WrapCalibratedExplainer` and the documented public CE API directly.
 
 ## Decision: `explain_factual` vs `explain_factual(..., guarded_options=GuardedOptions())`
 

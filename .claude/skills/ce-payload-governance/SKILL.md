@@ -4,6 +4,7 @@ description: >
   Validate explanation payload schemas, metadata and provenance fields, and ADR-005
   and ADR-028 governance invariants.
 ---
+<!-- Generated from skills/ce-payload-governance/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Payload and Governance
 

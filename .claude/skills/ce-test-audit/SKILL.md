@@ -4,6 +4,7 @@ description: >
   Audit existing tests for ADR-030 anti-patterns, redundancy risk, and compliance
   with repository test standards.
 ---
+<!-- Generated from skills/ce-test-audit/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Test Audit
 

@@ -4,6 +4,7 @@ description: >
   Implement ADR-011 deprecation and removal workflows with correct warnings,
   migration notes, and release timeline handling.
 ---
+<!-- Generated from skills/ce-deprecation/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Deprecation & Mitigation
 

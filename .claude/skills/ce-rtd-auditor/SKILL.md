@@ -5,6 +5,7 @@ description: >
   or standards consistency.
 model: haiku
 ---
+<!-- Generated from skills/ce-rtd-auditor/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE RTD Auditor
 
@@ -25,7 +26,7 @@ Load `references/rtd_audit_checklist.md` before producing findings.
 
 ```bash
 rg --files docs
-rg -n "{doc}|toctree|WrapCalibratedExplainer|ce_agent_utils" docs
+rg -n "{doc}|toctree|WrapCalibratedExplainer" docs
 ```
 
 2. Validate navigation and discoverability:
@@ -33,7 +34,7 @@ rg -n "{doc}|toctree|WrapCalibratedExplainer|ce_agent_utils" docs
 - page title and sectioning are clear and stable
 
 3. Validate technical correctness:
-- examples use public API (`WrapCalibratedExplainer`, `ce_agent_utils`)
+- examples use `WrapCalibratedExplainer` and the documented public CE API directly
 - no private-member guidance
 - uncertainty semantics and CE-first lifecycle are consistent
 

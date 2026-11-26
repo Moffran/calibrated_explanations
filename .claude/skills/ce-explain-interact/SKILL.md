@@ -4,6 +4,7 @@ description: >
   Post-process CE explanations by narrating, plotting, inspecting rules, filtering
   features, and managing conjunctions.
 ---
+<!-- Generated from skills/ce-explain-interact/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Explain Interact
 

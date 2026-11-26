@@ -1,15 +1,20 @@
+---
+id: "ADR-022"
+title: "Documentation Information Architecture"
+status: "superseded"
+description: "Historical documentation information architecture superseded by the engineering standard for audience-focused documentation."
+supersedes: []
+superseded_by: ["STD-004"]
+---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-022: Documentation Information Architecture
 
 > **Note:** This ADR has been superseded by :doc:`../standards/STD-004-documentation-audience-standard`. Do not use for new documentation.
 
-Status: Superseded
 Date: 2025-10-12
 Deciders: Documentation Working Group
 Reviewers: Core maintainers
-Supersedes: None
-Superseded-by: ADR-027-documentation-standard (renamed as STD-004-documentation-audience-standard)
 
 ## Context
 

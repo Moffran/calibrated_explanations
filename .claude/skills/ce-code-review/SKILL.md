@@ -4,6 +4,7 @@ description: >
   Review code changes for CE coding standards, ADR conformance, and behavior or API
   regression risk.
 ---
+<!-- Generated from skills/ce-code-review/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Code Review
 
@@ -21,7 +22,9 @@ Load `references/review_dimensions.md` for full dimension details with code exam
 3. **Future annotations** — REQUIRED: every `.py` file starts with `from __future__ import annotations`.
 4. **Docstrings (Numpy style)** — REQUIRED: `Parameters` -> `Returns` -> `Raises` -> `Notes` -> `Examples`.
 5. **Exception handling (ADR-002)** — REQUIRED: use CE exception hierarchy, not bare `ValueError`.
-6. **Fallback visibility** — CRITICAL: every fallback needs `_LOGGER.info()` + `warnings.warn(UserWarning)`.
+6. **Fallback visibility** — CRITICAL: user-visible fallbacks need
+   `_LOGGER.info()` + `warnings.warn(UserWarning)`; any internal exception must
+   match a registered site in `check_warning_policy.py`.
 7. **Type hints** — REQUIRED: avoid `Any` without documented reason; prefix private with `_`.
 8. **Deprecation (ADR-011)** — REQUIRED: use `deprecate()` helper; 2 minor releases before removal.
 9. **CE-First compliance** — public methods return calibrated types; assert fitted + calibrated.
@@ -32,7 +35,7 @@ Load `references/review_dimensions.md` for full dimension details with code exam
 
 ```bash
 make local-checks-pr               # fast required checks
-make local-checks                  # full checks (only needed for main-branch gates)
+make local-checks-full             # full checks (only for maintainer-requested final validation)
 pre-commit run --all-files         # linting, ruff, mypy subset
 ```
 

@@ -1,10 +1,11 @@
 ﻿---
 name: ce-skill-audit
 description: >
-  Audit the skills catalog for frontmatter quality, trigger precision, structural
-  hygiene, and registry synchronization.
+  Audit the canonical skills catalog for frontmatter quality, trigger precision,
+  structural hygiene, and generated-index consistency.
 model: haiku
 ---
+<!-- Generated from skills/ce-skill-audit/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Skill Audit
 
@@ -19,8 +20,8 @@ Load these references first:
 1. Inventory skills and required files:
 
 ```bash
-Get-ChildItem .claude/skills -Directory | Select-Object -ExpandProperty Name
-rg --files .claude/skills
+Get-ChildItem skills -Directory | Select-Object -ExpandProperty Name
+rg --files skills
 ```
 
 2. Structural checks (per skill):
@@ -36,7 +37,7 @@ rg --files .claude/skills
 - description length and style pass the strict checker:
 
 ```bash
-pwsh .claude/skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
+pwsh skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
 ```
 
 4. Content organization checks:
@@ -46,11 +47,13 @@ pwsh .claude/skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
 - phrase-heavy trigger synonyms are extracted to references (not embedded in
   frontmatter descriptions)
 
-5. Registry consistency checks:
-- `CONTRIBUTOR_INSTRUCTIONS.md` section 6A
-- `.claude/skills/ce-onboard/SKILL.md` section 4
+5. Generated-index consistency checks:
+- `python scripts/quality/sync_instruction_indexes.py --check`
+- `make skills-check` (generated `.claude/skills/` and `.agents/skills/`
+  packages match `skills/`)
+- `skills/README.md`
 - `docs/contributor/agent_skills.md`
-- filesystem set equality must hold
+- canonical filesystem and both generated indexes represent the same set
 
 ## Output contract
 
@@ -69,4 +72,4 @@ Each finding must include:
 ## Constraints
 
 - Do not propose evaluation-skill additions in this audit.
-- Do not mark audit complete while registries and filesystem differ.
+- Do not mark audit complete while generated indexes and the filesystem differ.

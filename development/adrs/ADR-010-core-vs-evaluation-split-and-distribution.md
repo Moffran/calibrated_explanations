@@ -1,18 +1,18 @@
-> **Active scope:** Governing architectural decision for the boundary between
-> the `calibrated_explanations` core distribution and separately maintained
-> evaluation or visualization capabilities. The 2026-07-24 addendum records
-> the current companion-repository distribution.
-
+---
+id: "ADR-010"
+title: "Core vs Evaluation Split & Distribution Strategy"
+status: "accepted"
+description: "Governing architectural decision for the boundary between the `calibrated_explanations` core distribution and separately maintained evaluation or visualization capabilities. The 2026-07-24 addendum records the current companion-repository distribution."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-01-28):** Last edited 2026-01-28 · Archive after: Retain indefinitely as architectural record · Implementation window: Completed in v0.11.0.
 
 # ADR-010: Core vs Evaluation Split & Distribution Strategy
 
-Status: Accepted (completed in v0.11.0)
 Date: 2025-09-02
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

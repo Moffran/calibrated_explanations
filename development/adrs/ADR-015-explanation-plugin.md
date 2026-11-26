@@ -1,16 +1,20 @@
-> **Active scope:** Governing architectural decision for the `ExplainerHandle`/`PredictBridge` explanation plugin contract. The `ExplainerHandle.learner` deprecation (v0.11.3) and removal (v1.0.0) are implementation milestones within this ADR's lifecycle.
-
+---
+id: "ADR-015"
+title: "Explanation Plugin Architecture"
+status: "accepted"
+description: "Governing architectural decision for the `ExplainerHandle`/`PredictBridge` explanation plugin contract. The `ExplainerHandle.learner` deprecation (v0.11.3) and removal (v1.0.0) are implementation milestones within this ADR's lifecycle."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-015 — Explanation Plugin Architecture
 
-Status: Accepted
 
 Date: 2025-10-05
 
 Authors: Core maintainers
 
-Supersedes: N/A
 
 Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-037-visualization-extension-and-rendering-governance, ADR-026-explanation-plugin-semantics
 

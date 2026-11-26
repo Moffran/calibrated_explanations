@@ -1,11 +1,10 @@
 ---
 name: ce-test-quality-method
 description: >
-  Orchestrate end-to-end ADR-030 test-quality remediation by routing work across
-  specialist skills (ce-test-pruning-expert, ce-test-creator, ce-test-audit,
-  ce-code-quality-auditor, ce-deadcode-hunter, ce-devils-advocate) using the Test
-  Quality Method with Option A/B/C focus selection.
+  Coordinate ADR-030 remediation across specialist audit, pruning, test, and
+  implementation skills.
 ---
+<!-- Generated from skills/ce-test-quality-method/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Test Quality Method
 

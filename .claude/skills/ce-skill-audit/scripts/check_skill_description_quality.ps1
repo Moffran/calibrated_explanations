@@ -1,5 +1,5 @@
 param(
-    [string]$Root = ".claude/skills",
+    [string]$Root = "skills",
     [int]$MinLength = 70,
     [int]$MaxLength = 160,
     [int]$MaxCommas = 4

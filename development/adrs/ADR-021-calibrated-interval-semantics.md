@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for prediction interval semantic definitions (`low`, `high`, `predict`, coverage semantics). Remains active as long as these semantics govern calibration output interpretation; superseded when interval semantics are revised.
-
+---
+id: "ADR-021"
+title: "Calibrated Interval Semantics"
+status: "accepted"
+description: "Governing architectural decision for prediction interval semantic definitions (`low`, `high`, `predict`, coverage semantics). Remains active as long as these semantics govern calibration output interpretation; superseded when interval semantics are revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-11-07):** Amended §2/§4/§4b for unbounded one-sided CPS endpoints and percentile-scoped checks (#237), following the #247 amendment; §3 instance-wise threshold scorer amended 2026-10-15 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-021: Calibrated Interval Semantics
 
-Status: Accepted (with documented un-contracted constraints)
 Date: 2026-03-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 Related: ADR-006, ADR-008, ADR-013, ADR-015
 
 ## Context

@@ -4,6 +4,7 @@ description: >
   Handle CE classification workflows for binary and multiclass prediction semantics
   and class-focused explanation behavior.
 ---
+<!-- Generated from skills/ce-classification/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Classification
 

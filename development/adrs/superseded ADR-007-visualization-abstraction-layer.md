@@ -1,15 +1,20 @@
+---
+id: "ADR-007"
+title: "Visualization Abstraction Layer"
+status: "superseded"
+description: "Historical visualization abstraction-layer decision superseded by the canonical PlotSpec and visualization-governance records."
+supersedes: []
+superseded_by: ["ADR-036", "ADR-037"]
+---
 > **Supersession note (2026-03-20):** This ADR is retained as a historical record. Canonical PlotSpec contract and validation authority moved to ADR-036. Visualization extension and rendering governance moved to ADR-037.
 
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-007: Visualization Abstraction Layer
 
-Status: Superseded
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-037-visualization-extension-and-rendering-governance
 
 ## Context
 

@@ -1,133 +1,49 @@
 ﻿---
 name: ce-adr-consult
 description: >
-  Map a proposed change to governing ADRs and constraints before implementation; use
-  for ADR applicability and conflict checks.
+  Map a proposed change to governing ADRs and constraints before implementation;
+  use for ADR applicability and conflict checks.
 model: haiku
 ---
+<!-- Generated from skills/ce-adr-consult/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE ADR Consult
 
-You are identifying which ADRs govern a proposed change and extracting their
-binding constraints. ADR decisions take precedence over the active version
-plan whenever they conflict (execution-plan.instructions.md).
+Identify the accepted ADRs and engineering standards that govern a proposed
+change. An ADR takes precedence over the active plan, a skill, and contributor
+workflow guidance.
 
-ADRs live in `development/adrs/`. Superseded ADRs are prefixed with
-`superseded ` and should not be consulted for new work.
+## Consultation workflow
 
----
+1. Read `development/adrs/README.md`, which is generated from canonical metadata.
+2. Search its titles and applicability descriptions for the proposed behavior,
+   boundary, or lifecycle change.
+3. Treat `accepted` records in the active section as governing. Treat `proposed`
+   records as non-final; `superseded` and `withdrawn` records are historical.
+4. Read the selected ADR source, especially its `Decision`, `Normative`, or
+   equivalently binding section and its consequences.
+5. Repeat with `development/standards/README.md` for engineering and quality
+   requirements.
+6. Check the active version plan only after identifying the governing records.
+   A plan row cannot override a binding decision.
+7. Validate supersession links and status in the metadata before relying on a
+   historical record.
 
-## Quick lookup by change type
+Do not maintain a topic-to-ADR table in this skill. The generated index is the
+single discovery inventory, and the ADR source remains normative.
 
-| Changing / implementing | Governing ADR(s) |
-|---|---|
-| Module / package boundaries | ADR-001 |
-| Exception types or validation | ADR-002 |
-| Caching (key design, eviction) | ADR-003 |
-| Parallel execution / fallback | ADR-004 |
-| Explanation payload schema / JSON | ADR-005 |
-| Plugin registration / trust | ADR-006, ADR-033 |
-| PlotSpec / visualization IR | ADR-007, ADR-016 |
-| Explanation domain model | ADR-008 |
-| Input preprocessing / mapping | ADR-009 |
-| Evaluation vs core split | ADR-010 |
-| Deprecation or migration | ADR-011 |
-| Documentation build | ADR-012 |
-| Interval calibrator plugin | ADR-013 |
-| Plot plugin | ADR-014 |
-| Explanation plugin | ADR-015, ADR-026 |
-| PlotSpec schema versioning | ADR-016 |
-| Legacy user API changes | ADR-020 |
-| Calibrated intervals / semantics | ADR-021 |
-| Matplotlib test coverage | ADR-023 |
-| FAST feature filtering | ADR-027 |
-| Logging and observability | ADR-028 |
-| Reject/abstain strategy | ADR-029 |
-| Test quality enforcement | ADR-030 |
-| Serialization / save_state | ADR-031 |
-| Guarded explanations | ADR-032 |
-| Modality extension / packaging | ADR-033 |
+## Required output
 
----
+Return:
 
-## How to consult an ADR
-
-1. Locate the file: `development/adrs/ADR-<NNN>-<slug>.md`
-2. Check `Status:` — skip if `Superseded`.
-3. Read the **Decision** section to extract binding constraints.
-4. Note the **Consequences** section for risk awareness.
-5. Check the active `development/current-work/vX.Y.Z_plan.md`'s
-   `## Included work` table for a row that closes outstanding gaps for this
-   ADR, if any is scheduled for the current release.
-
-```bash
-# List all active (non-superseded) ADRs
-Get-ChildItem development/adrs/*.md | Where-Object Name -NotMatch '^superseded'
-```
-
----
-
-## Key invariants summary (most commonly hit)
-
-### ADR-001 — Core / plugin boundary
-- `core/` must never import from `plugins/`.
-- New functionality → `plugins/`; delegation → via registry in `core/`.
-
-### ADR-002 — Exceptions
-- No bare `Exception` or `ValueError` in public-facing code.
-- Use `calibrated_explanations.utils.exceptions.*`.
-
-### ADR-006 — Plugin trust
-- Third-party plugins: opt-in trust required (`trust_plugin()` / env var / pyproject).
-- Built-ins: auto-trusted.
-
-### ADR-011 — Deprecation
-- Minimum 2 minor releases before removal.
-- Legacy User API (ADR-020) exempt; follows "Major Only" lifecycle.
-
-### ADR-013 — Interval plugin
-- `predict_proba` must delegate to VennAbers/IntervalRegressor reference.
-- `IntervalCalibratorContext` is read-only; plugin must not mutate it.
-
-### ADR-021 — Interval semantics
-- Invariant: `low ≤ predict ≤ high` must always hold.
-
-### ADR-023 — Matplotlib exemption
-- `viz/matplotlib_adapter.py` is excluded from coverage reporting.
-- Tests run normally with `pytest --no-cov -m viz`.
-
-### ADR-030 — Test quality
-- Coverage gate: 90%+ (excluding ADR-023 exemption).
-- Naming: `test_should_<behavior>_when_<condition>`.
-
-### ADR-031 — Serialization
-- All calibrators must implement `to_primitive()` / `from_primitive()`.
-- `schema_version` mandatory; fail-fast on incompatible version.
-
-### ADR-032 — Guarded explanations
-- Use `explain_factual(..., guarded_options=GuardedOptions())` / `explore_alternatives(..., guarded_options=GuardedOptions())` for unknown distributions.
-- Import: `from calibrated_explanations.explanations.guarded_options import GuardedOptions`
-- `guarded=True` kwarg was removed in v0.11.5; `explain_guarded_factual` / `explore_guarded_alternatives` were REMOVED in v0.11.3.
-
-### ADR-033 — Modality extension
-- Non-tabular modality code must NOT enter `core/`.
-- `data_modalities` and `plugin_api_version` required in `plugin_meta`.
-
----
+1. the task boundary being evaluated;
+2. applicable accepted ADRs and standards with source paths;
+3. binding constraints extracted from each source;
+4. conflicts, exemptions, or missing decisions;
+5. the implementation consequence and verification command.
 
 ## Conflict resolution
 
-When a version-plan row and an ADR conflict:
-1. The **ADR takes precedence**.
-2. Document the conflict in the PR.
-3. If the plan needs to supersede the ADR, a new ADR or ADR update is required first.
-
----
-
-## Evaluation Checklist
-
-- [ ] All governing ADRs identified for the proposed change.
-- [ ] Status field checked (not `Superseded`).
-- [ ] Decision section read; binding constraints listed.
-- [ ] No ADR constraint violated by the proposed implementation.
-- [ ] Active-plan row (if any) for outstanding gaps noted and respected.
+When a plan and an ADR conflict, the ADR wins. Record the conflict in the
+implementation summary. If a binding decision must change, obtain maintainer
+approval and revise or supersede the ADR before implementing the behavior.

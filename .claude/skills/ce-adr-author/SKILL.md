@@ -5,6 +5,7 @@ description: >
   status transitions, and ADR governance updates.
 model: haiku
 ---
+<!-- Generated from skills/ce-adr-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE ADR Author
 
@@ -32,7 +33,7 @@ Get-ChildItem development/adrs/ADR-*.md |
 3. Copy the template asset to the target file:
 
 ```bash
-Copy-Item .claude/skills/ce-adr-author/assets/adr_template.md `
+Copy-Item skills/ce-adr-author/assets/adr_template.md `
   development/adrs/ADR-<NNN>-<kebab-slug>.md
 ```
 

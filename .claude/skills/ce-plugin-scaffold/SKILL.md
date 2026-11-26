@@ -1,10 +1,10 @@
 ---
 name: ce-plugin-scaffold
 description: >
-  Scaffold interval, explanation, or plot plugins that satisfy registry metadata
-  and trust-model contracts. For non-tabular modalities (vision, audio),
-  use ce-modality-extension instead.
+  Scaffold CE interval, explanation, and plot plugins with valid registry
+  metadata and trust contracts.
 ---
+<!-- Generated from skills/ce-plugin-scaffold/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Plugin Scaffold
 

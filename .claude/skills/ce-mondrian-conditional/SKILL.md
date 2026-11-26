@@ -4,6 +4,7 @@ description: >
   Configure and validate Mondrian and conditional calibration for subgroup-aware
   uncertainty and fairness-sensitive workflows.
 ---
+<!-- Generated from skills/ce-mondrian-conditional/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Mondrian Conditional
 

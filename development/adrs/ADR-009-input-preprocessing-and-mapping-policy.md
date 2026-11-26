@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for feature input validation, categorical encoding, and the calibration-set mapping contract at `CalibratedExplainer` entry points. Remains active as long as this contract governs CE data ingestion; superseded when the policy is revised.
-
+---
+id: "ADR-009"
+title: "Input Preprocessing & Mapping Persistence Policy"
+status: "accepted"
+description: "Governing architectural decision for feature input validation, categorical encoding, and the calibration-set mapping contract at `CalibratedExplainer` entry points. Remains active as long as this contract governs CE data ingestion; superseded when the policy is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-09-04):** Last edited 2026-09-04 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-009: Input Preprocessing & Mapping Persistence Policy
 
-Status: Accepted
 Date: 2025-08-22
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

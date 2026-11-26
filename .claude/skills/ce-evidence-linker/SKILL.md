@@ -1,11 +1,10 @@
 ---
 name: ce-evidence-linker
 description: >
-  Generate, curate, and validate CE capability evidence records linking
-  test execution results to TIFs, requirements, and claims; use when
-  closing a verification chain step, producing curated evidence summaries,
-  or diagnosing coverage gaps in development/capabilities/evidence/.
+  Curate CE verification evidence linking claims, requirements, TIFs, and
+  concrete test results.
 ---
+<!-- Generated from skills/ce-evidence-linker/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Evidence Linker
 

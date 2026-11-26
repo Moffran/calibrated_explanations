@@ -5,6 +5,7 @@ description: >
   development step.
 model: haiku
 ---
+<!-- Generated from skills/ce-release-check/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Release Check
 

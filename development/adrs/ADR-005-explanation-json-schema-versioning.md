@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the versioned JSON schema contract for explanation payloads. Remains active as long as the JSON schema governs serialization output; superseded when the schema versioning policy is revised.
-
+---
+id: "ADR-005"
+title: "Explanation JSON Schema Versioning"
+status: "accepted"
+description: "Governing architectural decision for the versioned JSON schema contract for explanation payloads. Remains active as long as the JSON schema governs serialization output; superseded when the schema versioning policy is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-02-02):** Last edited 2026-02-02 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.10.3 (validation enforcement)
 
 # ADR-005: Explanation JSON Schema Versioning
 
-Status: Accepted (enforcement in v0.10.3)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

@@ -1,10 +1,15 @@
-> **Active scope:** Governing architectural decision for the matplotlib test-coverage exemption policy and `# pragma: no cover` boundaries for rendering code. Remains active as long as the coverage gate includes matplotlib exemptions; superseded when the exemption policy is revised.
-
+---
+id: "ADR-023"
+title: "Matplotlib Adapter Coverage Exemption"
+status: "accepted"
+description: "Governing architectural decision for the matplotlib test-coverage exemption policy and `# pragma: no cover` boundaries for rendering code. Remains active as long as the coverage gate includes matplotlib exemptions; superseded when the exemption policy is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-023: Matplotlib Adapter Coverage Exemption
 
-**Status:** Accepted
 **Date:** 2025-10-17
 **Authors:** Core team
 **Context:** v0.8.0 test infrastructure stabilization
@@ -57,14 +62,13 @@ AttributeError: module 'matplotlib' has no attribute 'artist'
 
 ### Implementation
 
-Modified `.coveragerc`:
+Set the omission in `pyproject.toml`:
 
-```ini
-omit =
-    # ... existing omissions ...
-    # Exclude viz adapter from coverage due to matplotlib lazy loading conflicts
-    # with pytest-cov instrumentation. See ADR-023 for rationale.
-    src/calibrated_explanations/viz/matplotlib_adapter.py
+```toml
+[tool.coverage.run]
+omit = [
+    "src/calibrated_explanations/viz/matplotlib_adapter.py",
+]
 ```
 
 ## Consequences

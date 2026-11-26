@@ -1,5 +1,11 @@
-> **Active scope:** Engineering standard for the 90% coverage gate, coverage configuration, and `# pragma: no cover` annotation policy. Remains active as long as the coverage standard governs CE test strategy; revised when the coverage policy is updated.
-
+---
+id: "STD-003"
+title: "Test Coverage Standardization"
+status: "active"
+description: "Engineering standard for the 90% coverage gate, coverage configuration, and `# pragma: no cover` annotation policy. Remains active as long as the coverage standard governs CE test strategy; revised when the coverage policy is updated."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2025-12-22):** Last edited 2025-12-22 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).
 
 # Standard-003: Test Coverage Standardization
@@ -7,48 +13,33 @@
 Formerly ADR-019. Reclassified as an engineering standard to keep ADRs scoped to
 architectural or contract decisions.
 
-Status: Active
 Date: 2025-10-06
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 
-Pytest is the primary regression harness for the package, yet neither local defaults nor
-continuous integration enforce minimum coverage. `pytest.ini` runs tests quietly without
-loading `pytest-cov`, while the CI workflow executes `pytest --cov=src/calibrated_explanations`
-without a `--cov-fail-under` threshold. Contributors are asked to target roughly 90% coverage,
-with reports uploaded to Codecov, but there is no guardrail preventing significant regressions.
-Legacy runtime modules (for example `core.interval_regressor`) remain effectively untested, so
-confidence in calibration guarantees erodes as the code evolves.【F:pytest.ini†L1-L17】【F:.github/workflows/test.yml†L33-L49】【F:CONTRIBUTING.md†L49-L58】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】
+Pytest remains the regression harness. Coverage configuration is owned by
+`pyproject.toml`; the canonical command is `make test-cov`, while
+`make local-checks-full` and the main-branch CI coverage job enforce the
+repository threshold. The PR profile runs the required behavioral suite without
+repeating the heavier main-only coverage run.
 
 ## Decision
 
 Adopt a layered coverage policy that couples numeric targets with risk-based exceptions,
 while right-sizing enforcement for OSS development:
 
-- **Package-wide floor:** Target **90% statement coverage** across
-  `src/calibrated_explanations`. OSS/mainline CI reports the percentage but does not block.
-  Release/stable branches enforce `--cov-fail-under=90`.
+- **Package-wide floor:** Enforce **90% statement coverage** across
+  `src/calibrated_explanations` through `pyproject.toml`, `make test-cov`, the
+  full local profile, and the main-branch CI coverage job.
 - **Critical paths:** Target **95% coverage** on calibrated prediction helpers, interval
-  regression, serialization, and plugin registries. OSS/mainline CI reports per-path coverage;
-  release/stable branches enforce via `coverage report --fail-under` per-path configuration.
-- **Change-based gating:** Add a `coverage xml` step and integrate the Codecov “patch coverage”
-  gate at **≥88%** for modified lines/files. This is advisory on OSS/mainline and blocking on
-  release/stable branches. Pull requests that lower patch coverage below the threshold must
-  justify waivers in the review checklist.
-- **Parity reference harness:** Maintain canonical parity fixtures (factual, alternatives, fast,
-  predictions) under `tests/parity_reference/` and require the parity harness job to pass in CI.
-  The canonical harness entrypoint is `tests/parity_reference/run_parity_reference.py`; run it locally with::
-
-      python tests/parity_reference/run_parity_reference.py --dataset <classification|regression|multiclass|probabilistic_regression>
-
-  Use `--update` to refresh golden fixtures after intentional changes to explanation outputs. This harness is the canonical regression gate for OSS parity checks.
-- **Documented exemptions:** Generated code, visualization golden files, and deprecated
-  shims can be excluded via `.coveragerc` with explicit comments that describe the rationale
-  and expiry date.
+  regression, serialization, and plugin registries. The repository-owned
+  `scripts/quality/check_coverage_gates.py` verifies scoped gates from
+  `coverage.xml`.
+- **Documented exemptions:** Coverage omissions live in `pyproject.toml` and
+  require a documented rationale. ADR-023 owns the matplotlib-adapter
+  instrumentation exemption; do not create a separate `.coveragerc`.
 - **Public API guardrails:** Coverage thresholds MUST continue to exercise the
   WrapCalibratedExplainer contract (fit/calibrate/explain/predict flows,
   plotting helpers, uncertainty/threshold options). No part of the published
@@ -79,43 +70,22 @@ Negative/Risks:
 
 ## Adoption & Migration
 
-1. Land this ADR and announce during contributor sync and release notes.
-2. Introduce a shared `.coveragerc` that encodes thresholds and named exemptions.
-3. Update CI (`test.yml`) to run `pytest --cov=src/calibrated_explanations --cov-report=xml \
-   --cov-report=term` and pass the XML to Codecov with patch gating enabled; enforce
-   `--cov-fail-under=90` and per-path fail-under only on release/stable branches.
-4. Add a `make test-cov` (or invoke via `tox` target) so developers can trigger the same checks
-   locally; ensure the dev extra installs `pytest-cov` by default.
-5. Complete remediation tasks outlined in the coverage improvement plan so that historical debt
-   does not block adoption.
+1. Keep coverage settings in `pyproject.toml`.
+2. Keep the local entry points in `Makefile` and `scripts/local_checks.py`.
+3. Keep the main-only CI coverage command aligned with those settings.
+4. Review additions to `[tool.coverage.run].omit` as documented exceptions.
+5. Run `make test-cov` before changing a coverage threshold or exemption.
 
 ## Open Questions
 
-- **Cadence:** Review and prune `.coveragerc` exemptions during the planning phase of each minor release (e.g., v0.10.0, v0.11.0).
+- **Cadence:** Review and prune `pyproject.toml` omissions during release planning.
 - **Subpackage Thresholds:** The critical-path list defined in the Decision section is sufficient for v1.0.0. Subpackage-specific thresholds are deferred to avoid excessive configuration maintenance.
 - **Mutation Testing:** Defer to v0.11+ or later. While valuable, it is not a blocking requirement for v1.0.0 stability.
 
 ## Implementation Status
 
-- 2025-10-06 – ADR accepted alongside the coverage remediation plan and
-  baseline assessment.
-- v0.6.x – `.coveragerc` drafted with provisional exemptions and
-  baseline metrics recorded to shape the remediation backlog while CI
-  continues to run without fail-under gates.
-- v0.7.0 – CI introduces `--cov-fail-under=80` with exit-zero preview
-  reports, coverage dashboards are published, and contributor templates
-  document the waiver workflow.
-- v0.8.0 – Critical-path modules (`core`, calibration, serialization,
-  registry) are raised to ≥95% coverage, Codecov patch gating at ≥85%
-  is advisory on mainline, and local tooling (`make test-cov`) mirrors
-  the CI workflow.
-- v0.9.0 – Package-wide floor raised to ≥88%, waiver inventory trimmed,
-  Codecov patch gating tightened to ≥88%, and coverage enforcement is
-  blocking on release branches per the milestone gate while remaining
-  advisory on mainline.
-- v1.0.0-rc – CI enforces the final ≥90% package floor on release
-  branches, coverage dashboards become part of the release checklist,
-  and branch protection rules require green coverage jobs before freeze.
-- v1.0.0 – Stable release maintains ≥90% gating with scheduled audits of
-  exemptions and telemetry-driven monitoring to detect regressions ahead
-  of v1.0.x maintenance updates.
+- 2025-10-06 – Standard accepted with a staged coverage-remediation objective.
+- v1.0.0 – `pyproject.toml` owns the 90% floor; local and CI entry points use
+  the same configuration.
+- Current – main-branch coverage and scoped module gates are blocking; PR
+  behavior validation remains in the canonical `local-checks-pr` profile.

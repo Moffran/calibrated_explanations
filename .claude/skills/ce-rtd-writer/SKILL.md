@@ -5,6 +5,7 @@ description: >
   correct toctree integration.
 model: haiku
 ---
+<!-- Generated from skills/ce-rtd-writer/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE RTD Writer
 
@@ -24,7 +25,7 @@ Use this skill when adding or rewriting docs pages under `docs/`.
 2. Start from template:
 
 ```bash
-Copy-Item .claude/skills/ce-rtd-writer/assets/rtd_page_template.md `
+Copy-Item skills/ce-rtd-writer/assets/rtd_page_template.md `
   docs/<target>/<new-page>.md
 ```
 

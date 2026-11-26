@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for backward-compatibility guarantees on the public `WrapCalibratedExplainer` and `CalibratedExplainer` API through v1.0.0. Moves to `finished-work` after v1.0.0 GA when the stability contract transitions to a post-GA maintenance policy.
-
+---
+id: "ADR-020"
+title: "Legacy User API Stability Guardrails"
+status: "accepted"
+description: "Governing architectural decision for backward-compatibility guarantees on the public `WrapCalibratedExplainer` and `CalibratedExplainer` API through v1.0.0. Moves to `finished-work` after v1.0.0 GA when the stability contract transitions to a post-GA maintenance policy."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-03-03):** Last edited 2026-03-03 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-020: Legacy User API Stability Guardrails
 
-Status: Accepted
 Date: 2025-10-07
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

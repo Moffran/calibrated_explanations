@@ -1,5 +1,11 @@
-> **Active scope:** Engineering standard for `_LOGGER` usage, logging domain conventions, and warning classification rules. Companion to ADR-028; remains active as long as these conventions govern CE observability; revised when the logging standard is updated.
-
+---
+id: "STD-005"
+title: "Logging and Observability"
+status: "accepted"
+description: "Engineering standard for `_LOGGER` usage, logging domain conventions, and warning classification rules. Companion to ADR-028; remains active as long as these conventions govern CE observability; revised when the logging standard is updated."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-01-15):** Last edited 2026-01-15 · Archive after: Retain indefinitely as an engineering standard · Implementation window: v0.10.2 and onwards.
 
 # Standard-005: Logging and Observability
@@ -7,7 +13,6 @@
 Formerly part of an ad-hoc logging practice. Reclassified and consolidated as an
 engineering standard so ADRs can focus on architectural and contract decisions.
 
-Status: Accepted (2026-01-15) — to be enforced starting with the v0.10.2 milestone.
 
 ## 1. Purpose
 

@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for visualization extension contracts, renderer dispatch, and the matplotlib adapter boundary. Remains active as long as these contracts govern CE visualization plugins; superseded when the rendering governance is revised.
-
+---
+id: "ADR-037"
+title: "Visualization Extension and Rendering Governance"
+status: "accepted"
+description: "Governing architectural decision for visualization extension contracts, renderer dispatch, and the matplotlib adapter boundary. Remains active as long as these contracts govern CE visualization plugins; superseded when the rendering governance is revised."
+supersedes: ["ADR-007", "ADR-014", "ADR-016"]
+superseded_by: []
+---
 > **Status note (2026-05-15):** Last edited 2026-05-15 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.1+. v0.11.3 Task 6 promotes PlotSpec to the default user-facing plotting path while keeping runtime plot-kind extension disabled.
 
 # ADR-037: Visualization Extension and Rendering Governance
 
-Status: Accepted
 Date: 2026-03-20
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: ADR-007-visualization-abstraction-layer, ADR-014-plot-plugin-strategy, ADR-016-plot-spec-separation
-Superseded-by: None
 Related: ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-006-plugin-registry-trust-model, ADR-023-matplotlib-coverage-exemption
 
 ## Context

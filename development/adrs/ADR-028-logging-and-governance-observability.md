@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for logging domain taxonomy, fallback visibility rules (`_LOGGER.info` + `warnings.warn`), and the `check_warning_policy` governance gate. Remains active as long as these rules govern CE observability; superseded when the logging policy is revised.
-
+---
+id: "ADR-028"
+title: "Logging and Governance Observability"
+status: "accepted"
+description: "Governing architectural decision for logging domain taxonomy, fallback visibility rules (`_LOGGER.info` + `warnings.warn`), and the `check_warning_policy` governance gate. Remains active as long as these rules govern CE observability; superseded when the logging policy is revised."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-03-03):** Last edited 2026-03-03 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.10.2–v1.0.0.
 
 # ADR-028: Logging and Governance Observability
 
-Status: Accepted
 Date: 2026-01-05
 Deciders: Runtime & Governance maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

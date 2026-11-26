@@ -4,6 +4,7 @@ description: >
   Author tests that verify fallback visibility through opt-in fixtures, warning
   assertions, and INFO log side effects.
 ---
+<!-- Generated from skills/ce-fallback-test/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Fallback Test
 
@@ -61,7 +62,9 @@ with pytest.warns(UserWarning, match="fallback"):
 
 ## INFO Log Side-Effect (mandatory per Fallback Visibility Policy)
 
-Every fallback must also emit an INFO log. Assert it when testable:
+Every user-visible fallback must also emit an INFO log. Assert it when testable;
+for registered logger-only or fail-closed exceptions, follow the dedicated
+policy disposition instead.
 
 ```python
 import logging
