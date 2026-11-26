@@ -4,6 +4,7 @@ description: >
   Configure and interpret CE regression intervals for percentile conformal and
   thresholded probabilistic modes.
 ---
+<!-- Generated from skills/ce-regression-intervals/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Regression Intervals
 

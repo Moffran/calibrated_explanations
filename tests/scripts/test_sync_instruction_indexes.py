@@ -50,7 +50,7 @@ Example.
 """,
     )
     _write(
-        root / ".claude/skills/ce-example/SKILL.md",
+        root / "skills/ce-example/SKILL.md",
         """---
 name: ce-example
 description: >-
@@ -82,7 +82,7 @@ def test_should_generate_all_indexes_when_write_runs(tmp_path: Path) -> None:
         for path, expected_text in {
             "development/adrs/README.md": "ADR-001",
             "development/standards/README.md": "STD-001",
-            ".claude/skills/README.md": "ce-example",
+            "skills/README.md": "ce-example",
             "docs/contributor/agent_skills.md": "ce-example",
         }.items()
     )
@@ -94,7 +94,7 @@ def test_should_reflect_source_changes_when_write_runs(tmp_path: Path) -> None:
     _write_source_tree(tmp_path)
     assert main(["--root", str(tmp_path), "--write"]) == 0
     _write(
-        tmp_path / ".claude/skills/ce-second/SKILL.md",
+        tmp_path / "skills/ce-second/SKILL.md",
         """---
 name: ce-second
 description: New source record.
@@ -111,8 +111,8 @@ description: New source record.
         ),
         encoding="utf-8",
     )
-    (tmp_path / ".claude/skills/ce-example/SKILL.md").unlink()
-    (tmp_path / ".claude/skills/ce-example").rmdir()
+    (tmp_path / "skills/ce-example/SKILL.md").unlink()
+    (tmp_path / "skills/ce-example").rmdir()
 
     # Act
     exit_code = main(["--root", str(tmp_path), "--write"])
@@ -120,7 +120,7 @@ description: New source record.
     # Assert
     generated = _generated_contents(tmp_path)
     assert exit_code == 0
-    assert "ce-second" in generated[".claude/skills/README.md"]
+    assert "ce-second" in generated["skills/README.md"]
     assert "ce-example" not in generated["docs/contributor/agent_skills.md"]
     assert "Updated applicability description." in generated["development/standards/README.md"]
 
@@ -198,7 +198,7 @@ superseded_by: []
             "description",
         ),
         (
-            ".claude/skills/ce-invalid/SKILL.md",
+            "skills/ce-invalid/SKILL.md",
             """---
 name: ce-other
 description: The name does not match the directory.
@@ -284,7 +284,7 @@ def test_should_reject_skill_directory_without_canonical_source(tmp_path: Path) 
     """Every canonical skill directory must contain a SKILL.md source."""
     # Arrange
     _write_source_tree(tmp_path)
-    (tmp_path / ".claude/skills/ce-incomplete").mkdir()
+    (tmp_path / "skills/ce-incomplete").mkdir()
 
     # Act
     exit_code = main(["--root", str(tmp_path), "--check"])

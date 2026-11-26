@@ -53,9 +53,12 @@ check-private-members:
 check-agent-instructions:
 	python scripts/quality/check_agent_instruction_consistency.py
 
-.PHONY: check-skill-mirrors
-check-skill-mirrors:
-	python scripts/quality/check_skill_mirror_sync.py --strict
+.PHONY: skills-sync skills-check
+skills-sync:
+	python scripts/quality/sync_skill_packages.py --write
+
+skills-check:
+	python scripts/quality/sync_skill_packages.py --check
 
 .PHONY: instruction-index-sync instruction-index-check
 instruction-index-sync:

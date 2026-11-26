@@ -4,6 +4,7 @@ description: >
   Audit save and load behavior for ADR-031 schema contracts, invariants, and
   round-trip safety.
 ---
+<!-- Generated from skills/ce-serialization-audit/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Serialization Audit
 

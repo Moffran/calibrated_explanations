@@ -4,6 +4,7 @@ description: >
   Author or extend PlotSpec-based visualizations with validated IR contracts and
   backend-agnostic rendering.
 ---
+<!-- Generated from skills/ce-plotspec-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE PlotSpec Author
 

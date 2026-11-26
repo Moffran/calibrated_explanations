@@ -37,9 +37,7 @@ prediction or explanation output:
 
 ## Direct public API
 
-New agent implementations call the wrapper lifecycle directly.
-`src/calibrated_explanations/ce_agent_utils.py` remains available for legacy
-integrations, not as an implementation shortcut.
+Use `WrapCalibratedExplainer` and the documented public CE API directly.
 
 ## Architecture Constraint
 
@@ -48,11 +46,9 @@ Core never imports plugins (ADR-001). Every new feature goes into `plugins/`.
 
 ## Failure Messages
 
-```python
-CE_FIRST_POLICY["failure_messages"] = {
-    "missing_library": "calibrated_explanations is required. Install with: pip install calibrated-explanations",
-    "invalid_wrapper": "Wrapper must be WrapCalibratedExplainer or a verified subclass from calibrated_explanations.",
-    "not_fitted": "Wrapper must be fitted before calibration or explanation.",
-    "not_calibrated": "Wrapper must be calibrated before prediction or explanation.",
-}
-```
+| Condition | Message |
+|---|---|
+| Library missing | calibrated_explanations is required. Install with: pip install calibrated-explanations |
+| Invalid wrapper | Wrapper must be WrapCalibratedExplainer or a verified subclass from calibrated_explanations. |
+| Not fitted | Wrapper must be fitted before calibration or explanation. |
+| Not calibrated | Wrapper must be calibrated before prediction or explanation. |

@@ -4,6 +4,7 @@ description: >
   Validate and preprocess input data for CE pipelines, handle mixed types and
   categorical features, and configure encoding per ADR-002 and ADR-009.
 ---
+<!-- Generated from skills/ce-data-preparation/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Data Preparation
 

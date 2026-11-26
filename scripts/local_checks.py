@@ -725,7 +725,18 @@ def _changed_python_targets() -> list[str]:
         return default_targets
 
     commands = [
-        [git, "diff", "--name-only", "--relative", "HEAD", "--", "src", "tests", "scripts"],
+        [
+            git,
+            "diff",
+            "--name-only",
+            "--relative",
+            "--diff-filter=d",
+            "HEAD",
+            "--",
+            "src",
+            "tests",
+            "scripts",
+        ],
         [git, "ls-files", "--others", "--exclude-standard", "--", "src", "tests", "scripts"],
     ]
     changed: list[str] = []
@@ -812,6 +823,10 @@ def _quick_steps(mypy_targets: list[str], lint_targets: list[str]) -> list[Step]
                 "Instruction index consistency",
                 _python_cmd("scripts/quality/sync_instruction_indexes.py", "--check"),
             ),
+            Step(
+                "Skill package consistency",
+                _python_cmd("scripts/quality/sync_skill_packages.py", "--check"),
+            ),
             Step("Unit tests (fast/no viz/no slow/no cov)", _quick_pytest_command()),
         ]
     )
@@ -844,10 +859,6 @@ def _pr_steps(
             Step(
                 "Agent instruction consistency",
                 _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
-            ),
-            Step(
-                "Canonical skill mirror consistency",
-                _python_cmd("scripts/quality/check_skill_mirror_sync.py", "--strict"),
             ),
             Step(
                 "Deprecation ledger gate (ADR-011)",
@@ -2810,7 +2821,7 @@ def main() -> int:
     parser.add_argument(
         "--instruction-index-sync",
         action="store_true",
-        help="Regenerate derived ADR, standard, and skill discovery indexes.",
+        help="Regenerate derived ADR, standard and skill indexes and platform skill packages.",
     )
     parser.add_argument(
         "--ci-parity",
@@ -2900,8 +2911,12 @@ def main() -> int:
             print(target)
         return 0
     if args.instruction_index_sync:
+        # Indexes and platform skill packages derive from the same canonical
+        # sources, so one local regeneration command refreshes both.
         return subprocess.call(  # noqa: S603
             _python_cmd("scripts/quality/sync_instruction_indexes.py", "--write")
+        ) or subprocess.call(  # noqa: S603
+            _python_cmd("scripts/quality/sync_skill_packages.py", "--write")
         )
     if args.uv_install_smoke:
         return _run_uv_install_smoke()

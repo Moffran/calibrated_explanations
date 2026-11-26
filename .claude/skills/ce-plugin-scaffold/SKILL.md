@@ -4,6 +4,7 @@ description: >
   Scaffold CE interval, explanation, and plot plugins with valid registry
   metadata and trust contracts.
 ---
+<!-- Generated from skills/ce-plugin-scaffold/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Plugin Scaffold
 

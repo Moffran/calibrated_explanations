@@ -4,6 +4,7 @@ description: >
   Generate factual CE explanations and select the correct guarded versus standard
   factual workflow.
 ---
+<!-- Generated from skills/ce-factual-explain/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Factual Explain
 

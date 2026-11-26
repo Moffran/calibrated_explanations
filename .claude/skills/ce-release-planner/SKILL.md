@@ -4,6 +4,7 @@ description: >
   Plan a versioned CE release from an approved milestone or an explicit
   maintainer-selected issue set.
 ---
+<!-- Generated from skills/ce-release-planner/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Release Planner
 

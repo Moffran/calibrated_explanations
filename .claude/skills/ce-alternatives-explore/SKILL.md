@@ -4,6 +4,7 @@ description: >
   Generate and interpret CE alternative and counterfactual explanations, including
   ensured filters and alternatives-specific plot workflows.
 ---
+<!-- Generated from skills/ce-alternatives-explore/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Alternatives Explorer
 

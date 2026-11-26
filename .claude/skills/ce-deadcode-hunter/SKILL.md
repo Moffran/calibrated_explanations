@@ -4,6 +4,7 @@ description: >
   Identify unreachable CE code and distinguish true dead paths from reachable
   code that lacks coverage.
 ---
+<!-- Generated from skills/ce-deadcode-hunter/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Dead-Code Hunter
 

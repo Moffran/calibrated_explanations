@@ -106,6 +106,40 @@ identifier, trusted_plugin = registry.find_explanation_plugin_for(
 trusted_plugins = (trusted_plugin,)
 ```
 
+### `calibrated_explanations.ce_agent_utils` (deprecated v1.1.0, removed in v1.3.0)
+
+Importing the module emits a `DeprecationWarning` (an error under
+`CE_DEPRECATIONS=error`). Importing `calibrated_explanations` itself does not.
+No replacement module is provided: use `WrapCalibratedExplainer` and the
+documented public API directly. The replacements below are functional migration
+paths, not drop-in equivalents; return structures and text formats differ.
+
+| Helper family | Public replacement |
+|---|---|
+| `ensure_ce_first_wrapper`, `fit_and_calibrate`, `wrap_and_explain`, `enforce_ce_first_and_execute` | Construct `WrapCalibratedExplainer(learner)`, call `fit(...)` and `calibrate(...)`, and check `fitted` / `calibrated` in your own code. |
+| `explain_and_narrate`, `explain_and_summarize`, `summarize_explanations` | `explain_factual(...)` or `explore_alternatives(...)`, then `to_narrative(...)`, `get_rules()` or `to_json()` on the result. |
+| `add_conjunctions`, `add_conjunctions_to_one` | `explanations.add_conjunctions(...)` or `explanations[i].add_conjunctions(...)`. |
+| `get_calibrated_predictions`, `get_uncalibrated_predictions` | `predict(...)` / `predict_proba(...)` (with `uq_interval=True` for intervals); `calibrated=False` for raw learner output. |
+| `format_guarded_audit_table`, `print_guarded_audit_table` | `get_guarded_audit()` on guarded explanations; format the returned mapping in your own code (for example with `pandas`, as in `notebooks/quickstart_guarded.ipynb`). |
+| `optional_cache` | `functools.lru_cache` where caching is appropriate. |
+| `set_telemetry_hook`, `TelemetryEvent` | Standard `logging` or your own instrumentation. |
+| `CE_FIRST_POLICY`, `policy_as_dict`, `serialize_policy` | The CE-first rules in the contributor instructions and `docs/get-started/ce_first_agent_guide.md`. |
+| `probe_optional_features` | `importlib.util.find_spec(...)`. |
+
+```py
+# old
+from calibrated_explanations.ce_agent_utils import wrap_and_explain
+
+# new
+from calibrated_explanations import WrapCalibratedExplainer
+
+explainer = WrapCalibratedExplainer(learner)
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal)
+factual = explainer.explain_factual(x_test)
+print(factual[0].to_narrative(output_format="text"))
+```
+
 ## Common deprecated items and migration examples
 
 - `CalibratedExplanations.get_explanation(index)` was removed → Use indexing: `explanations[index]`.
@@ -180,7 +214,7 @@ trusted_plugins = (trusted_plugin,)
 
 ## Status table
 
-**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** no later than its Removal ETA. (v1.0.0 shipped with no active deprecations; v1.1.0 adds the ADR-042 rows below.)
+**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** no later than its Removal ETA. (v1.0.0 shipped with no active deprecations; v1.1.0 adds the rows below.)
 
 ### Task 21 inventory (v0.11.1): core-surface LIME/SHAP deprecations
 
@@ -193,6 +227,7 @@ All ten now emit `deprecate()` warnings and are assigned to explicit pre-v1.0 re
 |---|---|---:|---:|---|
 | `rank_features(num_to_show <= 0)` legacy result | `num_to_show=None` for all indices; a positive count for a top-k | v1.1.0 | v1.3.0 | ADR-042 D10. Until then `0` returns every index and `-m` drops the `m` weakest; afterwards `0` returns none and negatives raise `ValidationError`. Uses `deprecate()`. |
 | Factual `plot(rnk_metric=...)` other than `"feature_weight"` | `rnk_metric="feature_weight"` (default) | v1.1.0 | v2.0.0 | ADR-042 D11; the legacy factual `ensured`/`uncertainty` ranking is kept until removal (ADR-020 legacy contract). Uses `deprecate()`. |
+| `calibrated_explanations.ce_agent_utils` | Direct use of `WrapCalibratedExplainer` and documented public APIs | v1.1.0 | v1.3.0 | Module-level deprecation of all 20 exported helpers; not part of the ADR-020 legacy contract. Emitted on explicit import via `deprecate()`. Migration: see the section above. |
 
 ### Removed deprecations (history)
 

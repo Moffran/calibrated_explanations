@@ -4,6 +4,7 @@ description: >
   Configure CE caching, parallel execution, batch-size tuning, and FAST feature
   filtering per ADR-003 and ADR-004 for faster explanations on large datasets.
 ---
+<!-- Generated from skills/ce-performance-tuning/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Performance Tuning
 
@@ -52,7 +53,6 @@ CE supports parallel feature-level and instance-level explanation:
 
 Key source files:
 - `src/calibrated_explanations/parallel/parallel.py`
-- `src/calibrated_explanations/perf/parallel.py`
 
 ### 3. Batch size and chunking
 

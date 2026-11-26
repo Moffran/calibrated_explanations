@@ -129,9 +129,8 @@ explainer.plot(x_test[:50])
 
 ## 4. CE-First lifecycle enforcement (direct public API)
 
-Agents must implement the CE-First lifecycle using the public CE API directly.
-Do **not** use `calibrated_explanations.ce_agent_utils` as an implementation
-shortcut.
+Agents must implement the CE-First lifecycle using `WrapCalibratedExplainer`
+and the documented public CE API directly.
 
 ```python
 from calibrated_explanations import WrapCalibratedExplainer
@@ -165,10 +164,6 @@ print(alternatives[0].to_narrative(output_format="text", expertise_level="beginn
 # Calibrated predictions with uncertainty intervals
 probabilities, interval = explainer.predict_proba(x_test[:1], uq_interval=True)
 ```
-
-> **Legacy note:** Helper functions remain available in
-> `calibrated_explanations.ce_agent_utils` for older integrations and examples,
-> but new agent instructions must not use them. Use the public API shown above.
 
 ---
 
@@ -213,7 +208,7 @@ alt = explainer.explore_alternatives(x_test[:3], ensure_coverage=True, ensure_or
 ## 7. Agent policy enforcement (direct lifecycle checks)
 
 Agents must verify the CE-First lifecycle explicitly before any prediction or
-explanation call. Do not delegate this check to `ce_agent_utils` helpers.
+explanation call, in the calling code.
 
 ```python
 from calibrated_explanations import WrapCalibratedExplainer
@@ -264,17 +259,11 @@ Agents should verify the following CE-first behaviors with direct public API tes
 - Probabilistic regression `threshold` usage (scalar + interval).
 - Conjunctions on collections and single explanations.
 
-> **Note:** Backward-compatibility tests for `ce_agent_utils` are in
-> `tests/unit/test_ce_agent_utils.py`. Those protect the legacy module's API
-> contract and must not be read as endorsing its use for new agent code.
-
 ---
 
 ## 9. Integration & exposure plan (practical)
 
-- Agents must use the public CE API directly — **do not** register
-  `calibrated_explanations.ce_agent_utils` as a canonical helper module or
-  expose its functions as canonical agent entrypoints.
+- Agents must use the public CE API directly.
 - Canonical entrypoints to expose in any agent registry:
   - `calibrated_explanations.WrapCalibratedExplainer`
   - `WrapCalibratedExplainer.fit`
@@ -371,10 +360,9 @@ class MyPlotPlugin:
         return "<svg>..."  # or matplotlib output
 ```
 
-### Telemetry and caching (optional post-processing utilities)
+### Parallelism (optional)
 
 - Parallelism hooks exist on the wrapper (`wrapper.parallel_executor`) and should only be tuned for extreme workloads.
-- Telemetry and caching utilities exist in the legacy `ce_agent_utils` module but are not part of the canonical CE-first path and should not be used in new agent code.
 
 ### Documentation (RTD)
 

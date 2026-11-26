@@ -4,6 +4,7 @@ description: >
   Implement and verify one active-plan deliverable with its ADRs, tests, gates,
   and closure evidence.
 ---
+<!-- Generated from skills/ce-release-task/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Release Task
 

@@ -13,9 +13,9 @@
 
 ## Skill discovery
 
-Use the generated [`.claude/skills/README.md`](.claude/skills/README.md) to
-discover the minimum skill set for the task. Canonical shared skill content lives
-under `.claude/skills/`; compatibility trees contain shims only.
+Use the generated [`skills/README.md`](skills/README.md) to discover the
+minimum skill set for the task. Edit skills only under `skills/`; Claude Code
+loads the generated copies in `.claude/skills/` (`make skills-sync`).
 
 Durable feedback follows `CONTRIBUTOR_INSTRUCTIONS.md` rather than duplicating
 shared rules in this file.

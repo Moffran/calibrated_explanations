@@ -4,6 +4,7 @@ description: >
   Audit notebooks for public-API correctness, policy compliance, and private-member
   usage violations.
 ---
+<!-- Generated from skills/ce-notebook-audit/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Notebook Audit
 

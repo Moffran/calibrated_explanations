@@ -4,6 +4,7 @@ description: >
   Curate CE verification evidence linking claims, requirements, TIFs, and
   concrete test results.
 ---
+<!-- Generated from skills/ce-evidence-linker/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Evidence Linker
 

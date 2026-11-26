@@ -4,6 +4,7 @@ description: >
   Audit ADR compliance across implementation and docs, reporting only unresolved
   gaps against binding decisions.
 ---
+<!-- Generated from skills/ce-adr-gap-analyzer/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE ADR Gap Analyzer
 

@@ -4,6 +4,7 @@ description: >
   Implement retained fallback chains with governed UserWarning, logging, and
   explicit internal-exemption handling.
 ---
+<!-- Generated from skills/ce-fallback-impl/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Fallback Implementation
 

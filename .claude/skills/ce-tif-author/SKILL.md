@@ -4,6 +4,7 @@ description: >
   Create or revise CE TIF specifications and scenarios with structured
   public-API observations.
 ---
+<!-- Generated from skills/ce-tif-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE TIF Author
 

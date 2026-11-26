@@ -4,6 +4,7 @@ description: >
   Configure reject and defer decision policies and interpret RejectResult behavior
   in prediction and explanation flows.
 ---
+<!-- Generated from skills/ce-reject-policy/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Reject Policy
 

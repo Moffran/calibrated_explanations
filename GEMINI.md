@@ -15,6 +15,7 @@ repeating the repository-wide rules in generated output.
 - Do not modify files outside the repository root.
 - Use the verification profiles and exact commands from
   `CONTRIBUTOR_INSTRUCTIONS.md`.
-- Use the canonical skill catalog generated under `.claude/skills/`.
+- Gemini CLI discovers CE skills through the generated `.agents/skills/`
+  packages; edit skills only under `skills/` (index: `skills/README.md`).
 - Preserve persisted feedback through the canonical feedback workflow instead
   of relying on cross-session memory.

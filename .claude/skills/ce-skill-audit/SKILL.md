@@ -5,6 +5,7 @@ description: >
   structural hygiene, and generated-index consistency.
 model: haiku
 ---
+<!-- Generated from skills/ce-skill-audit/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Skill Audit
 
@@ -19,8 +20,8 @@ Load these references first:
 1. Inventory skills and required files:
 
 ```bash
-Get-ChildItem .claude/skills -Directory | Select-Object -ExpandProperty Name
-rg --files .claude/skills
+Get-ChildItem skills -Directory | Select-Object -ExpandProperty Name
+rg --files skills
 ```
 
 2. Structural checks (per skill):
@@ -36,7 +37,7 @@ rg --files .claude/skills
 - description length and style pass the strict checker:
 
 ```bash
-pwsh .claude/skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
+pwsh skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
 ```
 
 4. Content organization checks:
@@ -48,7 +49,9 @@ pwsh .claude/skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
 
 5. Generated-index consistency checks:
 - `python scripts/quality/sync_instruction_indexes.py --check`
-- `.claude/skills/README.md`
+- `make skills-check` (generated `.claude/skills/` and `.agents/skills/`
+  packages match `skills/`)
+- `skills/README.md`
 - `docs/contributor/agent_skills.md`
 - canonical filesystem and both generated indexes represent the same set
 

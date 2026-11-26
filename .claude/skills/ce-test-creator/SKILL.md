@@ -4,6 +4,7 @@ description: >
   Design high-value CE tests for documented coverage gaps without padding or
   redundant cases.
 ---
+<!-- Generated from skills/ce-test-creator/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Test Creator
 

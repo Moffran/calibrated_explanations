@@ -27,6 +27,12 @@ Use the repository prompt files under [`.github/prompts/`](prompts/) for
 `/generate-tests-strict`, `/implement-plugin`, `/fix-issue`, and
 `/refresh-ce-context`.
 
+## Agent skills
+
+Copilot discovers CE skills through the generated `.agents/skills/` packages
+(it also reads `.claude/skills/`, which holds identical generated copies).
+Edit skills only under `skills/`; the index is `skills/README.md`.
+
 ## Workspace tips
 
 - Use `@workspace` for CE-internal code discovery.

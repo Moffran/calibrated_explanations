@@ -4,6 +4,7 @@ description: >
   Audit plugin implementations for registry trust rules, metadata validity, and ADR
   contract compliance.
 ---
+<!-- Generated from skills/ce-plugin-audit/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Plugin Audit
 

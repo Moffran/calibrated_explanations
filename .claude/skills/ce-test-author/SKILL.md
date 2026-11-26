@@ -4,6 +4,7 @@ description: >
   Write focused CE tests with AAA structure, public-behavior assertions, and
   deterministic setup.
 ---
+<!-- Generated from skills/ce-test-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Test Author
 

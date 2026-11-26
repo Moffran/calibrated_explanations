@@ -1,15 +1,22 @@
 {
   "commands_run": [
-    "python -m ruff check src/calibrated_explanations/calibration/interval_regressor.py src/calibrated_explanations/core/prediction/orchestrator.py src/calibrated_explanations/explanations/explanations.py src/calibrated_explanations/explanations/narrative_spec.py src/calibrated_explanations/serialization.py src/calibrated_explanations/utils/helper.py tests/capabilities/test_prediction_contracts.py tests/unit/core/test_percentile_aware_invariants.py tests/unit/serialization/test_serialization_invariants.py",
-    "python -m ruff format --check src/calibrated_explanations/calibration/interval_regressor.py src/calibrated_explanations/core/prediction/orchestrator.py src/calibrated_explanations/explanations/explanations.py src/calibrated_explanations/explanations/narrative_spec.py src/calibrated_explanations/serialization.py src/calibrated_explanations/utils/helper.py tests/capabilities/test_prediction_contracts.py tests/unit/core/test_percentile_aware_invariants.py tests/unit/serialization/test_serialization_invariants.py",
+    "python -m ruff check src/calibrated_explanations/ce_agent_utils.py tests/unit/test_ce_agent_utils.py tests/unit/test_ce_agent_utils_deprecation.py tests/docs/get_started/test_no_ce_agent_utils_recommendation.py tests/focused/test_plotting_format_save_path_focused.py tests/unit/api/test_deprecation_ledger_sync.py tests/scripts/test_local_checks_changed_targets.py scripts/quality/check_import_graph.py scripts/quality/sync_instruction_indexes.py scripts/quality/check_agent_instruction_consistency.py scripts/quality/sync_skill_packages.py scripts/quality/check_forbidden_doc_patterns.py scripts/quality/validate_ci_policy.py scripts/quality/build_governance_status_artifact.py scripts/local_checks.py tests/scripts/test_sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py",
+    "python -m ruff format --check src/calibrated_explanations/ce_agent_utils.py tests/unit/test_ce_agent_utils.py tests/unit/test_ce_agent_utils_deprecation.py tests/docs/get_started/test_no_ce_agent_utils_recommendation.py tests/focused/test_plotting_format_save_path_focused.py tests/unit/api/test_deprecation_ledger_sync.py tests/scripts/test_local_checks_changed_targets.py scripts/quality/check_import_graph.py scripts/quality/sync_instruction_indexes.py scripts/quality/check_agent_instruction_consistency.py scripts/quality/sync_skill_packages.py scripts/quality/check_forbidden_doc_patterns.py scripts/quality/validate_ci_policy.py scripts/quality/build_governance_status_artifact.py scripts/local_checks.py tests/scripts/test_sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py",
     "python -m mypy src/calibrated_explanations/core/exceptions.py src/calibrated_explanations/core/validation.py src/calibrated_explanations/api/params.py --config-file pyproject.toml",
     "python scripts/quality/check_import_graph.py",
     "python scripts/quality/check_adr002_compliance.py",
+    "python scripts/quality/sync_instruction_indexes.py --check",
+    "python scripts/quality/sync_skill_packages.py --check",
     "python -m pytest -q tests/unit -m not viz and not slow --maxfail=1 -o addopts= --no-cov",
-    "python -m pytest -q tests/unit/core/test_percentile_aware_invariants.py tests/unit/serialization/test_serialization_invariants.py tests/capabilities/test_prediction_contracts.py tests/unit/explanations/test_narrative_spec.py tests/unit/explanations/test_payload_rule_fidelity.py tests/integration/core/test_regression.py tests/integration/core/test_regression_guarded.py tests/integration/viz/test_plots_integration.py -o addopts= --no-cov"
+    "python -m pytest -q tests/scripts/test_sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py tests/scripts/test_check_agent_instruction_consistency.py tests/scripts/test_validate_ci_policy.py -o addopts= --no-cov",
+    "python scripts/quality/sync_instruction_indexes.py --check",
+    "python scripts/quality/sync_skill_packages.py --check",
+    "python scripts/quality/check_agent_instruction_consistency.py",
+    "python -m pytest -q tests/unit/test_ce_agent_utils_deprecation.py tests/unit/test_ce_agent_utils.py tests/docs/get_started/test_no_ce_agent_utils_recommendation.py tests/unit/api/test_deprecation_ledger_sync.py tests/scripts/test_local_checks_changed_targets.py -o addopts= --no-cov",
+    "python scripts/local_checks.py --deprecation-ledger"
   ],
   "exit_status": 0,
-  "generated_at": "2026-11-26T07:51:22.504306+00:00",
+  "generated_at": "2026-11-26T10:54:45.141365+00:00",
   "requested_paths": [],
   "schema_version": 1,
   "selected_profile": "task",
@@ -47,5 +54,5 @@
       "reason": "Reserved for release validation."
     }
   ],
-  "task_id": 10
+  "task_id": 17
 }

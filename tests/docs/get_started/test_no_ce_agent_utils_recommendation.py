@@ -1,101 +1,106 @@
-"""Regression tests ensuring agent-facing docs do not recommend ce_agent_utils.
+"""Regression test: active guidance and normal workflows never mention ``ce_agent_utils``.
 
-These tests fail if any agent-facing or CE-first guide starts recommending
-calibrated_explanations.ce_agent_utils as the preferred agent interface.
-
-Allowed mentions are restricted to:
-- The source file itself (src/calibrated_explanations/ce_agent_utils.py)
-- Backward-compatibility tests (tests/unit/test_ce_agent_utils.py)
-- Changelog / release notes (CHANGELOG.md)
-- The explicit legacy-compatibility notes added to the guide (which must contain
-  the words "legacy" or "backward" in the same line or nearby context)
-
-Files checked here are exclusively agent-facing instructions and the CE-First
-guide that agents are directed to read.
+``calibrated_explanations.ce_agent_utils`` is deprecated since v1.1.0 and is
+removed in v1.3.0 (ADR-011). Active agent instructions, skills, user
+documentation, notebooks, examples and CE source code must not reference it at
+all, not even to discourage its use. The only permitted references are formal
+deprecation and migration records, version-specific historical records, and the
+temporary compatibility infrastructure listed in ``ALLOWED`` below; each entry
+goes away with the module.
 """
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[3]
+NEEDLE = "ce_agent_utils"
 
-AGENT_FACING_DOCS = [
-    ROOT / "AGENTS.md",
-    ROOT / "CLAUDE.md",
-    ROOT / "GEMINI.md",
-    ROOT / "CONTRIBUTOR_INSTRUCTIONS.md",
-    ROOT / "docs" / "get-started" / "ce_first_agent_guide.md",
-    ROOT / "docs" / "get-started" / "copilot-setup.md",
+SCANNED_FILES = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "CONTRIBUTOR_INSTRUCTIONS.md",
+    "CONTRIBUTING.md",
+    "PROMPTS.md",
+    "QUICK_API.md",
+    "README.md",
+    ".github/copilot-instructions.md",
 ]
-
-FORBIDDEN_RECOMMENDATION_PATTERNS = [
-    r"Use helpers from `src/calibrated_explanations/ce_agent_utils\.py`",
-    r"Use `src/calibrated_explanations/ce_agent_utils\.py` helpers",
-    r"Use WrapCalibratedExplainer and ce_agent_utils helpers",
-    r"Register `calibrated_explanations\.ce_agent_utils` as a canonical",
-    r"canonical helper module",
-    r"validated helpers? from.*ce_agent_utils",
-    r"CE-First runtime helpers",
-    r"pipeline helpers? for agents",
-    r"one-line CE-first flow",
-    r"agent helper",
-    r"Prefer these helpers over ad-hoc code",
+SCANNED_DIRS = [
+    "skills",
+    ".agents",
+    ".ai",
+    ".claude/skills",
+    ".github/instructions",
+    ".github/prompts",
+    "docs",
+    "examples",
+    "notebooks",
+    "scripts",
+    "src",
 ]
+SCANNED_SUFFIXES = {".md", ".rst", ".txt", ".py", ".ipynb", ".yaml", ".yml", ".toml", ".json"}
+SKIPPED_DIR_NAMES = {"_build", "__pycache__", ".ipynb_checkpoints"}
 
-_ALLOWED_CONTEXT_WORDS = {
-    "legacy",
-    "backward",
-    "backward-compat",
-    "retained",
-    "not the recommended",
-    "do not",
-    "must not",
-    "agents must not",
-    "not use",
-    "not recommend",
+ALLOWED = {
+    # The deprecated module itself (removed in v1.3.0).
+    "src/calibrated_explanations/ce_agent_utils.py",
+    # Formal ADR-011 deprecation ledger and migration guidance.
+    "docs/migration/deprecations.md",
+    # Version-specific upgrade record describing v0.11.6 behavior.
+    "docs/upgrade/v0.11.6-upgrade-checklist.md",
+    # ADR-001 import-graph exception for the module (removed with the module).
+    "scripts/quality/check_import_graph.py",
 }
 
 
-def line_is_in_allowed_context(line: str) -> bool:
-    lower = line.lower()
-    return any(word in lower for word in _ALLOWED_CONTEXT_WORDS)
-
-
-def test_no_forbidden_recommendation_patterns_in_agent_docs() -> None:
-    violations: list[str] = []
-    for doc_path in AGENT_FACING_DOCS:
-        if not doc_path.exists():
+def _scanned_paths() -> list[Path]:
+    paths = [ROOT / name for name in SCANNED_FILES]
+    for directory in SCANNED_DIRS:
+        base = ROOT / directory
+        if not base.is_dir():
             continue
-        for lineno, line in enumerate(doc_path.read_text(encoding="utf-8").splitlines(), 1):
-            for pattern in FORBIDDEN_RECOMMENDATION_PATTERNS:
-                if re.search(pattern, line, re.IGNORECASE) and not line_is_in_allowed_context(line):
-                    violations.append(
-                        f"{doc_path.relative_to(ROOT)}:{lineno}: "
-                        f"forbidden pattern «{pattern}» found in: {line.strip()}"
-                    )
-    assert not violations, (
-        "Agent-facing docs must not recommend ce_agent_utils usage.\n" + "\n".join(violations)
+        paths.extend(
+            path
+            for path in base.rglob("*")
+            if path.is_file()
+            and path.suffix in SCANNED_SUFFIXES
+            and not any(
+                part in SKIPPED_DIR_NAMES or part.endswith(".egg-info")
+                for part in path.relative_to(ROOT).parts
+            )
+        )
+    return [path for path in paths if path.is_file()]
+
+
+def test_active_guidance_and_workflows_do_not_reference_deprecated_module() -> None:
+    # Arrange
+    paths = _scanned_paths()
+
+    # Act
+    offenders = sorted(
+        relative
+        for path in paths
+        if (relative := path.relative_to(ROOT).as_posix()) not in ALLOWED
+        and NEEDLE in path.read_text(encoding="utf-8", errors="replace")
+    )
+
+    # Assert
+    assert paths, "no files were scanned; check SCANNED_FILES and SCANNED_DIRS"
+    assert not offenders, (
+        "Remove references to the deprecated ce_agent_utils module; use "
+        "WrapCalibratedExplainer and the documented public CE API directly:\n"
+        + "\n".join(offenders)
     )
 
 
-def test_no_import_from_ce_agent_utils_in_agent_guide() -> None:
-    guide = ROOT / "docs" / "get-started" / "ce_first_agent_guide.md"
-    if not guide.exists():
-        return
-    text = guide.read_text(encoding="utf-8")
-    lines = text.splitlines()
-    violations: list[str] = []
-    for lineno, line in enumerate(lines, 1):
-        if "from calibrated_explanations.ce_agent_utils import" in line:
-            # Allow only on lines that are inside a clearly-labelled legacy section
-            # (the line itself or the preceding 5 lines contain "legacy" or "backward")
-            context_lines = lines[max(0, lineno - 6) : lineno]
-            context_text = " ".join(context_lines).lower()
-            if not any(w in context_text for w in _ALLOWED_CONTEXT_WORDS):
-                violations.append(f"ce_first_agent_guide.md:{lineno}: {line.strip()}")
-    assert not violations, (
-        "ce_first_agent_guide.md must not import from ce_agent_utils outside "
-        "explicitly labelled legacy-compatibility sections.\n" + "\n".join(violations)
+def test_allowed_references_still_exist() -> None:
+    # Keeps ALLOWED from silently outliving the references it permits.
+    stale = sorted(
+        name
+        for name in ALLOWED
+        if not (ROOT / name).is_file()
+        or NEEDLE not in (ROOT / name).read_text(encoding="utf-8", errors="replace")
     )
+    assert not stale, "Drop stale ALLOWED entries: " + ", ".join(stale)

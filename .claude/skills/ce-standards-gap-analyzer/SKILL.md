@@ -4,6 +4,7 @@ description: >
   Audit standards compliance across implementation and docs, reporting only
   unresolved gaps.
 ---
+<!-- Generated from skills/ce-standards-gap-analyzer/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Standards Gap Analyzer
 

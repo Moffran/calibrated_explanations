@@ -4,6 +4,7 @@ description: >
   Build CE-first end-to-end pipelines using WrapCalibratedExplainer with fit,
   calibrate, and explain or predict sequencing.
 ---
+<!-- Generated from skills/ce-pipeline-builder/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Pipeline Builder
 
@@ -109,9 +110,7 @@ explanations = explainer.explain_factual(X_query, threshold=my_threshold)
 
 ## Direct public API only
 
-New agent code must call `WrapCalibratedExplainer` directly. Do not import
-`calibrated_explanations.ce_agent_utils`; it is retained only for legacy
-integrations and backward-compatibility examples.
+Use `WrapCalibratedExplainer` and the documented public CE API directly.
 
 ## Decision: `explain_factual` vs `explain_factual(..., guarded_options=GuardedOptions())`
 

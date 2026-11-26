@@ -12,7 +12,7 @@
 - Engineering standards in
   [`development/standards/README.md`](development/standards/README.md) own
   engineering and quality requirements.
-- Skills in [`.claude/skills/README.md`](.claude/skills/README.md) own
+- Skills in [`skills/README.md`](skills/README.md) own
   task-specific workflows.
 - Documentation owns verified API guidance and runnable examples.
 - Generated indexes are discovery surfaces, never independent authority.
@@ -36,11 +36,8 @@ Use the public `calibrated_explanations` API directly:
 5. Use `explain_factual`, `explore_alternatives`, `predict`, or `predict_proba`.
 6. Return calibrated outputs and uncertainty by default. Do not silently return
    uncalibrated output.
-7. Verify the fit/calibrate lifecycle explicitly; never delegate it to
-   `ce_agent_utils`.
+7. Verify the fit/calibrate lifecycle explicitly in the calling code.
 
-`calibrated_explanations.ce_agent_utils` is retained for backward compatibility
-and legacy integrations, not as the implementation shortcut for new agent code.
 Authoritative runnable examples live in
 [`docs/get-started/ce_first_agent_guide.md`](docs/get-started/ce_first_agent_guide.md).
 
@@ -135,8 +132,8 @@ Start with [`development/README.md`](development/README.md), then use:
 | Capability verification | `development/capabilities/` |
 | Test quality method | [`development/standards/test-quality-method/`](development/standards/test-quality-method/) |
 | Test guidance | [`tests/README.md`](tests/README.md) |
-| Canonical skills | [`.claude/skills/`](.claude/skills/) |
-| Platform skill mirrors | `.agents/skills/`, `.codex/skills/`, `.github/skills/` |
+| Canonical skills | [`skills/`](skills/) |
+| Generated skill discovery packages | `.claude/skills/` (Claude Code), `.agents/skills/` (Codex, GitHub Copilot, Gemini CLI) |
 | Public contributor docs | [`docs/contributor/`](docs/contributor/) |
 
 No new root-level directory may be created without explicit maintainer approval.
@@ -147,7 +144,7 @@ The generated indexes are:
 
 - `development/adrs/README.md`
 - `development/standards/README.md`
-- `.claude/skills/README.md`
+- `skills/README.md`
 - `docs/contributor/agent_skills.md`
 
 After an ADR, standard, or canonical skill change:
@@ -160,10 +157,14 @@ make instruction-index-check
 `--write` updates derived files; verification uses the non-mutating `--check`
 mode. CI validates generated content but does not repair it.
 
-Shadow skill trees contain shims for shared CE skills. Keep authoritative
-workflow logic, references, assets, and scripts only under `.claude/skills/`.
-Run `make check-agent-instructions` and `make check-skill-mirrors` when
-touching instruction or skill-discovery surfaces.
+Every CE skill, with its references, scripts and assets, has exactly one source
+under `skills/<name>/`. The platform discovery directories `.claude/skills/`
+and `.agents/skills/` are complete generated copies (`[tool.skill-packages]`
+in `pyproject.toml`); never edit them. `make instruction-index-sync` refreshes
+indexes and packages together; `make skills-sync` / `make skills-check`
+handle the packages alone. Skills owned outside this repository are installed
+at user level, not committed here. Run `make check-agent-instructions` when
+touching instruction surfaces.
 
 ---
 

@@ -4,6 +4,7 @@ description: >
   Execute the complete calibrated-explanations release handoff: automated
   preflight, human-gated publication, and automated postcommit cleanup.
 ---
+<!-- Generated from skills/ce-release-finalize/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Release Finalize
 

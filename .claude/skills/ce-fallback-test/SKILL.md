@@ -4,6 +4,7 @@ description: >
   Author tests that verify fallback visibility through opt-in fixtures, warning
   assertions, and INFO log side effects.
 ---
+<!-- Generated from skills/ce-fallback-test/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Fallback Test
 

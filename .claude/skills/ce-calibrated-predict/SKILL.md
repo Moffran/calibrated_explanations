@@ -4,6 +4,7 @@ description: >
   Produce calibrated predict and predict_proba outputs, with optional uncertainty
   intervals, without generating explanations.
 ---
+<!-- Generated from skills/ce-calibrated-predict/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Calibrated Predict
 

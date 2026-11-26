@@ -4,6 +4,7 @@ description: >
   Create or revise CE capability claims with stable identifiers, scoped status,
   and requirement links.
 ---
+<!-- Generated from skills/ce-claim-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Claim Author
 

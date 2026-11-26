@@ -4,6 +4,7 @@ description: >
   Create or revise testable CE requirements with acceptance criteria,
   verification targets, and evidence fields.
 ---
+<!-- Generated from skills/ce-requirements-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Requirements Author
 

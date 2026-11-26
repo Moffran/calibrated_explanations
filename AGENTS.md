@@ -29,6 +29,11 @@ Task:
 - residual risk
 ```
 
+## Skills
+
+Codex discovers CE skills in the generated `.agents/skills/` packages. Edit
+skills only under `skills/`; the index is `skills/README.md`.
+
 ## Persistence and feedback
 
 Codex has no reliable cross-session memory. Durable corrections belong in the

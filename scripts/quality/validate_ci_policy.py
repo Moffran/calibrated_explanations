@@ -55,6 +55,7 @@ SKILL_SYNC_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\.codex/skills/"), "automated write to agent skill directory"),
     (re.compile(r"\.claude/skills/"), "automated write to agent skill directory"),
     (re.compile(r"\.agents/skills/"), "automated write to agent skill directory"),
+    (re.compile(r"(?<![\w./-])skills/"), "automated write to canonical skill directory"),
 )
 
 #: Publishing/deployment mechanics forbidden on this development mirror.

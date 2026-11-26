@@ -4,6 +4,7 @@ description: >
   Audit CE source and tests for ADR-030 anti-patterns, determinism issues,
   API-boundary violations, and test-helper leakage.
 ---
+<!-- Generated from skills/ce-code-quality-auditor/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Code Quality Auditor
 

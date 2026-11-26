@@ -5,6 +5,7 @@ description: >
   contributor documentation rules.
 model: haiku
 ---
+<!-- Generated from skills/ce-docstring-author/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Docstring Author
 

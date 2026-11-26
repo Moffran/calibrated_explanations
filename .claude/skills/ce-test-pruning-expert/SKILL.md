@@ -4,6 +4,7 @@ description: >
   Identify redundant or low-value CE tests using unique-line and overlap
   evidence.
 ---
+<!-- Generated from skills/ce-test-pruning-expert/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Test Pruning Expert
 

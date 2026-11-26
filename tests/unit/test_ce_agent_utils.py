@@ -1,10 +1,37 @@
+"""Backward-compatibility tests for the deprecated ``ce_agent_utils`` module.
+
+The module is deprecated since v1.1.0 and scheduled for removal in v1.3.0
+(ADR-011, ``docs/migration/deprecations.md``). Delete this file together with
+the module. Deprecation emission itself is verified in isolated interpreters by
+``tests/unit/test_ce_agent_utils_deprecation.py``.
+"""
+
 import importlib
+import json
 import types
+import warnings
 
 import pytest
 import numpy as np
 
-from calibrated_explanations.ce_agent_utils import (
+from tests.helpers.deprecation import deprecations_error_enabled
+
+if deprecations_error_enabled():
+    pytest.skip(
+        "CE_DEPRECATIONS=error rejects importing the deprecated ce_agent_utils module; "
+        "strict-mode rejection is verified in test_ce_agent_utils_deprecation.py",
+        allow_module_level=True,
+    )
+
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        message=r"calibrated_explanations\.ce_agent_utils is deprecated",
+        category=DeprecationWarning,
+    )
+    from calibrated_explanations import ce_agent_utils
+
+from calibrated_explanations.ce_agent_utils import (  # noqa: E402
     add_conjunctions,
     add_conjunctions_to_one,
     enforce_ce_first_and_execute,
@@ -21,8 +48,8 @@ from calibrated_explanations.ce_agent_utils import (
     set_telemetry_hook,
 )
 
-from calibrated_explanations.core.exceptions import ValidationError
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.core.exceptions import ValidationError  # noqa: E402
+from calibrated_explanations.core.exceptions import (  # noqa: E402
     ConfigurationError,
     ModelNotSupportedError,
     NotFittedError,
@@ -985,3 +1012,27 @@ def test_format_guarded_audit_table_legend_mentions_mrg():
     }
     text = format_guarded_audit_table(payload)
     assert "mrg=Y" in text
+
+
+def test_policy_serialization_round_trips() -> None:
+    policy = ce_agent_utils.policy_as_dict()
+    assert policy["requires_library"] == "calibrated_explanations"
+    assert json.loads(ce_agent_utils.serialize_policy()) == json.loads(json.dumps(policy))
+
+
+def test_optional_cache_enabled_and_disabled() -> None:
+    calls = {"n": 0}
+
+    @ce_agent_utils.optional_cache(enabled=True, maxsize=16)
+    def cached():
+        calls["n"] += 1
+        return calls["n"]
+
+    assert cached() == cached() == 1
+
+    @ce_agent_utils.optional_cache(enabled=False)
+    def uncached():
+        calls["n"] += 1
+        return calls["n"]
+
+    assert uncached() + 1 == uncached()

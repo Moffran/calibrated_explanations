@@ -5,6 +5,7 @@ description: >
   and deterministic generated-index verification.
 model: haiku
 ---
+<!-- Generated from skills/ce-skill-creator/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Skill Creator
 
@@ -33,13 +34,17 @@ Use this skill to add new skills or upgrade weak existing skills.
 ```bash
 make instruction-index-sync
 make instruction-index-check
+make skills-check
 ```
+
+   Create and edit skills only under `skills/<name>/`; `make instruction-index-sync`
+   also regenerates the `.claude/skills/` and `.agents/skills/` packages.
 
 7. Re-run `ce-skill-audit` and resolve blocker/high findings.
 8. Run strict description quality check:
 
 ```bash
-pwsh .claude/skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
+pwsh skills/ce-skill-audit/scripts/check_skill_description_quality.ps1
 ```
 
 ## Refactor policy for poor skills

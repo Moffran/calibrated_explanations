@@ -4,6 +4,7 @@ description: >
   Extend CE to non-tabular data modalities (vision, audio, text) via
   ADR-033 plugin contracts, modality naming rules, and extension safety guardrails.
 ---
+<!-- Generated from skills/ce-modality-extension/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Modality Extension
 

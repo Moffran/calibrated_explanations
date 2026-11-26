@@ -1,5 +1,10 @@
 """CE-First helper utilities for Calibrated Explanations.
 
+.. deprecated:: 1.1.0
+    This module will be removed in v1.3.0. Use ``WrapCalibratedExplainer`` and
+    the documented public Calibrated Explanations API directly. Migration
+    guidance is in ``docs/migration/deprecations.md``.
+
 This module is intentionally CE-first: every public helper validates that the
 calibrated_explanations package is available, uses WrapCalibratedExplainer,
 checks .fitted / .calibrated states, and defaults to calibrated outputs.
@@ -24,6 +29,15 @@ from .core.exceptions import (
     ModelNotSupportedError,
     NotFittedError,
     ValidationError,
+)
+from .utils.deprecations import deprecate
+
+deprecate(
+    "calibrated_explanations.ce_agent_utils is deprecated since v1.1.0 and will be "
+    "removed in v1.3.0. Use WrapCalibratedExplainer and the documented public "
+    "Calibrated Explanations API directly.",
+    key="calibrated_explanations.ce_agent_utils",
+    stacklevel=3,
 )
 
 LOGGER = logging.getLogger("calibrated_explanations.core.agents")

@@ -5,6 +5,7 @@ description: >
   use for ADR applicability and conflict checks.
 model: haiku
 ---
+<!-- Generated from skills/ce-adr-consult/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE ADR Consult
 

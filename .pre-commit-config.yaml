@@ -71,7 +71,13 @@ repos:
         name: Instruction index consistency
         entry: python scripts/quality/sync_instruction_indexes.py --check
         language: system
-        files: ^(development/adrs/|development/standards/|\.claude/skills/|docs/contributor/agent_skills\.md$)
+        files: ^(development/adrs/|development/standards/|skills/|docs/contributor/agent_skills\.md$)
+        pass_filenames: false
+      - id: skills-check
+        name: Skill package consistency
+        entry: python scripts/quality/sync_skill_packages.py --check
+        language: system
+        files: ^(skills/|\.claude/skills/|\.agents/skills/|pyproject\.toml$)
         pass_filenames: false
 
 ci:

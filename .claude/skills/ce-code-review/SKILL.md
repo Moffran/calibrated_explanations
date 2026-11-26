@@ -4,6 +4,7 @@ description: >
   Review code changes for CE coding standards, ADR conformance, and behavior or API
   regression risk.
 ---
+<!-- Generated from skills/ce-code-review/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Code Review
 

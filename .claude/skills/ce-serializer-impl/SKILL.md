@@ -4,6 +4,7 @@ description: >
   Implement ADR-031 serializer and persistence APIs with versioned primitives and
   compatible load behavior.
 ---
+<!-- Generated from skills/ce-serializer-impl/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Serializer Implementation
 

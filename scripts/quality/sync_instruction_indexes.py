@@ -17,7 +17,7 @@ from urllib.parse import quote
 GENERATED_FILES = (
     "development/adrs/README.md",
     "development/standards/README.md",
-    ".claude/skills/README.md",
+    "skills/README.md",
     "docs/contributor/agent_skills.md",
 )
 
@@ -162,7 +162,7 @@ def _read_skill_record(path: Path, root: Path) -> SkillRecord:
     metadata = _parse_frontmatter(path)
     name = _require_string(path, metadata, "name")
     description = _require_string(path, metadata, "description")
-    expected = path.parent.relative_to(root / ".claude/skills").as_posix()
+    expected = path.parent.relative_to(root / "skills").as_posix()
     if name != expected:
         raise MetadataError(
             f"{path.as_posix()}: skill name {name!r} does not match directory {expected!r}"
@@ -203,7 +203,7 @@ def _discover_records(root: Path) -> tuple[list[GovernanceRecord], list[Governan
 
 
 def _discover_skills(root: Path) -> list[SkillRecord]:
-    skills_root = root / ".claude/skills"
+    skills_root = root / "skills"
     skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
     missing = [directory.name for directory in skill_dirs if not (directory / "SKILL.md").is_file()]
     if not skill_dirs:
@@ -323,9 +323,10 @@ def _skill_index(records: list[SkillRecord], *, rtd: bool) -> str:
         _GENERATED_HEADER.rstrip(),
         f"# {heading}",
         "",
-        "This generated discovery index is derived from canonical `.claude/skills/*/SKILL.md`",
+        "This generated discovery index is derived from canonical `skills/*/SKILL.md`",
         "frontmatter. Select a skill for its workflow; the linked `SKILL.md` is the",
-        "task-specific execution contract.",
+        "task-specific execution contract. Edit skills only under `skills/`; the",
+        "platform discovery packages are generated from it by `make skills-sync`.",
         "",
         "| Skill | Description | Source |",
         "|---|---|---|",
@@ -334,7 +335,7 @@ def _skill_index(records: list[SkillRecord], *, rtd: bool) -> str:
         if rtd:
             source = (
                 "https://github.com/Moffran/calibrated_explanations/blob/main/"
-                f".claude/skills/{record.name}/SKILL.md"
+                f"skills/{record.name}/SKILL.md"
             )
         else:
             source = f"./{record.name}/SKILL.md"
@@ -365,7 +366,7 @@ def build_generated_files(root: Path) -> dict[str, str]:
             heading="Engineering standard index",
             source_note="Canonical standard sources: `development/standards/STD-*.md`.",
         ),
-        ".claude/skills/README.md": _skill_index(skills, rtd=False),
+        "skills/README.md": _skill_index(skills, rtd=False),
         "docs/contributor/agent_skills.md": _skill_index(skills, rtd=True),
     }
 

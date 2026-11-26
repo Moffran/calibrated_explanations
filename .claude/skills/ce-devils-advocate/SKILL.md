@@ -4,6 +4,7 @@ description: >
   Challenge proposed CE test and cleanup work for hidden risk, weak evidence,
   and regressions.
 ---
+<!-- Generated from skills/ce-devils-advocate/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Devil's Advocate
 

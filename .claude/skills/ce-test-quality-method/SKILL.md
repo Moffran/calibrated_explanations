@@ -4,6 +4,7 @@ description: >
   Coordinate ADR-030 remediation across specialist audit, pruning, test, and
   implementation skills.
 ---
+<!-- Generated from skills/ce-test-quality-method/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Test Quality Method
 

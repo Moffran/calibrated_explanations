@@ -5,6 +5,7 @@ description: >
   canonical instructions and generated discovery indexes.
 model: haiku
 ---
+<!-- Generated from skills/ce-onboard/SKILL.md by scripts/quality/sync_skill_packages.py; do not edit. -->
 
 # CE Onboard
 
@@ -19,7 +20,7 @@ Use this skill to orient a new session; do not reproduce the full policy.
 4. Use the generated indexes to discover only relevant sources:
    - `development/adrs/README.md`
    - `development/standards/README.md`
-   - `.claude/skills/README.md`
+   - `skills/README.md`
 
 ## CE-first reminder
 
@@ -28,18 +29,7 @@ an intentional, verified subclass preserves the wrapper contract. Follow
 `fit -> calibrate -> explain/predict`, verify both lifecycle flags, and default
 to calibrated outputs with uncertainty.
 
-Do not use `calibrated_explanations.ce_agent_utils` as a shortcut in new code.
-
 ## Navigation
 
-Select the minimum specialist skill for the task; task-specific workflows live
-under `.claude/skills/`. Common choices include:
-
-- `ce-adr-consult` for applicable architectural decisions.
-- `ce-release-task` for one active-plan deliverable.
-- `ce-test-author` for a specific test.
-- `ce-code-review` for change risk and ADR conformance.
-- `ce-docstring-author` or `ce-rtd-writer` for documentation work.
-
-The full generated inventory is the only skill catalogue; do not maintain another
-manual list in this primer.
+Select the minimum specialist skill for the task from the generated
+`skills/README.md` catalogue; it is the only skill inventory.

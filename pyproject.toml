@@ -173,6 +173,13 @@ exclude_lines = [
 [tool.coverage.html]
 directory = "coverage_html"
 
+[tool.skill-packages]
+# Canonical CE skill catalogue and the generated platform discovery packages
+# (scripts/quality/sync_skill_packages.py). .claude/skills: Claude Code.
+# .agents/skills: Codex, GitHub Copilot and Gemini CLI.
+source = "skills"
+targets = [".claude/skills", ".agents/skills"]
+
 [tool.setuptools.packages.find]
 where = [
     "src",
