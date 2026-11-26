@@ -22,6 +22,15 @@
 
 ### Changed
 
+- **Self-maintaining instruction indexes (#263, v1.1.0):** ADRs, engineering
+  standards and canonical skills now carry minimal machine-readable metadata and
+  generate their discovery indexes through
+  `scripts/quality/sync_instruction_indexes.py --write/--check`. The read-only
+  check runs in the quick and PR profiles and pre-commit, while
+  `make instruction-index-sync` performs local regeneration. Contributor and
+  platform instructions now delegate to generated catalogs, `ce-skill-registry-sync`
+  is retired, and focused tests cover source additions/changes/removals, malformed
+  metadata, stale indexes, supersession links, determinism and non-mutating checks.
 - **`multi_labels_enabled` and `interval_summary` are explicit keyword-only
   parameters (ADR-038 graduation gate, #206, v1.1.0):**
   `CalibratedExplainer.explain_factual`/`explore_alternatives` and the

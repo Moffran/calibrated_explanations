@@ -1,13 +1,18 @@
+---
+id: "ADR-041"
+title: "Minimal Narrative Semantic Contract"
+status: "accepted"
+description: "Governing the minimal semantic contract for offline explanation narration without a separate narrative fact model."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-11-25):** Last edited 2026-11-25 (revised: no separate `NarrativeSpec` contract; canonical selection via ADR-042 D17; #227) · Archive after: Retain indefinitely as architectural record · Implementation window: v1.1.0 (#227-#230, #232).
 
 # ADR-041: Minimal Narrative Semantic Contract
 
-Status: Accepted
 Date: 2026-11-02 (revised 2026-11-25)
 Deciders: Core maintainers
 Reviewers: Core maintainers
-Supersedes: None
-Superseded-by: None
 Related: ADR-002-validation-and-exception-design, ADR-005-explanation-json-schema-versioning, ADR-008-explanation-domain-model-and-compat, ADR-020-legacy-user-api-stability, ADR-021-calibrated-interval-semantics, ADR-029-reject-integration-strategy, ADR-037-visualization-extension-and-rendering-governance, ADR-040-capability-verification-framework, ADR-042-canonical-rule-and-feature-ranking
 
 ## Context

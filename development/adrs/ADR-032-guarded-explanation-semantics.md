@@ -1,17 +1,20 @@
-> **Active scope:** Governing architectural decision for `GuardedOptions` semantics and guarded explanation behavior (explain-only when predicted class matches the guard condition). Remains active as long as guarded semantics govern the CE guarded explain paths.
-
+---
+id: "ADR-032"
+title: "Guarded Explanation Semantics and Single-Median-Probe Guarding"
+status: "accepted"
+description: "Governing architectural decision for `GuardedOptions` semantics and guarded explanation behavior (explain-only when predicted class matches the guard condition). Remains active as long as guarded semantics govern the CE guarded explain paths."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-06-09):** Last edited 2026-06-09 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
 
 # ADR-032: Guarded Explanation Semantics and Single-Median-Probe Guarding
 
 ## Status
-Status: Accepted (scoped)
 Date: 2026-03-20
 Updated: 2026-06-09
 Deciders: Core maintainers
 Reviewers: Core maintainers
-Supersedes: None
-Superseded-by: None
 Related: ADR-020, ADR-021, ADR-026, ADR-029
 
 ## Context

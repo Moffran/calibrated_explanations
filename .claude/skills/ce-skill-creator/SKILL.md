@@ -2,7 +2,7 @@
 name: ce-skill-creator
 description: >
   Create or refactor skills with precise triggers, reusable assets and references,
-  and synchronized registry updates.
+  and deterministic generated-index verification.
 model: haiku
 ---
 
@@ -29,10 +29,11 @@ Use this skill to add new skills or upgrade weak existing skills.
 4. Tighten trigger wording in `description` to avoid overlap.
 5. If a legacy skill has phrase-heavy descriptions, move those trigger phrases
    into `references/trigger_phrases.md` using the reference template.
-6. If you changed skill inventory, invoke `ce-skill-registry-sync` and update:
-- `CONTRIBUTOR_INSTRUCTIONS.md` section 6A
-- `.claude/skills/ce-onboard/SKILL.md` section 4
-- `docs/contributor/agent_skills.md`
+6. If skill metadata or inventory changed, regenerate and verify the indexes:
+```bash
+make instruction-index-sync
+make instruction-index-check
+```
 
 7. Re-run `ce-skill-audit` and resolve blocker/high findings.
 8. Run strict description quality check:
@@ -57,7 +58,7 @@ For each created/refactored skill, provide:
 1. skill name + path
 2. trigger description summary
 3. any added assets, references, or scripts
-4. registry updates completed
+4. generated index verification results
 
 ## Constraints
 

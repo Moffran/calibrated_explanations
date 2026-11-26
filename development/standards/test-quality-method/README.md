@@ -526,8 +526,7 @@ Designs and improves the test quality workflow and tooling.
 
 - All scripts in `scripts/over_testing/` and `scripts/anti-pattern-analysis/`
 - `development/standards/test-quality-method/README.md`
-- `docs/improvement/archived/over_testing_method.md` (historical notes)
-- `docs/improvement/archived/over_testing_method.md` (archived stub)
+- `scripts/over_testing/README.md` (current pipeline reference)
 - `scripts/over_testing/finalize_over_testing.md`
 - `.github/workflows/` (CI definitions)
 - `pyproject.toml` (pytest config, coverage config)

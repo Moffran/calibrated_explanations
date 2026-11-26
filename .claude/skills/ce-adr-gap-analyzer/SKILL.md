@@ -1,9 +1,8 @@
 ---
 name: ce-adr-gap-analyzer
 description: >
-  Analyze ADR compliance by interpreting the ADR's intent, verifying that
-  implementation and RTD satisfy every decision, and producing a dated gap
-  report with only unresolved items.
+  Audit ADR compliance across implementation and docs, reporting only unresolved
+  gaps against binding decisions.
 ---
 
 # CE ADR Gap Analyzer

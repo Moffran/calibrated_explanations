@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for top-level module boundary rules between `core/`, `plugins/`, `calibration/`, and `utils/`. Remains active as long as these boundaries govern implementation choices; superseded when a successor ADR revises the decomposition model.
-
+---
+id: "ADR-001"
+title: "Core Decomposition Boundaries"
+status: "accepted"
+description: "Governing architectural decision for top-level module boundary rules between `core/`, `plugins/`, `calibration/`, and `utils/`. Remains active as long as these boundaries govern implementation choices; superseded when a successor ADR revises the decomposition model."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-001: Core Decomposition Boundaries
 
-Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

@@ -1,5 +1,11 @@
-> **Active scope:** Engineering standard for internal module and symbol naming conventions (snake_case modules, PascalCase classes, deprecated-shim isolation policy). Remains active as long as Standard-001 governs CE naming; revised when the nomenclature policy is updated.
-
+---
+id: "STD-001"
+title: "Internal nomenclature standardisation"
+status: "active"
+description: "Engineering standard for internal module and symbol naming conventions (snake_case modules, PascalCase classes, deprecated-shim isolation policy). Remains active as long as Standard-001 governs CE naming; revised when the nomenclature policy is updated."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).
 
 # Standard-001: Internal nomenclature standardisation
@@ -7,7 +13,6 @@
 Formerly ADR-017. Reclassified as an engineering standard to keep ADRs scoped to
 architectural or contract decisions.
 
-Status: Active (2025-10-06)
 
 ## Context
 

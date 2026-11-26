@@ -1,9 +1,8 @@
 ---
 name: ce-test-author
 description: >
-  Write individual CE test cases for specified modules or behaviors using AAA
-  structure, public-API focus, and coverage-gate discipline. Does NOT identify
-  coverage gaps; use ce-test-creator for gap-driven test design.
+  Write focused CE tests with AAA structure, public-behavior assertions, and
+  deterministic setup.
 ---
 
 # CE Test Author

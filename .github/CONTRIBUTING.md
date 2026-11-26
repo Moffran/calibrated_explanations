@@ -94,7 +94,10 @@ replace the canonical `pip` workflow, release builds, or `constraints.txt`.
 
 ## Testing and Code Coverage
 
-Pytest remains the primary regression harness. CI now enforces the ADR-019 coverage gate via `make test-cov`, which simply runs `pytest` with coverage flags supplied by `pytest.ini` (`--cov=src/calibrated_explanations --cov-config=.coveragerc --cov-report=term-missing --cov-report=xml --cov-fail-under=90`). The shared `.coveragerc` applies locally as well, so invoking `make test-cov` reproduces the CI behaviour (including generation of `coverage.xml` for Codecov uploads). Coverage results are uploaded to [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations) for historical tracking, and Codecov enforces ≥90% patch coverage on runtime/calibration paths per the v0.10.0 release plan.
+Pytest remains the primary regression harness. CI and local verification enforce
+the STD-003 coverage gate through `pyproject.toml`. Use `make test-cov` or the
+profiles in `CONTRIBUTOR_INSTRUCTIONS.md`; do not recreate coverage settings in
+legacy `.coveragerc` or `pytest.ini` files.
 
 If a change cannot practically meet the 90% package-wide bar (for example, because it touches legacy shims slated for removal), request a coverage waiver:
 
@@ -107,20 +110,19 @@ Waivers are exceptional and should include a plan with owners/dates so the debt 
 Additional checks:
 
 - Linting via ruff (style and simple correctness rules).
-- Naming guardrails: run `ruff check --select N` locally to preview the CI naming warnings introduced for the v0.7.0 release gate (ADR-017).
-- Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI runs the same checks in blocking mode, so fix violations before opening a pull request.
-- Docstring coverage: `python scripts/check_docstring_coverage.py` prints the current module/class/function/method coverage mix and accepts `--fail-under` for teams that want to experiment with stricter thresholds.
+- Naming guardrails: run `ruff check --select N` locally for STD-001.
+- Docstring guardrails: run `pydocstyle --convention=numpy src tests` for STD-002.
+- Docstring coverage: `python scripts/quality/check_docstring_coverage.py`
+  prints the current coverage mix.
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
 - Performance guard: see `scripts/check_perf_regression.py` and `tests/benchmarks/perf_thresholds.json`.
 
 ## Naming and documentation style quick reference
 
-ADR-017 and ADR-018 define the internal style rules that keep the plugin-first
-architecture consistent. The cheat-sheet below summarises what reviewers expect
-in day-to-day contributions; consult the ADRs for the full context and
-motivation.【F:development/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:development/adrs/ADR-018-code-documentation-standard.md†L1-L62】
+STD-001 and STD-002 define the internal style rules that keep the plugin-first
+architecture consistent. Consult the standards for their full rationale.
 
-### Naming conventions (ADR-017)
+### Naming conventions (STD-001)
 
 | Scope | Requirements | Common pitfalls |
 | --- | --- | --- |
@@ -129,7 +131,7 @@ motivation.【F:development/adrs/ADR-017-nomenclature-standardization.md†L1-L3
 | Functions & attributes | `snake_case`; boolean values begin with verbs (`is_`, `has_`, `should_`) | Introducing new double-underscore names or mismatching helper prefixes |
 | Registry identifiers | Dot-delimited lowercase paths (`core.explanation.factual`) | Forgetting to document aliases when keeping backward-compatible IDs |
 
-### Documentation conventions (ADR-018)
+### Documentation conventions (STD-002)
 
 | Area | Minimum expectation | Notes |
 | --- | --- | --- |
@@ -137,7 +139,7 @@ motivation.【F:development/adrs/ADR-017-nomenclature-standardization.md†L1-L3
 | Public callables | Full numpydoc sections (`Parameters`, `Returns`, `Raises`, `Examples` as appropriate) | Summaries start with an imperative verb and fit on one line |
 | Internal helpers (`_` prefix) | Single-line summary explaining purpose | Still counted in coverage; these should clarify side-effects/constraints |
 | Deprecations | `.. deprecated::` directive or explicit `Warnings` section | Reference the replacement module or helper |
-| Coverage tracking | Run `python scripts/check_docstring_coverage.py` before requesting review | Pair with `pydocstyle` output to keep ADR-018 coverage metrics honest |
+| Coverage tracking | Run `python scripts/quality/check_docstring_coverage.py` before requesting review | Pair with `pydocstyle` output to keep the STD-002 metric honest |
 
 ## Plugin tooling quickstart
 

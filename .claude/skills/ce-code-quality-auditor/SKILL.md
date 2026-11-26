@@ -1,9 +1,8 @@
 ---
 name: ce-code-quality-auditor
 description: >
-  Audit source and tests for ADR-030 anti-patterns, determinism failures,
-  API-boundary violations, and test-helper leakage with Option A/B/C handling
-  from the Test Quality Method.
+  Audit CE source and tests for ADR-030 anti-patterns, determinism issues,
+  API-boundary violations, and test-helper leakage.
 ---
 
 # CE Code Quality Auditor

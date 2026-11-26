@@ -1,9 +1,8 @@
 ---
 name: ce-standards-gap-analyzer
 description: >
-  Analyze standards compliance by interpreting the standards's intent, verifying that
-  implementation and RTD satisfy every decision, and producing a dated gap
-  report with only unresolved items.
+  Audit standards compliance across implementation and docs, reporting only
+  unresolved gaps.
 ---
 
 # CE Standards Gap Analyzer

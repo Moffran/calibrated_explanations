@@ -14,10 +14,12 @@ Calibrated Explanations (CE) provide **actionable explanations with calibrated u
    ```bash
    pip install calibrated-explanations
    ```
-2. **Wrapper**: Use **`WrapCalibratedExplainer`** (or a subclass). Never invent a new wrapper.
+2. **Wrapper**: Use **`WrapCalibratedExplainer`** directly. An intentional
+   verified subclass may preserve the wrapper contract; never invent an ad-hoc
+   wrapper.
 3. **Fit**: `explainer.fit(...)` → verify `explainer.fitted is True`.
 4. **Calibrate**: `explainer.calibrate(...)` → verify `explainer.calibrated is True`.
-5. **Explain**: Use **`explainer.explain_factual(...)`** or **`explorer.explore_alternatives(...)`**.
+5. **Explain**: Use **`explainer.explain_factual(...)`** or **`explainer.explore_alternatives(...)`**.
 6. **Conjunctions**: Use **`explanations.add_conjunctions(...)`** or **`explanations[idx].add_conjunctions(...)`**.
 7. **Narratives & plots**: Use `.to_narrative(output_format=..., expertise_level=...)` and `.plot(...)`.
 8. **Probabilistic regression**: Use `threshold=` for probabilistic intervals, or `low_high_percentiles=` for conformal.
@@ -25,7 +27,8 @@ Calibrated Explanations (CE) provide **actionable explanations with calibrated u
 ### Enforcement rules agents must apply programmatically
 
 - **CE presence**: `import calibrated_explanations` or fail with install message.
-- **Wrapper identity**: Ensure instance is `WrapCalibratedExplainer` or subclass.
+- **Wrapper identity**: Ensure the instance is `WrapCalibratedExplainer` or an
+  intentional verified subclass.
 - **State checks**: `.fitted` and `.calibrated` must be `True` before predictions/explanations.
 - **Calibrated by default**: Do not return uncalibrated outputs unless explicitly requested.
 - **Canonical calls**:

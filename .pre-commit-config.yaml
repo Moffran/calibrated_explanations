@@ -67,6 +67,12 @@ repos:
         language: system
         files: ^\.github/
         pass_filenames: false
+      - id: instruction-index-check
+        name: Instruction index consistency
+        entry: python scripts/quality/sync_instruction_indexes.py --check
+        language: system
+        files: ^(development/adrs/|development/standards/|\.claude/skills/|docs/contributor/agent_skills\.md$)
+        pass_filenames: false
 
 ci:
   autofix_prs: true

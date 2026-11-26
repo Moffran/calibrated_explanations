@@ -1,16 +1,17 @@
 ---
 name: ce-fallback-impl
 description: >
-  Implement fallback chains that always emit UserWarning and INFO logs per CE
-  fallback-visibility policy.
+  Implement retained fallback chains with governed UserWarning, logging, and
+  explicit internal-exemption handling.
 ---
 
 # CE Fallback Implementation
 
-You are implementing a fallback path. The CE fallback visibility policy
-(copilot-instructions.md §7) is **mandatory**: every fallback must be visible
-to users via both a `UserWarning` and an `INFO` log. Silent fallbacks are a
-blocking code-review failure.
+You are implementing a fallback path. The CE fallback visibility policy in
+`CONTRIBUTOR_INSTRUCTIONS.md` §4 is **mandatory**: every retained user-visible
+fallback emits both a `UserWarning` and an `INFO` log. A narrow internal
+exception is valid only when `scripts/quality/check_warning_policy.py` records
+the site, disposition, and concrete reason.
 
 ---
 
@@ -185,7 +186,10 @@ raise RuntimeError("parallel failed")  # should fall back, not raise
 
 ## Evaluation Checklist
 
-- [ ] Every fallback calls both `_LOGGER.info(...)` AND `warnings.warn(..., UserWarning)`.
+- [ ] Every user-visible fallback calls both `_LOGGER.info(...)` and
+  `warnings.warn(..., UserWarning)`.
+- [ ] Any internal exception is registered in
+  `scripts/quality/check_warning_policy.py` with a concrete reason.
 - [ ] Warning message clearly states what failed and what path is chosen.
 - [ ] `stacklevel` is set so the warning points to the user's call site (not the helper).
 - [ ] Test uses `pytest.warns(UserWarning, match=...)` to assert the warning.

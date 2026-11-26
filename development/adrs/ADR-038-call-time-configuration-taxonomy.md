@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the `*Spec`/`*Options`/`*Config` naming taxonomy for call-time configuration surfaces. The `**kwargs` graduation gate (Gap 1, v1.0.0-rc) is an implementation milestone within this ADR's lifecycle. The unknown-kwarg policy for closed/stable public surfaces (§3) and the multi-label spelling question were resolved 2026-07-08 (v0.11.6 Task 5 series): unknown and cross-method keyword arguments now fail fast with `ConfigurationError` on both `WrapCalibratedExplainer` and `CalibratedExplainer`, validated per method against allow-lists with a single source of truth — see the Addendum below.
-
+---
+id: "ADR-038"
+title: "Call-time Configuration Taxonomy and Naming Conventions"
+status: "accepted"
+description: "Governing architectural decision for the `*Spec`/`*Options`/`*Config` naming taxonomy for call-time configuration surfaces. The `**kwargs` graduation gate (Gap 1, v1.0.0-rc) is an implementation milestone within this ADR's lifecycle. The unknown-kwarg policy for closed/stable public surfaces (§3) and the multi-label spelling question were resolved 2026-07-08 (v0.11.6 Task 5 series): unknown and cross-method keyword arguments now fail fast with `ConfigurationError` on both `WrapCalibratedExplainer` and `CalibratedExplainer`, validated per method against allow-lists with a single source of truth — see the Addendum below."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-07-08):** Last edited 2026-07-08 (Addendum: fail-fast call-time kwarg validation, v0.11.6 Task 5 series) · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.3 (base decision), v0.11.6 (fail-fast addendum). Establishes the call-time configuration taxonomy and naming conventions. Canonical examples are `RejectPolicySpec` (Strategy) and `GuardedOptions` (Tuning).
 
 # ADR-038: Call-time Configuration Taxonomy and Naming Conventions
 
-Status: Accepted
 Date: 2026-06-12
 Deciders: Core maintainers
 Reviewers: API, Plugin, and Governance maintainers
-Supersedes: None
-Superseded-by: None
 Related: ADR-034-centralized-configuration-management, ADR-006-plugin-registry-trust-model, ADR-011-deprecation-and-migration-policy, ADR-020-legacy-user-api-stability, ADR-029-reject-integration-strategy, ADR-032-guarded-explanation-semantics
 
 ## Context

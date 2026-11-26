@@ -174,7 +174,6 @@ Write your proposal containing:
 
 - `reports/anti-pattern-analysis/test_anti_pattern_report.csv`
 - `reports/anti-pattern-analysis/private_usage_scan_*.csv`
-- `docs/improvement/anti_pattern_gap_analysis.ipynb` (analysis notebook)
 - `.github/private_member_allowlist.json`
 - ADR-030: `development/adrs/` (search for ADR-030)
 

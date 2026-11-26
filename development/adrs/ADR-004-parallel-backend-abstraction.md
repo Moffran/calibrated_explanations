@@ -1,15 +1,18 @@
-> **Active scope:** Governing architectural decision for the `ParallelConfig`/`strategy` parallel-execution contract and backend selection policy. The `strategy="auto"` deprecation (v0.11.4) and removal (v1.0.0) are implementation milestones within this ADR's lifecycle.
-
+---
+id: "ADR-004"
+title: "Parallel Backend Abstraction"
+status: "accepted"
+description: "Governing architectural decision for the `ParallelConfig`/`strategy` parallel-execution contract and backend selection policy. The `strategy=\"auto\"` deprecation (v0.11.4) and removal (v1.0.0) are implementation milestones within this ADR's lifecycle."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-004: Parallel Backend Abstraction
 
-Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: None
 
 ## Context
 

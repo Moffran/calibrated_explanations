@@ -110,7 +110,6 @@ enterprise/operational deployment, monitoring, or governance tooling (see
 |---|---|
 | `ce-skill-audit` | Auditing the CE skill library itself |
 | `ce-skill-creator` | Creating new CE skills |
-| `ce-skill-registry-sync` | Keeping the skill registry up to date |
 | `ce-notebook-audit` | Auditing Jupyter notebooks in CE projects |
 | `ce-plot-review` | Reviewing CE visualisations/plots |
 | `ce-plotspec-author` | Writing plot specifications for CE outputs |
@@ -144,8 +143,8 @@ Before routing: the canonical CE entry points are `WrapCalibratedExplainer`,
 the primary mental model or as a substitute for the public API.
 
 If a user asks about `ce_agent_utils` specifically:
-→ Route to `ce-pipeline-builder` with a note to read the explicit skeleton first,
-  and use the optional helpers section only after verifying canonical delegation.
+→ Route to `ce-pipeline-builder` and explain that new agent code uses the direct
+  public wrapper lifecycle; helpers remain only for legacy maintenance.
 
 ---
 
@@ -161,8 +160,8 @@ If a user asks about `ce_agent_utils` specifically:
 → Primary: `ce-reject-policy`
 
 **"I want to use ce_agent_utils / wrap_and_explain"**
-→ Primary: `ce-pipeline-builder` (explicit skeleton first; optional helpers section is secondary)
-→ Note: `ce_agent_utils` is a convenience layer — verify it still delegates to the public API
+→ Primary: `ce-pipeline-builder`
+→ Note: do not use `ce_agent_utils` for new workflows; construct `WrapCalibratedExplainer` directly
 
 **"I want to build a pipeline / start using CE"**
 → Primary: `ce-pipeline-builder`

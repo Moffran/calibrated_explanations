@@ -1,146 +1,34 @@
-# GitHub Copilot Instructions for `calibrated_explanations`
+# GitHub Copilot instructions
 
-> **Canonical agent instructions:** `CONTRIBUTOR_INSTRUCTIONS.md` — the single source of
-> truth shared by all agent platforms (Copilot, Codex, Claude Code, Gemini). Read
-> that first. This file adds **only** GitHub Copilot-specific context.
-> **Setup guide:** `docs/get-started/copilot-setup.md` — VS Code setup, prompt files, feedback loop.
-> **Feedback log:** `.github/copilot-feedback-log.md` — dated corrections; run `/refresh-ce-context feedback="…"` to add an entry.
+> [`CONTRIBUTOR_INSTRUCTIONS.md`](../CONTRIBUTOR_INSTRUCTIONS.md) is the single
+> source of truth shared by all agent platforms. This file adds only GitHub
+> Copilot-specific integration guidance.
 
----
+## VS Code setup
 
-## 1. Project Context & Architecture
-- **Core Purpose:** Extract calibrated explanations (factual rules, alternatives, prediction intervals) from scikit-learn compatible models.
-- **Key Components:**
-  - `core/`: Main logic (`CalibratedExplainer`, `WrapCalibratedExplainer`). **Strictly separated** from plugins (ADR-001).
-  - `plugins/`: Extensible architecture for calibrators, plotters, and explanations (ADR-006, ADR-013, ADR-014).
-  - `calibration/`: Underlying calibration logic (Venn-Abers, Conformal Prediction).
-- **Design Patterns:**
-  - **Lazy Loading:** Heavy dependencies (matplotlib, etc.) are imported lazily in `__init__.py` and `__getattr__` to minimize startup time.
-  - **Plugin-First:** New functionality should often be implemented as a plugin rather than modifying core logic directly.
-  - **Validation:** Use the unified exception hierarchy in `core.exceptions` (ADR-002).
+- Setup and extension guidance:
+  [`docs/get-started/copilot-setup.md`](../docs/get-started/copilot-setup.md).
+- Durable corrections:
+  [`.github/copilot-feedback-log.md`](copilot-feedback-log.md).
 
-## 2. Development Workflow
-- **Build & Test:**
-  - Inner loop: `make quick`.
-  - Release-task closure: `make local-checks-task TASK=<n>`.
-  - PR preflight: `make local-checks-pr`.
-  - Merge/final local gate: `make local-checks-full`.
-  - Release prep: `make local-checks-release`.
-  - Workflow run-block smoke only: `make ci-local-runblocks`.
-  - Run tests directly when needed: `make test` or `pytest`.
-  - **Strict Gates:** The project enforces high standards for coverage (90%+), docstrings, and linting.
-- **Release Process:**
-  - Follow the sole active `development/current-work/vX.Y.Z_plan.md`.
-    Proposed work lives in GitHub issues; approved scope is a GitHub milestone.
-  - Check `development/adrs/` for architectural constraints before major changes.
-
-## 3. Coding Standards
-- **Type Hinting:** Use `from __future__ import annotations` and comprehensive type hints.
-- **Docstrings:** Strict **Numpy style** docstrings are required (ADR-018).
-- **Imports:** Avoid circular imports. Use `if TYPE_CHECKING:` for type-only imports.
-- **Deprecation:** Use `utils.deprecate` for legacy features (ADR-011).
-
-## 4. Testing Guidance (Critical)
-> **Ref:** `tests/README.md`
-
-1. **Modify existing files first.** Locate the nearest test file for the SUT and extend it.
-2. **Respect scope + naming.** Use `tests/unit|integration|e2e/...` paths with `test_<module>.py` naming.
-3. **Content rubric.** Output deterministic, AAA-structured pytest tests named `test_should_<behavior>_when_<condition>`.
-4. **Mocking & snapshots.** Mock only to avoid slow I/O. Assert behaviors, not implementation details.
-5. **Coverage context.** Keep an eye on `pytest --cov=... --cov-fail-under=90`.
-
-## 5. Key Files & Directories
-- `src/calibrated_explanations/core/__init__.py`: Public API surface (lazy loaded).
-- `src/calibrated_explanations/plugins/`: Plugin implementations.
-- `src/calibrated_explanations/ce_agent_utils.py`: CE-first runtime guardrails for agents.
-- `development/adrs/`: Architectural Decision Records (Read these!).
-- `Makefile`: Entry points for build and test tasks.
-
-## 6. Design Patterns & TDD
-**Prefer Test-Driven Development (TDD):**
-1.  **Red:** Write a failing test case first (following the Testing Guidance).
-2.  **Green:** Implement the minimal code to pass the test.
-3.  **Refactor:** Clean up the code while keeping tests green.
-
-**Required Patterns:**
--   **Plugin/Strategy:** Implement new functionality (calibrators, plotters) as plugins in `plugins/` using `typing.Protocol`. Do not modify `core/` logic unless necessary.
--   **Adapter:** Maintain scikit-learn compatibility via `WrapCalibratedExplainer`.
--   **Lazy Loading:** **CRITICAL:** Do not add eager imports for heavy libs (matplotlib, pandas) in `__init__.py`. Use `__getattr__` or local imports.
-
-**Nice-to-Haves (Recommended):**
--   **Facade:** `CalibratedExplainer` acts as a facade. When adding complex subsystems, hide them behind a simple facade method.
--   **Factory:** The registry acts as a factory. Use factory methods for creating complex `Explanation` objects.
-
-**Anti-Patterns (Overhead):**
--   **Deep Inheritance:** Prefer composition and Protocols.
--   **Heavy DI:** Use the existing registry; do not introduce DI containers.
-
-## 7. Fallback Visibility Policy (MANDATORY)
-
-All runtime, plugin, visualization, and utility fallbacks must be visible to users.
-
-- **Log Info:** Emit an `INFO` log summarizing the fallback decision (what failed, what path is chosen).
-- **Raise Warning:** Emit a `warnings.warn(..., UserWarning)` with a clear message. No silent fallbacks.
-- **Where:** Apply to execution strategy selection (parallel → sequential), plugin execution fallbacks (legacy path), cache backend fallbacks, visualization simplifications, and perturbation fallbacks.
-- **Tests:**
-  - If a test depends on a fallback, assert that a warning is raised using `pytest.warns(UserWarning)`.
-  - If a test does not depend on a fallback, then the fallback chain must be explicitly made empty to avoid unexpected fallbacks.
-- **Docs:** When introducing a new fallback, update `CHANGELOG.md` with a short note.
-
-This policy enforces traceability and observability across all fallback decisions and is required for PR approval.
-
----
-
-## 8. Python Scripting
-
-Never use the construct:
-
-```bash
-python - <<PY
-# Your Python code here
-PY
-```
-
-It does not work!
-
-Prefer using a python -c command, like:
-
-```pwsh
-python -c "import calibrated_explanations as ce; print(ce.__version__)"
-```
-
----
-
-## 9. Copilot-Specific: Instruction Files (auto-injected context)
-
-The following files are automatically loaded into Copilot's context based on the
-file you are editing (via `applyTo` frontmatter). You do not need to paste them
-into the chat.
+## Automatically applied instruction files
 
 | File | Scope | Purpose |
 |---|---|---|
-| `.github/instructions/source-code.instructions.md` | `src/**/*.py` | Module layout, import rules, docstring style, error handling |
-| `.github/instructions/tests.instructions.md` | `tests/**`, `*test*` | Test framework, naming, structure, coverage gate |
-| `.github/instructions/execution plan.instructions.md` | all files | Release plan, ADR conformance, changelog policy |
+| [`instructions/source-code.instructions.md`](instructions/source-code.instructions.md) | `src/**/*.py` | Python source boundaries and error-handling reminders |
+| [`instructions/tests.instructions.md`](instructions/tests.instructions.md) | tests and test-like files | Route test work to `tests/README.md` |
+| [`instructions/execution plan.instructions.md`](<instructions/execution plan.instructions.md>) | all files | Plan, ADR, release, and changelog authority |
 
----
+These files are scoped reminders, not alternate owners of the repository rules.
 
-## 10. Copilot-Specific: Prompt Slash Commands
+## Prompt commands
 
-Type `/` in Copilot Chat to invoke these CE workflows:
+Use the repository prompt files under [`.github/prompts/`](prompts/) for
+`/generate-tests-strict`, `/implement-plugin`, `/fix-issue`, and
+`/refresh-ce-context`.
 
-| Command | Use when |
-|---|---|
-| `/generate-tests-strict` | Writing new tests for any CE module |
-| `/implement-plugin` | Scaffolding a new calibrator, plot, or explanation plugin |
-| `/fix-issue` | Diagnosing and fixing a bug or failing test |
-| `/refresh-ce-context` | Updating instructions after an API change or to record feedback |
+## Workspace tips
 
----
-
-## 11. Copilot-Specific: Chat Tips
-
-- Use `@workspace` for questions about CE internals — it indexes local files.
-- Use `#file:CONTRIBUTOR_INSTRUCTIONS.md` to explicitly pin the canonical instructions in chat.
-- Commit instruction-file updates in the same PR as the code change so history stays in sync.
-- Persist feedback in `.github/copilot-feedback-log.md` with `Feedback`, `Root cause`, `Durable fix`, `Verification`, and `Status` fields.
+- Use `@workspace` for CE-internal code discovery.
+- Pin `#file:CONTRIBUTOR_INSTRUCTIONS.md` when repository-wide rules matter.
+- Commit instruction changes together with the behavior or correction they govern.

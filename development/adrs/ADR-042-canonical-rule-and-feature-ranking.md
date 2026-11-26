@@ -1,13 +1,18 @@
+---
+id: "ADR-042"
+title: "Canonical Rule and Feature Ranking Semantics"
+status: "accepted"
+description: "Governing deterministic canonical rule and feature ranking across plots, narratives, representations and conjunction selection."
+supersedes: []
+superseded_by: []
+---
 > **Status note (2026-11-02):** Last edited 2026-11-25 (D17 public canonical rule selection added; D9, D13, D15 amended; #227, #204) · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).
 
 # ADR-042: Canonical Rule and Feature Ranking Semantics
 
-Status: Accepted
 Date: 2026-10-14
 Deciders: Core maintainers
 Reviewers: Core maintainers
-Supersedes: None
-Superseded-by: None
 Related: ADR-002-validation-and-exception-design, ADR-005-explanation-json-schema-versioning, ADR-008-explanation-domain-model-and-compat, ADR-011-deprecation-and-migration-policy, ADR-020-legacy-user-api-stability, ADR-021-calibrated-interval-semantics, ADR-027-fast-feature-filtering, ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-040-capability-verification-framework
 
 ## Context

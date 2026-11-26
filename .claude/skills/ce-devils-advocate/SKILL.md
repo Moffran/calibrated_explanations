@@ -1,8 +1,8 @@
 ---
 name: ce-devils-advocate
 description: >
-  Adversarially challenge cleanup and test proposals for hidden risk, weak evidence,
-  and coverage or behavior regressions, including Option A/B/C focus-specific risks.
+  Challenge proposed CE test and cleanup work for hidden risk, weak evidence,
+  and regressions.
 ---
 
 # CE Devil's Advocate

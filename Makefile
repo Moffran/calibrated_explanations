@@ -53,6 +53,17 @@ check-private-members:
 check-agent-instructions:
 	python scripts/quality/check_agent_instruction_consistency.py
 
+.PHONY: check-skill-mirrors
+check-skill-mirrors:
+	python scripts/quality/check_skill_mirror_sync.py --strict
+
+.PHONY: instruction-index-sync instruction-index-check
+instruction-index-sync:
+	python scripts/local_checks.py --instruction-index-sync
+
+instruction-index-check:
+	python scripts/quality/sync_instruction_indexes.py --check
+
 .PHONY: check-report-paths
 check-report-paths:
 	python scripts/quality/check_no_local_paths_in_reports.py --check --report reports/quality/no_local_paths_report.json

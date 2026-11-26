@@ -1,3 +1,11 @@
+---
+id: "ADR-025"
+title: "Legacy Plot Rendering Semantics"
+status: "superseded"
+description: "Historical legacy plot-rendering semantics retained for migration reference."
+supersedes: []
+superseded_by: ["docs/maintenance/legacy-plotting-reference.md"]
+---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-025: Legacy Plot Rendering Semantics
@@ -7,12 +15,9 @@
 > This ADR has been superseded by [docs/maintenance/legacy-plotting-reference.md](../../maintenance/legacy-plotting-reference.md).
 > The legacy plotting semantics are now maintained as a reference rather than an active architectural decision.
 
-Status: Superseded
 Date: 2025-10-18
 Deciders: Core maintainers
 Reviewers: TBD
-Supersedes: None
-Superseded-by: docs/maintenance/legacy-plotting-reference.md
 Related: ADR-014, ADR-016, ADR-021, ADR-024
 
 ## Context

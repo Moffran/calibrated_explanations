@@ -32,7 +32,9 @@ priority: 90
 - Do not raise bare `Exception` or `ValueError` unless the callers already expect them
   as part of the documented contract.
 
-### Fallback visibility (mandatory – see `copilot-instructions.md` §7)
-- Every fallback must emit `warnings.warn(..., UserWarning)` **and** an `INFO` log.
+### Fallback visibility (mandatory – see `CONTRIBUTOR_INSTRUCTIONS.md` §4)
+- Every retained user-visible fallback must emit
+  `warnings.warn(..., UserWarning)` **and** an `INFO` log.
 - Parallel → sequential fallbacks must be announced before execution starts.
-- No silent fallbacks anywhere in `src/`.
+- A narrow internal exception requires a site-specific disposition in
+  `scripts/quality/check_warning_policy.py`; do not infer a general exemption.

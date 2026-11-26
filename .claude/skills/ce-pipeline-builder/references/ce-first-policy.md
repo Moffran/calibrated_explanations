@@ -14,8 +14,9 @@ prediction or explanation output:
    ```bash
    pip install calibrated-explanations
    ```
-2. **Wrapper** — use `WrapCalibratedExplainer` (or a verified subclass). Never
-   invent a new wrapper class.
+2. **Wrapper** — use `WrapCalibratedExplainer` directly. A verified subclass may
+   preserve the contract for an intentional extension; never invent an ad-hoc
+   wrapper class.
 3. **Fit** — `explainer.fit(x_proper, y_proper)` → assert `explainer.fitted is True`.
 4. **Calibrate** — `explainer.calibrate(x_cal, y_cal)` → assert `explainer.calibrated is True`.
 5. **Explain (standard)** — `explainer.explain_factual(X)` or
@@ -34,17 +35,11 @@ prediction or explanation output:
 10. **Probabilistic regression** — `threshold=` for probabilistic intervals;
     `low_high_percentiles=` for conformal.
 
-## Helper Utilities
+## Direct public API
 
-`src/calibrated_explanations/ce_agent_utils.py` exposes validated helpers:
-
-| Helper | Purpose |
-|---|---|
-| `ensure_ce_first_wrapper(model)` | Wrap and validate |
-| `fit_and_calibrate(explainer, x_proper, y_proper, x_cal, y_cal)` | Fit + calibrate |
-| `explain_and_narrate(explainer, X, mode)` | Explain + return narrative |
-| `wrap_and_explain(model, x_proper, y_proper, x_cal, y_cal, X_query)` | Full pipeline |
-| `probe_optional_features(explainer)` | Check available optional features |
+New agent implementations call the wrapper lifecycle directly.
+`src/calibrated_explanations/ce_agent_utils.py` remains available for legacy
+integrations, not as an implementation shortcut.
 
 ## Architecture Constraint
 
@@ -56,7 +51,7 @@ Core never imports plugins (ADR-001). Every new feature goes into `plugins/`.
 ```python
 CE_FIRST_POLICY["failure_messages"] = {
     "missing_library": "calibrated_explanations is required. Install with: pip install calibrated-explanations",
-    "invalid_wrapper": "Wrapper must be a WrapCalibratedExplainer (or subclass) from calibrated_explanations.",
+    "invalid_wrapper": "Wrapper must be WrapCalibratedExplainer or a verified subclass from calibrated_explanations.",
     "not_fitted": "Wrapper must be fitted before calibration or explanation.",
     "not_calibrated": "Wrapper must be calibrated before prediction or explanation.",
 }

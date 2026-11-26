@@ -103,9 +103,10 @@ grep -r "from calibrated_explanations.core" src/your_plugin/
 
 ---
 
-## Audit Dimension 5 — Fallback visibility (mandatory copilot-instructions.md §7)
+## Audit Dimension 5 — Fallback visibility (CONTRIBUTOR_INSTRUCTIONS.md §4)
 
-All fallback decisions inside the plugin must be visible:
+User-visible fallback decisions inside the plugin must be visible. Check the
+warning-policy registry before accepting an internal exception:
 ```python
 import warnings, logging
 _LOGGER = logging.getLogger("calibrated_explanations.plugins.<name>")
@@ -193,6 +194,7 @@ Overall:   CONFORMANT / NON-CONFORMANT (N issues)
 - [ ] Context not mutated in `create()`.
 - [ ] `predict_proba` delegates to VennAbers / IntervalRegressor for probability maths.
 - [ ] No imports of `core/` implementation details.
-- [ ] Every fallback emits `warnings.warn + _LOGGER.info`.
+- [ ] Every user-visible fallback emits `warnings.warn + _LOGGER.info`; any
+  internal exception is registered in `check_warning_policy.py`.
 - [ ] No eager top-level imports of matplotlib/pandas/joblib.
 - [ ] ADR-033 metadata present if non-tabular modality targeted.

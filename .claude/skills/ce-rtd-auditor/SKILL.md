@@ -33,7 +33,8 @@ rg -n "{doc}|toctree|WrapCalibratedExplainer|ce_agent_utils" docs
 - page title and sectioning are clear and stable
 
 3. Validate technical correctness:
-- examples use public API (`WrapCalibratedExplainer`, `ce_agent_utils`)
+- examples use `WrapCalibratedExplainer`; new guidance does not use
+  `ce_agent_utils` as an implementation shortcut
 - no private-member guidance
 - uncertainty semantics and CE-first lifecycle are consistent
 

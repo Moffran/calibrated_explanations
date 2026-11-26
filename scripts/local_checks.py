@@ -808,6 +808,10 @@ def _quick_steps(mypy_targets: list[str], lint_targets: list[str]) -> list[Step]
                 "ADR-002 compliance check",
                 _python_cmd("scripts/quality/check_adr002_compliance.py"),
             ),
+            Step(
+                "Instruction index consistency",
+                _python_cmd("scripts/quality/sync_instruction_indexes.py", "--check"),
+            ),
             Step("Unit tests (fast/no viz/no slow/no cov)", _quick_pytest_command()),
         ]
     )
@@ -826,20 +830,24 @@ def _pr_steps(
                 _python_cmd("scripts/quality/validate_ci_policy.py", "--full-inventory"),
             ),
             Step(
-                "Ruff naming enforcement (ADR-017)",
+                "Ruff naming enforcement (STD-001)",
                 _python_cmd("-m", "ruff", "check", "--select", "N"),
             ),
             Step(
-                "Notebook naming lint (ADR-018 notebooks)",
+                "Notebook naming lint (STD-002 notebooks)",
                 _python_cmd("-m", "nbqa", "ruff", "notebooks", "--select", "N"),
             ),
             Step(
-                "pydocstyle (ADR-018 baseline)",
+                "pydocstyle (STD-002 baseline)",
                 _python_cmd("-m", "pydocstyle", "src", "tests"),
             ),
             Step(
                 "Agent instruction consistency",
                 _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
+            ),
+            Step(
+                "Canonical skill mirror consistency",
+                _python_cmd("scripts/quality/check_skill_mirror_sync.py", "--strict"),
             ),
             Step(
                 "Deprecation ledger gate (ADR-011)",
@@ -2800,6 +2808,11 @@ def main() -> int:
         help="Compatibility alias for --profile pr.",
     )
     parser.add_argument(
+        "--instruction-index-sync",
+        action="store_true",
+        help="Regenerate derived ADR, standard, and skill discovery indexes.",
+    )
+    parser.add_argument(
         "--ci-parity",
         action="store_true",
         help="Run the local workflow run-block smoke runner (not an exact GitHub Actions emulator).",
@@ -2886,6 +2899,10 @@ def main() -> int:
         for target in _mypy_targets():
             print(target)
         return 0
+    if args.instruction_index_sync:
+        return subprocess.call(  # noqa: S603
+            _python_cmd("scripts/quality/sync_instruction_indexes.py", "--write")
+        )
     if args.uv_install_smoke:
         return _run_uv_install_smoke()
     if args.adr030_ratification:

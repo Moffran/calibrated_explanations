@@ -1,8 +1,8 @@
 ---
 name: ce-release-task
 description: >
-  Identify the next release deliverable from the active vX.Y.Z_plan.md,
-  plan implementation, execute it, and verify closure with tests and gates.
+  Implement and verify one active-plan deliverable with its ADRs, tests, gates,
+  and closure evidence.
 ---
 
 # CE Release Task

@@ -1,758 +1,234 @@
 # Agent Instructions for `calibrated_explanations`
 
-> **Canonical source of truth** for all AI agent platforms (GitHub Copilot, Codex,
-> Claude Code, Google Gemini). Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
-> `GEMINI.md`, `.github/copilot-instructions.md`) reference this file and **only**
-> add what is unique to each platform.
->
-> **Update cadence:** Update this file whenever the public API changes, an ADR is
-> closed, or the feedback log identifies a recurring error. Commit the update in the
-> same PR as the code change.
+> **Canonical source of truth** for repository-wide contributor and agent
+> instructions. Platform files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and
+> `.github/copilot-instructions.md`) add only platform-specific guidance.
+
+## Information ownership
+
+- This file owns globally mandatory operating rules and navigation.
+- Accepted/proposed ADRs in [`development/adrs/README.md`](development/adrs/README.md)
+  own architectural decisions.
+- Engineering standards in
+  [`development/standards/README.md`](development/standards/README.md) own
+  engineering and quality requirements.
+- Skills in [`.claude/skills/README.md`](.claude/skills/README.md) own
+  task-specific workflows.
+- Documentation owns verified API guidance and runnable examples.
+- Generated indexes are discovery surfaces, never independent authority.
+- Scripts and verification gates enforce deterministic checks.
+
+If sources conflict, the governing ADR or engineering standard wins over a
+release plan, a skill, and this operational summary.
 
 ---
 
-## 1. CE-First Policy (mandatory for all agents)
+## 1. Required CE-first lifecycle
 
-All agent workflows **must** follow this checklist before producing any prediction
-or explanation output.
+Use the public `calibrated_explanations` API directly:
 
-1. **Library presence** – If `calibrated_explanations` is not importable, fail fast:
-   ```bash
-   pip install calibrated-explanations
-   ```
-2. **Wrapper** – Use **`WrapCalibratedExplainer`** (or a verified subclass). Never
-   invent a new wrapper class.
-3. **Fit** – `explainer.fit(x_proper, y_proper)` → assert `explainer.fitted is True`.
-4. **Calibrate** – `explainer.calibrate(x_cal, y_cal)` → assert `explainer.calibrated is True`.
-5. **Explain** – Use `explainer.explain_factual(X)` or `explainer.explore_alternatives(X)`.
-    For in-distribution filtering (guarded explanations), use `guarded_options=GuardedOptions()`:
-    ```python
-    from calibrated_explanations.explanations.guarded_options import GuardedOptions
-    explainer.explain_factual(X, guarded_options=GuardedOptions())
-    explainer.explore_alternatives(X, guarded_options=GuardedOptions())
-    ```
-    Per-class output (classification only) and the probability point estimate are
-    explicit keyword-only parameters, not `**kwargs`:
-    `explain_factual(X, multi_labels_enabled=True, interval_summary="lower")`
-    (`interval_summary`: `IntervalSummary` member or `"regularized_mean"`/`"mean"`/
-    `"lower"`/`"upper"`; `None` keeps the explainer-level setting).
-    `GuardedOptions` fields: `confidence` (default 0.9), `n_neighbors`, `normalize`,
-    `merge_adjacent`. Do NOT use the REMOVED methods `explain_guarded_factual(X)` /
-    `explore_guarded_alternatives(X)` (deleted v0.11.3) or the removed `guarded=True`
-    boolean kwarg (removed in v0.11.5; raises `ConfigurationError` as of v0.11.6).
-6. **Calibrated by default** – Do not return uncalibrated outputs unless explicitly
-   requested.
-7. **Conjunctions** – `explanations.add_conjunctions(...)` or
-   `explanations[idx].add_conjunctions(...)`.
-8. **Narratives & plots** – `.to_narrative(output_format=...)` and `.plot(...)`.
-9. **Probabilistic regression** – `threshold=` for probabilistic intervals;
-   `low_high_percentiles=` for conformal.
+1. Import `WrapCalibratedExplainer` from `calibrated_explanations`.
+2. Instantiate `WrapCalibratedExplainer` directly. A subclass is acceptable only
+   when it is an intentional, verified extension that preserves the wrapper
+   contract; never invent an ad-hoc wrapper.
+3. Call `fit(x_proper, y_proper)` and require `fitted is True`.
+4. Call `calibrate(x_cal, y_cal, ...)` and require `calibrated is True`.
+5. Use `explain_factual`, `explore_alternatives`, `predict`, or `predict_proba`.
+6. Return calibrated outputs and uncertainty by default. Do not silently return
+   uncalibrated output.
+7. Verify the fit/calibrate lifecycle explicitly; never delegate it to
+   `ce_agent_utils`.
 
-Agents must not use `calibrated_explanations.ce_agent_utils` as their
-implementation shortcut. Use the public API directly. `ce_agent_utils.py` is
-retained for backward compatibility and as a legacy example only.
+`calibrated_explanations.ce_agent_utils` is retained for backward compatibility
+and legacy integrations, not as the implementation shortcut for new agent code.
+Authoritative runnable examples live in
+[`docs/get-started/ce_first_agent_guide.md`](docs/get-started/ce_first_agent_guide.md).
+
+Use guarded explanations through `guarded_options=GuardedOptions()`. The removed
+`explain_guarded_factual`, `explore_guarded_alternatives`, and
+`guarded=True` surfaces must not be used.
 
 ---
 
-## 2. Architecture
+## 2. Architecture and coding invariants
 
-| Package | Purpose | Rules |
-|---|---|---|
-| `core/` | `CalibratedExplainer`, `WrapCalibratedExplainer`, `core.exceptions` | Never import `plugins/` here (ADR-001) |
-| `core/config_manager.py` | Runtime configuration authority (`ConfigManager`) | Only boundary module for env/pyproject reads (ADR-034) |
-| `plugins/` | Calibrators, plotters, explanation plugins | Register via plugin registry; never hard-code in `core/` |
-| `calibration/` | Venn-Abers & Conformal Prediction primitives | Stateless helpers only |
-| `utils/` | `deprecate`, logging, serialization | Shared across packages |
+Consult the generated ADR index, then read every relevant accepted source file.
+Common boundaries are:
 
-Design patterns:
-- **Lazy Loading**: `matplotlib`, `pandas`, `joblib` are imported lazily. Never
-  add top-level imports of heavy libs in any module reachable from the package root.
-- **Plugin-First**: New functionality goes into `plugins/`, not `core/`.
-- **Exception hierarchy**: Use `core.exceptions` (ADR-002). No bare `Exception` or
-  `ValueError` unless documented.
-- **Config authority**: All runtime configuration reads go through
-  `ConfigManager` (ADR-034). Do not call `os.getenv` or parse `pyproject.toml`
-  directly outside `core/config_manager.py` and `core/config_helpers.py`. Use
-  `get_process_config_manager()` to access the process-level singleton.
+- `core/` never imports `plugins/`; extensible behavior belongs in `plugins/`.
+- Runtime configuration reads go through `ConfigManager` (ADR-034).
+- Heavy optional libraries are imported lazily.
+- Use the unified exception hierarchy in `core.exceptions` (ADR-002).
+- Use `typing.Protocol` and the existing plugin registry rather than deep
+  inheritance or a new dependency-injection framework.
+- Preserve stable public APIs and scientific semantics unless the approved plan
+  explicitly requires a change.
+- Add `from __future__ import annotations` to Python source, use comprehensive
+  type hints, and write NumPy-style docstrings (STD-002).
+- Use `utils.deprecate` and the ADR-011 lifecycle for public deprecations.
 
----
-
-## 3. Coding Standards
-
-- **Future annotations**: `from __future__ import annotations` at the top of every
-  source file.
-- **Docstrings**: **Numpy style** (`Parameters`, `Returns`, `Raises`, `Examples`).
-- **Type hints**: Comprehensive. Avoid `Any` without a documented reason.
-- **Private members**: Prefix with `_`; omit from `__all__`.
-- **Circular imports**: Use `if TYPE_CHECKING:` blocks for type-only imports.
-- **Deprecation**: Use `utils.deprecate` for legacy features (ADR-011).
+Do not convert ADRs or engineering standards into skills. Do not add a second
+policy hierarchy, master roadmap, requirement catalogue, or canonical registry.
 
 ---
 
-## 4. Testing Standards
+## 3. Testing and capability verification
 
-> Full guidance: `tests/README.md`
+[`tests/README.md`](tests/README.md) is the single test authority; ADR-030 and
+STD-003 govern quality and coverage.
 
-- Framework: **pytest** + **pytest-mock**. No alternative frameworks.
-- Naming: `test_should_<behavior>_when_<condition>` (pytest collection-safe).
-- Structure: Arrange–Act–Assert; one logical assertion block per behavior.
-- Determinism: no real network, clock, or randomness; seed RNG; freeze time.
-- File policy: extend the nearest existing test file first; new files require a
-  "Why a new test file?" justification in the PR.
-- Coverage gate: `pytest --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-fail-under=90`.
-- Fallback tests: tests that rely on a fallback **must** use the `enable_fallbacks`
-  fixture and assert a `UserWarning` is raised.
+- Use pytest and the existing fixtures.
+- Extend the nearest existing test file first.
+- Name tests `test_should_<behavior>_when_<condition>`.
+- Structure tests as Arrange–Act–Assert and assert observable behavior.
+- Keep tests deterministic; do not access private implementation details merely
+  for coverage.
+- Keep normal fallback chains disabled through the autouse fixtures. A fallback
+  behavior test must opt in with `enable_fallbacks`.
+- The package coverage gate is at least 90%; preserve documented exceptions.
 
-### 4A. Capability-Based Verification
-
-This section is the agent-facing operational summary of
-`development/adrs/ADR-040-capability-verification-framework.md`, the governing
-ADR for capability verification. On conflict, ADR-040 is authoritative.
-
-Externally visible CE capability claims are product/library claims about
-`calibrated_explanations` behavior. Treat them as verifiable engineering
-contracts, not as verified facts merely because they appear in documentation.
-
-Use this chain for release confidence:
+For externally visible capability claims, preserve ADR-040's chain:
 
 ```text
 ADR / Standard
-    -> constrains
-Capability claim
-    -> decomposes into
-Requirement
-    -> is exercised through
-TIF verification interface
-    -> is executed by
-Test / verification gate / review
-    -> produces
-Evidence record
+  -> constrains capability claim
+  -> decomposes into requirement
+  -> exercised by TIF or documented exemption
+  -> executed by test / gate / review
+  -> recorded as evidence
 ```
 
-ADRs and Standards constrain claims, requirements, TIF interfaces, and
-verification behavior. They are not themselves capability claims.
+Use the canonical capability locations in `development/capabilities/`. A passing
+test is execution, not evidence, and does not prove assumptions outside the
+documented boundary. Run `make capability-chain-check` for structural changes to
+claims, requirements, TIFs, tests, or evidence.
 
-Definitions:
+---
 
-- **Capability claim**: a broad, user-visible statement about what CE provides.
-  A claim describes a capability at the product/library level. It must not
-  contain acceptance criteria, exact test scenarios, parameter-specific
-  behavior, return-type obligations, or implementation mechanics. A claim
-  should normally decompose into multiple requirements. A one-to-one
-  claim-to-requirement mapping is allowed only when the capability is genuinely
-  atomic and the requirement includes an explicit atomic rationale.
-- **Requirement**: a concrete, scoped, testable obligation derived from one or
-  more capability claims. A requirement explains one way in which a claim is
-  proven and must contain observable behavior, acceptance criteria, verification
-  method, TIF reference or TIF exemption, and evidence expectations.
-- **TIF verification interface**: a reusable test interface that stimulates CE
-  through `WrapCalibratedExplainer`, captures structured observations, and
-  returns those observations to tests or verification gates. TIF is not the
-  same as pytest. TIF defines the interface between requirements and executable
-  verification.
-- **Test / verification execution**: the actual pytest test, quality gate,
-  script, or review process that invokes a TIF interface and evaluates the
-  acceptance criteria.
-- **Evidence**: a durable record of a verification execution, including enough
-  metadata to reconstruct what was checked, against which version, with which
-  fixture/configuration, and with what result.
+## 4. Fallback visibility
 
-Rules:
+Every retained user-visible fallback must:
 
-1. Capability claims are not requirements.
-2. Requirements are not tests.
-3. Tests are not evidence.
-4. Evidence is the recorded result of running a defined verification against a
-   specific version and configuration.
-5. Capability claims must be decomposed into explicit requirements before they
-   are used for release confidence.
-6. Requirements must be testable, scoped, and linked to concrete public
-   behavior.
-7. Tests must verify requirements, not vague promotional language.
-8. Evidence should record enough information to reconstruct what was checked,
-   including the version, data/configuration, verification identifier, and
-   result.
+1. Emit `warnings.warn(..., UserWarning)`.
+2. Emit an `INFO` log summarizing the failure and chosen path.
+3. Be documented in `CHANGELOG.md` when newly introduced.
 
-Each requirement should distinguish the obligation type it expresses, for
-example:
+Narrow internal or best-effort exceptions are allowed only when
+`scripts/quality/check_warning_policy.py` records a site-specific disposition and
+reason with the strongest available logger signal. An exemption is not a blanket
+policy waiver and must never be inferred from wording in a skill or overlay.
 
-- API contract
-- payload/schema contract
-- numerical behavior
-- statistical-method assumption
-- documentation boundary
-- visualization behavior
-- plugin or extension behavior
+---
 
-Statistical claims must state their assumptions explicitly, especially
-calibration-data assumptions, exchangeability assumptions, task-type
-constraints, and empirical-vs-theoretical verification boundaries.
+## 5. Canonical locations and generated discovery
 
-Avoid overclaiming:
+Start with [`development/README.md`](development/README.md), then use:
 
-- Empirical tests do not prove finite-sample theoretical guarantees by
-  themselves.
-- A test that checks output shape does not prove calibration validity.
-- A visual rendering test does not prove the scientific meaning of an
-  explanation.
-- Documentation claims must be scoped to what the implementation and tests
-  actually support.
-
-Anti-patterns:
-
-- Treating vague documentation prose as a testable requirement without
-  normalization.
-- Hiding acceptance criteria inside test code only.
-- Claiming that empirical smoke tests prove theoretical guarantees.
-- Adding tests with no requirement link.
-- Adding requirements with no verification strategy.
-- Adding claims with no owner.
-- Duplicating capability definitions in multiple places.
-- Using vague claims as release evidence.
-- Writing a TIF scenario that constructs explanation objects directly instead of
-  going through `WrapCalibratedExplainer`.
-- Using private/internal CE APIs in TIF scenarios.
-- Writing a one-to-one claim-to-requirement mapping without an explicit atomic
-  rationale.
-- Treating `verified: true` as meaningful without stating what was proven and
-  what was not (see verification_strength and assumption_boundary).
-
-Future claim IDs and requirement IDs should use CE-native prefixes, for example
-`CE-CAP-...` and `CE-REQ-...`.
-
-Canonical CE locations for capability verification material:
-
-| Material | Location |
+| Material | Canonical location |
 |---|---|
-| Capability claims | `development/capabilities/claims/` |
-| Requirements | `development/capabilities/requirements/` |
-| TIF verification interfaces | `development/capabilities/verification/tif/` |
-| Verification scenarios and helpers | `development/capabilities/verification/` |
-| Pytest verification | `tests/capabilities/` for new capability-contract tests; existing nearby unit or integration tests may be linked from requirements when appropriate |
-| Raw evidence run outputs | `reports/verification/` |
-| Curated release or closure evidence summaries | `development/capabilities/evidence/` |
+| Proposed work | GitHub issues |
+| Approved release scope | GitHub milestones |
+| Active release coordination | `development/current-work/vX.Y.Z_plan.md` |
+| Closed planning/evidence | `development/finished-work/` |
+| Architectural decisions | [`development/adrs/`](development/adrs/) |
+| Engineering standards | [`development/standards/`](development/standards/) |
+| Capability verification | `development/capabilities/` |
+| Test quality method | [`development/standards/test-quality-method/`](development/standards/test-quality-method/) |
+| Test guidance | [`tests/README.md`](tests/README.md) |
+| Canonical skills | [`.claude/skills/`](.claude/skills/) |
+| Platform skill mirrors | `.agents/skills/`, `.codex/skills/`, `.github/skills/` |
+| Public contributor docs | [`docs/contributor/`](docs/contributor/) |
 
-These paths define the CE verification layout even if the directories do not yet
-exist. Do not create additional locations for the same material. This instruction
-defines the layout only; do not add claim catalogs, requirement catalogs,
-schemas, verification code, tests, or evidence records unless the task explicitly
-requires that work.
+No new root-level directory may be created without explicit maintainer approval.
+The removed legacy documentation roots docs/improvement and docs/standards must
+not be recreated.
 
-Illustrative example only, not a binding schema:
+The generated indexes are:
 
-```yaml
-claim_id: CE-PRED-REG-001
-claim_type: capability
-claim_text: >
-  CE supports calibrated prediction intervals for supported regression workflows.
-requirements:
-  - CE-REQ-PRED-REG-API-001
-  - CE-REQ-PRED-REG-BOUNDS-001
-  - CE-REQ-PRED-REG-ASSUMPTIONS-001
-verification:
-  proves:
-    - api_contract
-    - interval_bounds_contract
-    - documented_assumption_boundary
-evidence_required:
-  - commit_sha
-  - package_version
-  - test_id
-  - dataset_id
-  - random_seed
-  - result
-```
+- `development/adrs/README.md`
+- `development/standards/README.md`
+- `.claude/skills/README.md`
+- `docs/contributor/agent_skills.md`
 
----
-
-## 5. Fallback Visibility Policy (mandatory)
-
-Every fallback must be visible to users. No silent fallbacks.
-
-- Emit `warnings.warn("<message>", UserWarning)`.
-- Emit an `INFO` log entry summarising the fallback decision.
-- Applies to: parallel → sequential execution, plugin fallback chains, cache backend
-  fallbacks, visualization simplifications.
-- Exception: an internal best-effort fallback may remain non-user-visible only when
-  `scripts/quality/check_warning_policy.py` records a site-specific exemption with a
-  concrete reason and the strongest available logger signal.
-- When introducing a new fallback, update `CHANGELOG.md`.
-
----
-
-## 6. Key Files & Directories
-
-| Path | Purpose |
-|---|---|
-| `src/calibrated_explanations/core/__init__.py` | Public API surface |
-| `src/calibrated_explanations/core/config_manager.py` | Runtime configuration authority: `ConfigManager`, `get_process_config_manager`, `init_process_config_manager` |
-| `src/calibrated_explanations/plugins/` | Plugin implementations |
-| `src/calibrated_explanations/ce_agent_utils.py` | Legacy compatibility module — backward-compat and example only, not the recommended agent interface |
-| `development/README.md` | Canonical development documentation map |
-| `development/current-work/` | The sole active `vX.Y.Z_plan.md` coordinating the current release |
-| `development/finished-work/` | Closed plans and curated closure evidence summaries |
-| GitHub issues / milestones | Proposed engineering work / approved release scope |
-| `development/adrs/` | Architectural Decision Records after migration |
-| `development/standards/` | Engineering Standards after migration |
-| `development/capabilities/claims/` | Capability claim catalog |
-| `development/capabilities/requirements/` | Requirement catalog |
-| `development/capabilities/verification/tif/` | TIF verification interface specifications and executable scenarios |
-| `development/capabilities/verification/` | Capability verification scenarios and helpers |
-| `docs/get-started/ce_first_agent_guide.md` | Runnable CE-first guide |
-| `docs/foundations/how-to/configure_runtime.md` | How-to guide: ConfigManager, env vars, pyproject.toml sections, export diagnostics |
-| `development/standards/test-quality-method/` | ADR-030 quality method tooling — canonical location |
-| `tests/README.md` | Authoritative test guidance |
-| `CHANGELOG.md` | Changelog; update under `## [Unreleased]` for every change |
-| `Makefile` | Entry points: `make quick`, `make local-checks-task`, `make local-checks-pr`, `make local-checks-full`, `make local-checks-release`, `make release-prepare-files` (focused deterministic version/file alignment before checklist closure), `make release-preflight` (release.md steps 1-10, including an idempotent release-file update), `make release-finalize`, `make release-postcommit` (steps 14-17; steps 11-13 remain maintainer-only) |
-
-Removed legacy docs locations: docs/improvement/ and docs/standards/ were fully
-removed after migration to `development/`. Do not recreate them or add new
-planning, ADR, Standard, claim, requirement, verification-framework, or curated
-evidence files there.
-
-### Root-directory policy
-
-**No new root-level directories may be created** without explicit maintainer approval.
-`development/` is the approved exception for maintainer planning, engineering
-governance, capability claim/requirement catalogs, and curated closure evidence
-summaries.
-Artifact and report outputs must be placed under an existing top-level directory:
-`reports/`, `artifacts/`, `docs/`, `scripts/`, `tests/`, or `development/`
-according to the location map above.
-Proposing a new root directory requires a PR rationale and an update to this file.
-
----
-
-## 6A. Shared Skill Registry (Cross-Agent)
-
-All agent platforms (Codex, GitHub Copilot, Claude Code, Gemini, and others)
-must treat `.claude/skills/` as the canonical repository skill catalog.
-
-Other skill trees such as `.agents/skills/`, `.github/skills/`, and
-`.codex/skills/` are compatibility or platform-local surfaces only. Shared CE
-skills must not be maintained independently there; keep the authoritative
-content under `.claude/skills/` and treat any extra non-canonical skills as
-explicit platform-only differences.
-For shared CE skills, shadow trees should contain only a shim `SKILL.md` that
-redirects to the canonical `.claude/skills/<skill>/SKILL.md` path; do not ship
-duplicated `assets/`, `references/`, or `scripts/` there.
-
-### Skill discovery and use
-
-1. Discover skills from `./.claude/skills/*/SKILL.md`.
-2. Select and apply the minimum skill set matching the task intent.
-3. Follow each selected skill's `SKILL.md` workflow before writing ad-hoc logic.
-4. If a skill conflicts with CE-first policy, CE-first policy wins.
-
-### Current shared skills
-
-| Skill | Path | Primary use |
-|---|---|---|
-| `ce-adr-author` | `.claude/skills/ce-adr-author/SKILL.md` | Author or update ADR documents |
-| `ce-adr-consult` | `.claude/skills/ce-adr-consult/SKILL.md` | Identify and apply relevant ADRs for a task |
-| `ce-adr-gap-analyzer` | `.claude/skills/ce-adr-gap-analyzer/SKILL.md` | Analyze ADR compliance by verifying implementation and RTD against ADR intent |
-| `ce-alternatives-explore` | `.claude/skills/ce-alternatives-explore/SKILL.md` | Alternative/counterfactual exploration workflows |
-| `ce-calibrated-predict` | `.claude/skills/ce-calibrated-predict/SKILL.md` | Generate calibrated predictions without explanations |
-| `ce-classification` | `.claude/skills/ce-classification/SKILL.md` | Calibrated Explanations for binary and multiclass tasks |
-| `ce-code-quality-auditor` | `.claude/skills/ce-code-quality-auditor/SKILL.md` | Identify quality risks and anti-patterns per ADR-030 |
-| `ce-code-review` | `.claude/skills/ce-code-review/SKILL.md` | Perform CE-focused code reviews |
-| `ce-data-preparation` | `.claude/skills/ce-data-preparation/SKILL.md` | Validate and preprocess input data for CE pipelines |
-| `ce-deadcode-hunter` | `.claude/skills/ce-deadcode-hunter/SKILL.md` | Identify and clean up unreachable or non-contributing code |
-| `ce-deprecation` | `.claude/skills/ce-deprecation/SKILL.md` | Implement ADR-011 compliant deprecations |
-| `ce-devils-advocate` | `.claude/skills/ce-devils-advocate/SKILL.md` | Rigorously review agent proposals for risks and blind spots |
-| `ce-docstring-author` | `.claude/skills/ce-docstring-author/SKILL.md` | Write or fix numpy-style docstrings |
-| `ce-explain-interact` | `.claude/skills/ce-explain-interact/SKILL.md` | Interactive explanation workflows |
-| `ce-factual-explain` | `.claude/skills/ce-factual-explain/SKILL.md` | Factual explanation workflows |
-| `ce-fallback-impl` | `.claude/skills/ce-fallback-impl/SKILL.md` | Implement visible, policy-compliant fallback paths |
-| `ce-fallback-test` | `.claude/skills/ce-fallback-test/SKILL.md` | Fallback visibility and warning tests |
-| `ce-integration-compare` | `.claude/skills/ce-integration-compare/SKILL.md` | Guide CE integration with SHAP and LIME |
-| `ce-logging-observability` | `.claude/skills/ce-logging-observability/SKILL.md` | Manage logging, governance, and audit context (ADR-028) |
-| `ce-modality-extension` | `.claude/skills/ce-modality-extension/SKILL.md` | Extend CE support to new data modalities |
-| `ce-mondrian-conditional` | `.claude/skills/ce-mondrian-conditional/SKILL.md` | Configure conditional/Mondrian calibration flows |
-| `ce-notebook-audit` | `.claude/skills/ce-notebook-audit/SKILL.md` | Audit notebooks for API/policy compliance |
-| `ce-onboard` | `.claude/skills/ce-onboard/SKILL.md` | Session-start CE orientation and skill routing |
-| `ce-payload-governance` | `.claude/skills/ce-payload-governance/SKILL.md` | Manage and validate explanation payloads (ADR-005) |
-| `ce-pipeline-builder` | `.claude/skills/ce-pipeline-builder/SKILL.md` | CE-first pipeline construction tasks |
-| `ce-plot-review` | `.claude/skills/ce-plot-review/SKILL.md` | Review visualization and plotting changes |
-| `ce-plotspec-author` | `.claude/skills/ce-plotspec-author/SKILL.md` | Author or extend PlotSpec-driven visualizations |
-| `ce-plugin-audit` | `.claude/skills/ce-plugin-audit/SKILL.md` | Audit plugin implementations and contracts |
-| `ce-performance-tuning` | `.claude/skills/ce-performance-tuning/SKILL.md` | Configure caching, parallelism, and batch-size tuning |
-| `ce-plugin-scaffold` | `.claude/skills/ce-plugin-scaffold/SKILL.md` | Scaffold new plugin implementations |
-| `ce-regression-intervals` | `.claude/skills/ce-regression-intervals/SKILL.md` | Probabilistic/conformal regression interval workflows |
-| `ce-regulatory-compliance` | `.claude/skills/ce-regulatory-compliance/SKILL.md` | Map CE capabilities to EU AI Act, GDPR, and liability directive obligations |
-| `ce-reject-policy` | `.claude/skills/ce-reject-policy/SKILL.md` | Configure reject/defer decision policies |
-| `ce-release-check` | `.claude/skills/ce-release-check/SKILL.md` | Select and validate next release tasks |
-| `ce-release-finalize` | `.claude/skills/ce-release-finalize/SKILL.md` | Execute the PyPI release checklist |
-| `ce-release-planner` | `.claude/skills/ce-release-planner/SKILL.md` | Analyze release plan and produce vX.Y.Z implementation plans |
-| `ce-release-task` | `.claude/skills/ce-release-task/SKILL.md` | Identify, implement, and verify individual release tasks |
-| `ce-rtd-auditor` | `.claude/skills/ce-rtd-auditor/SKILL.md` | Audit RTD docs for structure, accuracy, and governance alignment |
-| `ce-rtd-writer` | `.claude/skills/ce-rtd-writer/SKILL.md` | Author or revise RTD docs with audience-aware structure |
-| `ce-serialization-audit` | `.claude/skills/ce-serialization-audit/SKILL.md` | Audit serialization behavior and coverage |
-| `ce-serializer-impl` | `.claude/skills/ce-serializer-impl/SKILL.md` | Implement serialization and persistence support |
-| `ce-skill-audit` | `.claude/skills/ce-skill-audit/SKILL.md` | Audit repository skills against Claude authoring guidance |
-| `ce-skill-creator` | `.claude/skills/ce-skill-creator/SKILL.md` | Create/refactor skills and enforce structure/trigger quality |
-| `ce-skill-registry-sync` | `.claude/skills/ce-skill-registry-sync/SKILL.md` | Enforce synchronization of all skill registries |
-| `ce-standards-gap-analyzer` | `.claude/skills/ce-standards-gap-analyzer/SKILL.md` | Analyze STD compliance by verifying implementation and RTD against STD intent |
-| `ce-test-audit` | `.claude/skills/ce-test-audit/SKILL.md` | Test quality/compliance audit workflows |
-| `ce-test-author` | `.claude/skills/ce-test-author/SKILL.md` | High-signal CE test authoring workflows |
-| `ce-test-creator` | `.claude/skills/ce-test-creator/SKILL.md` | Design high-efficiency tests to close coverage gaps |
-| `ce-test-pruning-expert` | `.claude/skills/ce-test-pruning-expert/SKILL.md` | Identify and remove redundant or low-value tests |
-| `ce-test-quality-method` | `.claude/skills/ce-test-quality-method/SKILL.md` | Coordinate the full Test Quality Method (ADR-030) |
-
-### Maintenance rule
-
-Whenever a skill is added, renamed, removed, or moved under `.claude/skills/`,
-or when a user requests a skill listing update, agents must invoke
-`ce-skill-registry-sync` and update both this section and
-`.claude/skills/ce-onboard/SKILL.md` section 4 and
-`docs/contributor/agent_skills.md` in the same PR. All listings must include
-every existing skill directory under `.claude/skills/`.
-
----
-
-## 7. Development Workflow
-
-### First-time setup (required before running any checks)
+After an ADR, standard, or canonical skill change:
 
 ```bash
-# Install the package in editable mode with all dev dependencies
-pip install -e .[dev] -c constraints.txt
-
-# Optional: faster install if uv is available
-uv pip install -e .[dev] -c constraints.txt
-
-# Install pre-commit hooks (run once per clone)
-pre-commit install
+make instruction-index-sync
+make instruction-index-check
 ```
 
-Verify the environment is healthy:
+`--write` updates derived files; verification uses the non-mutating `--check`
+mode. CI validates generated content but does not repair it.
 
-```bash
-python -m ruff --version    # must be present
-python -m mypy --version    # must be present
-python -m pytest --version  # must be present
-```
-
-### Routine local validation
-
-```bash
-# Inner-loop checks while editing
-make quick
-
-# Focused release-task verification before marking a task complete
-make local-checks-task TASK=<n>
-
-# Blocking PR-scope preflight before opening/updating a PR
-make local-checks-pr
-
-# Heavy local gate for merge-readiness or maintainer-requested final validation
-make local-checks-full
-
-# Release-boundary local validation only
-make local-checks-release
-
-# Run tests only
-make test
-
-# Run only non-viz tests (faster; avoids matplotlib import)
-make test-core
-```
-
-### Performance profiling
-
-See `docs/contributor/performance_harness.md` for a guide to the available
-profiling scripts (`scripts/perf/`) and how to run baseline snapshots and
-regression checks.
-
-### Governance status artifact
-
-`reports/governance/governance_status.json` is a CI-derived artifact.
-The `lint` fields (`ruff`, `mypy`) show **"unavailable"** when generated
-without running lint tools. Use the local target to populate them:
-
-```bash
-# Run ruff + mypy locally, write results into the artifact
-make governance-status-local
-```
-
-`local_checks_pr` always shows **"unavailable"** locally — only CI can
-set it after the full test suite passes. The `schema_checks` fields are
-populated from local report files and reflect the last time those scripts ran.
-
-`make quick`, `make local-checks-task`, and `make local-checks-pr` do not
-populate this artifact automatically. Run `make governance-status-local`
-whenever you need fresh local `ruff`/`mypy` results recorded in the artifact.
-
-Before any implementation work:
-1. Read `development/README.md` to identify the current development map and
-   transition rules.
-2. Read the sole active `development/current-work/vX.Y.Z_plan.md`. Proposed
-   work lives in GitHub issues; approved release scope is a GitHub milestone.
-3. Check the governing ADRs and Standards. Active records live in
-   `development/adrs/` and `development/standards/`.
-
-### 7A. Engineering planning hierarchy authority (mandatory)
-
-The repository planning/control hierarchy is authoritative and must be preserved:
-
-1. `development/README.md` (development documentation map and location authority)
-2. GitHub issues (proposed work) and GitHub milestones (approved release scope)
-3. The sole active version plan at `development/current-work/vX.Y.Z_plan.md`,
-   coordinating the release currently being implemented
-4. Governance via ADRs and Standards in `development/adrs/` and
-   `development/standards/`
-
-Do not create a master roadmap document (by any name) that duplicates
-proposed work, approved scope, or deferred-architecture material already
-tracked in GitHub issues/milestones or in ADRs/Standards. Research directions
-belong only in `docs/researcher/future_work.md`.
-
-Conflict rule: ADRs and Standards govern design, behavior, architecture, and
-engineering standards. If any plan text conflicts with an ADR/Standard, the
-ADR/Standard is authoritative and must win.
-
-Do not redesign, replace, or create another planning hierarchy unless one of these
-is true:
-
-- The current documents directly contradict each other.
-- A required engineering rule is missing and safe execution is impossible without it.
-- The current structure causes a concrete execution failure (not a stylistic concern).
-- A repository-wide instruction for all agents and human contributors has no suitable
-  existing home elsewhere.
-
-When a shared instruction must be added or updated, `CONTRIBUTOR_INSTRUCTIONS.md`
-is the primary location. Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
-`GEMINI.md`, `.github/copilot-instructions.md`) must not become the main source of
-repository-wide engineering rules.
-
-The removed legacy docs locations docs/improvement/ and docs/standards/ are not
-active entry points. Active planning, ADR, Standard, and governance files have
-been migrated to `development/`. Do not recreate those directories or add new
-planning, ADR, Standard, claim, requirement, verification-framework, or curated
-evidence files there.
-
-Default execution posture for plan/instruction edits:
-
-- If no concrete contradiction, missing required rule, or execution blocker
-  exists, make no structural documentation changes.
-- Apply minimum-diff edits only; preserve existing headings, numbering,
-  milestone-plan structure, and future-milestone detail unless a concrete
-  conflict requires local clarification.
-- Do not create new plan/policy/checklist files by default; prefer resolving
-  shared guidance in this file with short cross-references from plans only when
-  necessary.
+Shadow skill trees contain shims for shared CE skills. Keep authoritative
+workflow logic, references, assets, and scripts only under `.claude/skills/`.
+Run `make check-agent-instructions` and `make check-skill-mirrors` when
+touching instruction or skill-discovery surfaces.
 
 ---
 
-## 8. Design Patterns & TDD
+## 6. Planning authority and release workflow
 
-**TDD workflow:**
-1. **Red** – Write a failing test first (follow `tests/README.md`).
-2. **Green** – Implement the minimal code to pass the test.
-3. **Refactor** – Clean up while keeping tests green.
+The planning hierarchy is:
 
-**Required patterns:**
-- **Plugin/Strategy**: New functionality → `plugins/` using `typing.Protocol`.
-- **Adapter**: scikit-learn compatibility via `WrapCalibratedExplainer`.
-- **Lazy Loading**: no eager imports of heavy libs in `__init__.py`.
+1. `development/README.md`
+2. GitHub issues (proposed work) and milestones (approved scope)
+3. The sole active version plan
+4. ADRs and engineering standards
 
-**Anti-patterns to avoid:**
-- Deep inheritance – prefer composition and Protocols.
-- Heavy DI containers – use the existing plugin registry.
+Before implementation:
 
----
+1. Read the active `development/current-work/vX.Y.Z_plan.md`.
+2. Confirm an issue/milestone or explicit maintainer instruction supports the
+   requested work.
+3. Identify only the ADRs and standards relevant to the change and read their
+   decision/normative sections.
+4. Do not require every agent to read every ADR or skill at session start.
 
-## 9. ADR and Standards Reference Map
-
-Always consult the relevant ADR or Standard before making design or implementation
-decisions. The ADR takes precedence over any plan document.
-
-### Architectural Decision Records (ADRs)
-
-| ADR | Title | When to consult |
-|---|---|---|
-| ADR-001 | Core Decomposition Boundaries | Any change to `core/` ↔ `plugins/` boundary |
-| ADR-002 | Validation and Exception Design | Adding or changing error/validation logic |
-| ADR-003 | Caching Key and Eviction | Cache behavior or LRU/TTL changes |
-| ADR-004 | Parallel Backend Abstraction | Changes to parallel execution strategy |
-| ADR-005 | Explanation JSON Schema Versioning | Explanation payload structure changes |
-| ADR-006 | Plugin Registry Trust Model | Adding or modifying a plugin registration |
-| ADR-008 | Explanation Domain Model | Explanation domain object changes |
-| ADR-009 | Input Preprocessing and Mapping | Input encoding, unseen-category policy |
-| ADR-010 | Core vs Evaluation Split | Import-time dependencies or extras flags |
-| ADR-011 | Deprecation and Migration Policy | Deprecating or removing any API |
-| ADR-012 | Documentation & Gallery Build | Docs/notebook build policy |
-| ADR-013 | Interval Calibrator Plugin Strategy | Calibrator plugin changes |
-| ADR-015 | Explanation Plugin Integration | Explanation plugin changes |
-| ADR-020 | Legacy User API Stability | Any public API change or removal |
-| ADR-021 | Calibrated Interval Semantics | Interval/probability semantics |
-| ADR-023 | Matplotlib Coverage Exemption | Coverage targets for viz modules |
-| ADR-026 | Explanation Plugin Semantics | Explanation plugin invariants |
-| ADR-027 | FAST-Based Feature Filtering | Feature filtering behavior |
-| ADR-028 | Logging and Governance Observability | Logging or telemetry changes |
-| ADR-029 | Reject Integration Strategy | Reject/guard mode integration changes |
-| ADR-030 | Test Quality Priorities and Enforcement | Any new or modified test |
-| ADR-031 | Calibrator Serialization | Calibrator save/load contracts |
-| ADR-032 | Guarded Explanation Semantics | In-distribution / guarded mode |
-| ADR-033 | Modality Extension Plugin Contract and Packaging Strategy | Modality metadata, plugin API compatibility, resolver modality selection, or extension packaging/shim policy |
-| ADR-034 | Centralized Configuration Management | Runtime config reads, env/`pyproject.toml` precedence, strict config validation, or config export/governance events |
-| ADR-035 | CI Workflow Governance | Changes to `.github/workflows/**`, `.github/actions/**`, `scripts/quality/validate_ci_policy.py`, CI merge gates, or `scripts/local_checks.py` parity rules |
-| ADR-036 | PlotSpec Canonical Contract and Validation Boundary | PlotSpec canonical model, serialization boundaries, and validation contract changes |
-| ADR-037 | Visualization Extension and Rendering Governance | Plot builder/renderer governance and visualization extension changes |
-
-> **Note:** ADR-017, ADR-018, and ADR-019 were reclassified as engineering standards
-> (STD-001, STD-002, STD-003 respectively); the original ADR files were removed and
-> replaced by the standards files now in `development/standards/`. ADR-022, ADR-024, and ADR-025
-> are superseded and retained in `development/adrs/` with a `superseded` prefix.
-> See `development/adrs/` for the full list.
-
-ADRs live in `development/adrs/`. New ADRs belong under `development/adrs/`.
-
-### Engineering Standards (STDs)
-
-| Standard | Title | When to consult |
-|---|---|---|
-| STD-001 | Nomenclature Standardization | Naming new modules, classes, or functions |
-| STD-002 | Code Documentation Standard | Writing or reviewing docstrings |
-| STD-003 | Test Coverage Standard | Coverage targets and per-module gates |
-| STD-004 | Documentation Audience Standard | Writing or restructuring docs |
-| STD-005 | Logging and Observability Standard | Adding log statements or telemetry |
-
-Standards live in `development/standards/`. New standards belong under
-`development/standards/`.
+Do not redesign the planning hierarchy or create another roadmap. Do not mark a
+plan row `Done` or close an issue until its verification evidence exists. Update
+`CHANGELOG.md` under `[Unreleased]` when a plan item is completed satisfactorily.
 
 ---
 
-## 10. ADR Conformance Workflow
+## 7. Verification profiles
 
-When making architectural or design decisions:
-1. Read `development/README.md` to identify the current authoritative locations.
-2. Read the relevant ADRs. During migration, existing ADRs may still live in
-   `development/adrs/`; new ADRs belong under `development/adrs/`.
-3. If an ADR governs the area, the ADR takes precedence over any plan document.
-4. Record the ADR reference in inline code comments for future agents.
-5. If a conflict arises, request clarification rather than guessing.
-
----
-
-## 11. Python Scripting Rules
-
-Never use the heredoc Python construct:
+Set up and synchronize the development environment using the repository
+dependency constraints when tools are unavailable.
 
 ```bash
-# ❌ WRONG – does not work in this repo
-python - <<PY
-print("hello")
-PY
+make quick                                      # inner loop
+make local-checks-task TASK=<n>                 # mapped release task closure
+make local-checks-pr                            # blocking PR preflight
+make local-checks-full                          # maintainer-requested final gate
+make local-checks-release                       # release boundary only
+make ci-local-runblocks                         # workflow run-block smoke
 ```
 
-Always use `-c`:
+Use task-proportional validation. `quick` and `pr` contain the read-only
+instruction-index check. Add a new standalone CI workflow only when the existing
+inventory demonstrably cannot support the gate (ADR-035).
+
+---
+
+## 8. Python commands
+
+Do not use Python stdin heredocs. Use `python -c` for short probes and versioned
+script entry points for repository checks:
 
 ```bash
-# ✅ CORRECT
 python -c "import calibrated_explanations as ce; print(ce.__version__)"
+python scripts/quality/sync_instruction_indexes.py --check
 ```
 
 ---
 
-## 12. Feedback Persistence Pattern
+## 9. Feedback persistence
 
-AI agents have no cross-session memory. To make feedback durable:
+Convert recurring or cross-platform agent errors into durable repository changes,
+not session-only notes:
 
-1. Convert the feedback into a concrete change in a versioned file:
-   - A new bullet in this file or a platform-specific instruction file.
-   - A test that reproduces the mistake.
-2. Commit the change in the same PR as the fix.
-3. Record a dated entry in `.github/copilot-feedback-log.md` using this schema:
-   - `**Feedback:**` what the agent got wrong
-   - `**Root cause:**` why the error happened
-   - `**Durable fix:**` exact files/tests/scripts updated
-   - `**Verification:**` command(s) proving the fix
-   - `**Status:**` `open | ✅ incorporated`
-
----
-
-## 13. Test-Quality Improvement Method
-
-This repository uses a **team-of-agents** approach for test quality improvement
-governed by ADR-030 and STD-003. Before writing, modifying, or removing tests,
-agents should understand this method.
-
-### Method overview
-
-The full method currently lives in
-`development/standards/test-quality-method/README.md` until migrated. Three usage
-modes:
-
-- **Option A – Test-Focused Cycle**: Run per-test coverage pipeline → prune redundant
-  tests → close coverage gaps with high-signal behavioral tests.
-- **Option B – Code-Focused Cycle**: Run code-quality gates → refactor and clean up
-  dead code. (Faster; skip heavy per-test pipeline unless pruning is also needed.)
-- **Option C – Full Cycle**: Both A and B in sequence. Recommended for large changes.
-
-### Quick start
-
-```bash
-# Full per-test coverage pipeline (slow; produces all analysis data)
-python scripts/over_testing/run_over_testing_pipeline.py
-
-# Per-module coverage gate check
-python scripts/quality/check_coverage_gates.py
-```
-
-All outputs land in `reports/over_testing/`.
-
-### Agent team (`test-quality-improvement`)
-
-| Agent | File | Mission |
-|---|---|---|
-| **test-creator** | `development/standards/test-quality-method/test_creator.md` | Analyze coverage gaps; design high-value tests to close them |
-| **pruner** | `development/standards/test-quality-method/pruner.md` | Remove/consolidate redundant tests (zero-unique-lines candidates) |
-| **anti-pattern-auditor** | `development/standards/test-quality-method/anti_pattern_auditor.md` | Detect test quality violations (private members, weak assertions, non-determinism) |
-| **code-quality-auditor** | `development/standards/test-quality-method/code_quality_auditor.md` | Audit source-code quality gates (exception taxonomy, imports, docstrings) |
-| **deadcode-hunter** | `development/standards/test-quality-method/deadcode_hunter.md` | Identify source code that is dead or covered only incidentally |
-| **process-architect** | `development/standards/test-quality-method/process_architect.md` | Design and improve the test-quality enforcement workflow |
-| **devils-advocate** | `development/standards/test-quality-method/devils_advocate.md` | Critically review every other agent's proposals before implementation |
-| **implementer** | `development/standards/test-quality-method/implementer.md` | Consolidate specialist proposals into a final remedy plan and execute |
-
-**Recommended workflow:**
-1. `test-creator` → produces prioritized coverage-gap analysis and test designs.
-2. `pruner` → identifies zero-unique-lines tests.
-3. `anti-pattern-auditor` + `code-quality-auditor` + `deadcode-hunter` → produce
-   independent quality reports.
-4. `devils-advocate` → challenges all proposals.
-5. `implementer` → merges approved changes; runs verification gates.
-
-### Key quality rules (ADR-030)
-
-1. **Determinism** – no wall-clock time, nondeterministic RNG, network I/O, or test order.
-2. **Public-contract testing** – validate observable public behavior; do not access `_private` members unless listed in `.github/private_member_allowlist.json`.
-3. **Strong assertions** – every test must assert specific values that would fail for plausible regressions.
-4. **No zero-unique-lines tests** – a test that adds zero unique coverage lines must be removed or parameterized.
-5. **No identical fingerprints** – tests with the same coverage fingerprint must be consolidated with `pytest.mark.parametrize`.
-6. **Fallback opt-in** – use the `enable_fallbacks` fixture and assert `UserWarning` whenever a test exercises a fallback path.
-7. **No production test-helper wrapper exports** – do not expose test-helper scaffolding via `__all__` in `src/`; CI blocks this via `scripts/quality/check_no_test_helper_exports.py`.
-
-### Critical coverage targets (STD-003)
-
-| Module | Gate |
-|---|---|
-| `core/calibrated_explainer.py` | ≥ 95% |
-| `utils/serialization.py` | ≥ 95% |
-| `plugins/registry.py` | ≥ 95% |
-| `calibration/interval_regressor.py` | ≥ 95% |
-| Package-wide | ≥ 90% |
-
----
-
-## 14. Feedback-Driven Agent Optimization (Shared Canonical Loop)
-
-To maximize agent and Copilot efficiency for calibrated_explanations:
-
-- **Centralize feedback:** Log all agent/Copilot errors, misses, and improvement notes in `.github/copilot-feedback-log.md` after each PR/session.
-- **Update instructions:** After each feedback entry, update `CONTRIBUTOR_INSTRUCTIONS.md` and platform-specific instruction files with new rules, anti-patterns, and best practices.
-- **Strict CE-first enforcement:** Always prime agents with the latest canonical instructions; fail fast or warn for non-canonical patterns.
-- **Continuous improvement:** Review feedback log and instructions after each release/major PR; communicate changes to all agent platforms.
-- **Verification:** Ensure feedback log and instructions are updated and referenced in PRs; validate agent suggestions follow latest CE-first guardrails.
-
-This loop ensures all agents and Copilot benefit from improvements and become more expert and reliable over time.
+1. Prefer a focused rule, test, or skill change at the authoritative source.
+2. Record feedback in `.github/copilot-feedback-log.md` with `**Feedback:**`,
+   `**Root cause:**`, `**Durable fix:**`, `**Verification:**`, and `**Status:**`.
+3. Commit the durable fix and evidence in the same PR.

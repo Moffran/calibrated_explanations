@@ -1,60 +1,21 @@
-# CLAUDE.md — Claude Code Instructions for `calibrated_explanations`
+# CLAUDE.md — Claude Code instructions
 
-> **Canonical agent instructions:** `CONTRIBUTOR_INSTRUCTIONS.md` — the single source of
-> truth shared by all agent platforms (Copilot, Codex, Claude Code, Gemini). Read
-> that first. This file adds **only** Claude Code-specific context.
+> [`CONTRIBUTOR_INSTRUCTIONS.md`](CONTRIBUTOR_INSTRUCTIONS.md) is the single
+> source of truth for all shared CE rules. This file adds only Claude
+> Code-specific tool guidance.
 
----
+## Tool permissions
 
-## 1. Session priming (Claude-specific)
+- The primary permission policy is `.claude/settings.json`.
+- Local overrides belong in `.claude/settings.local.json`.
+- Keep permission scopes minimal and repository-local.
+- Do not bypass a permission constraint by switching toolchains.
 
-At the start of every Claude Code session, explicitly direct the agent to:
+## Skill discovery
 
-1. Read `CONTRIBUTOR_INSTRUCTIONS.md` (canonical CE rules).
-2. Read `CLAUDE.md` (this file).
-3. Follow `docs/get-started/ce_first_agent_guide.md`.
-4. Use `WrapCalibratedExplainer` from the public CE API directly. Do not use
-   `ce_agent_utils` as an implementation shortcut.
+Use the generated [`.claude/skills/README.md`](.claude/skills/README.md) to
+discover the minimum skill set for the task. Canonical shared skill content lives
+under `.claude/skills/`; compatibility trees contain shims only.
 
-Reusable priming prompt:
-
-```text
-You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
-and CLAUDE.md first. Use WrapCalibratedExplainer and the public CE API directly.
-Fail fast if CE-first invariants are not satisfied.
-```
-
----
-
-## 2. Claude tool permissions (Claude-specific)
-
-- Primary permission policy lives in `.claude/settings.json`.
-- Local overrides live in `.claude/settings.local.json`.
-- Keep permission scopes minimal and repository-local by default.
-- Do not bypass permission constraints by using alternative toolchains.
-
----
-
-## 3. Workflow and validation (Claude-specific)
-
-- Prefer `make local-checks-pr` as the default fast validation path.
-- Escalate to `make local-checks` when changes touch main-branch gates.
-- After dependency or API changes, run:
-  - `pip install -e .[dev]`
-  - `python -m pip check`
-  - `pytest -q`
-
----
-
-## 4. Feedback loop (Claude-specific)
-
-Claude sessions do not persist memory across unrelated runs. Persist feedback via:
-
-- Canonical updates in `CONTRIBUTOR_INSTRUCTIONS.md` for shared guidance.
-- Claude-only quirks in `CLAUDE.md`.
-- Cross-agent feedback entries in `.github/copilot-feedback-log.md` using:
-  - `Feedback`
-  - `Root cause`
-  - `Durable fix`
-  - `Verification`
-  - `Status`
+Durable feedback follows `CONTRIBUTOR_INSTRUCTIONS.md` rather than duplicating
+shared rules in this file.

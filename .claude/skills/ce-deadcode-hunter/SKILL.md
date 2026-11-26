@@ -1,9 +1,8 @@
 ---
 name: ce-deadcode-hunter
 description: >
-  Identify unreachable or non-contributing source code and separate true dead code
-  from merely untested reachable paths, with Test Quality Method Option A/B/C
-  routing.
+  Identify unreachable CE code and distinguish true dead paths from reachable
+  code that lacks coverage.
 ---
 
 # CE Dead-Code Hunter

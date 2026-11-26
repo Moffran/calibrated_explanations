@@ -1,13 +1,19 @@
-> **Active scope:** Engineering standard for audience-first documentation structure, practitioner/researcher content parity, and the PR documentation review gate. Remains active as long as these conventions govern CE documentation; revised when the audience standard is updated.
-
+---
+id: "STD-004"
+title: "Documentation Audience Standard"
+status: "active"
+description: "Engineering standard for audience-first documentation structure, practitioner/researcher content parity, and the PR documentation review gate. Remains active as long as these conventions govern CE documentation; revised when the audience standard is updated."
+supersedes: ["ADR-022"]
+superseded_by: []
+---
 # Standard-004: Documentation Audience Standard
 
 > **Status note (2026-03-18):** Last edited 2026-03-18 · Retain indefinitely as an engineering standard.
 
-Formerly ADR-027. Reclassified as an engineering standard to keep ADRs scoped to
-architectural or contract decisions.
+Supersedes the documentation-policy portion of ADR-022. The subject was
+reclassified as an engineering standard so ADRs remain scoped to architectural
+or contract decisions.
 
-Status: Active
 
 ## 1. Purpose
 

@@ -1,8 +1,8 @@
 ---
 name: ce-release-planner
 description: >
-  Create a versioned vX.Y.Z_plan.md from an approved GitHub milestone or an
-  explicit maintainer-selected issue list, coordinating the active release.
+  Plan a versioned CE release from an approved milestone or an explicit
+  maintainer-selected issue set.
 ---
 
 # CE Release Planner
