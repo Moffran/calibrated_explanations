@@ -219,8 +219,16 @@ class DummyExplanation:
             "feature": [self.index],
             "feature_value": [self.x_test[0] if len(self.x_test) else None],
             "predict": [self.predict],
-            "predict_low": [self.prediction_interval[0]],
-            "predict_high": [self.prediction_interval[1]],
+            "predict_low": [
+                min(self.predict, self.prediction_interval[0])
+                if self.prediction_interval[0] is not None
+                else None
+            ],
+            "predict_high": [
+                max(self.predict, self.prediction_interval[1])
+                if self.prediction_interval[1] is not None
+                else None
+            ],
             "is_conjunctive": [False],
         }
 
