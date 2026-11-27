@@ -3,7 +3,6 @@ id: "ADR-013"
 title: "Interval Calibrator Plugin Strategy"
 status: "accepted"
 description: "Governing architectural decision for the interval calibrator plugin contract (`IntervalCalibratorPlugin`) and calibrator registration strategy. Remains active as long as these contracts govern calibrator plugins; superseded when the calibrator plugin strategy is revised."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-10-15):** Last edited 2026-10-15 (§4 recalibration-operation contract) · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

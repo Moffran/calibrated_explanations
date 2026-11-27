@@ -3,7 +3,6 @@ id: "ADR-042"
 title: "Canonical Rule and Feature Ranking Semantics"
 status: "accepted"
 description: "Governing deterministic canonical rule and feature ranking across plots, narratives, representations and conjunction selection."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-11-02):** Last edited 2026-11-25 (D17 public canonical rule selection added; D9, D13, D15 amended; #227, #204) · Archive after: Retain indefinitely as architectural record · Implementation window: decision recorded in v1.0.2 (#224); implementation and ordering changes in v1.1.0 (#204).

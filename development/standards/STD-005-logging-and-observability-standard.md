@@ -3,7 +3,6 @@ id: "STD-005"
 title: "Logging and Observability"
 status: "accepted"
 description: "Engineering standard for `_LOGGER` usage, logging domain conventions, and warning classification rules. Companion to ADR-028; remains active as long as these conventions govern CE observability; revised when the logging standard is updated."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-01-15):** Last edited 2026-01-15 · Archive after: Retain indefinitely as an engineering standard · Implementation window: v0.10.2 and onwards.

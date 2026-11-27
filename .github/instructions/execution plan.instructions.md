@@ -18,7 +18,7 @@ When asked to "proceed according to plan" or to determine the next development s
 3. **Enforce ADR conformance**:
    - For any implementation, design, or architectural decision, **review all relevant ADRs** in `development/adrs/`.
    - Ensure that your code, design, or recommendation strictly adheres to the protocols, contracts, and constraints described in the ADRs.
-   - If a conflict arises between a plan and an ADR, **the ADR takes precedence** unless the plan explicitly supersedes it.
+   - If a plan conflicts with an accepted ADR or active standard, **the ADR or standard takes precedence**. A plan cannot supersede it; amend or supersede the ADR or standard through its own process first.
 
 4. **Document rationale**:
    - When proposing or generating code for a next step, briefly reference the relevant section(s) of the plan and ADR(s) that justify your choice.

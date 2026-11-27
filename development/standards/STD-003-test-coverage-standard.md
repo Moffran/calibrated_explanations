@@ -3,7 +3,6 @@ id: "STD-003"
 title: "Test Coverage Standardization"
 status: "active"
 description: "Engineering standard for the 90% coverage gate, coverage configuration, and `# pragma: no cover` annotation policy. Remains active as long as the coverage standard governs CE test strategy; revised when the coverage policy is updated."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2025-12-22):** Last edited 2025-12-22 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).

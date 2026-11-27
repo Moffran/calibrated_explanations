@@ -3,7 +3,6 @@ id: "ADR-035"
 title: "CI Workflow Governance \u2014 CI Upgrade & Enforcement"
 status: "accepted"
 description: "Governing architectural decision for CI workflow policy, job-level contracts, and the `validate_ci_policy` governance gate. The parity-reference scikit-learn pin (Task 7, v0.11.4) is an implementation milestone within this ADR's lifecycle."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-07-13):** Last edited 2026-07-13 (v0.11.6 Task 60 v1 consolidation)

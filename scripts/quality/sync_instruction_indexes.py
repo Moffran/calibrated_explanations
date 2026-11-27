@@ -7,12 +7,16 @@ and canonical skill sources. Generated indexes are discovery surfaces only.
 from __future__ import annotations
 
 import argparse
-import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+
+try:  # repository root on sys.path (tests, ``python -m``)
+    from scripts.quality import instruction_tooling as tooling
+except ModuleNotFoundError:  # direct execution: scripts/quality is sys.path[0]
+    import instruction_tooling as tooling  # type: ignore[no-redef]
 
 GENERATED_FILES = (
     "development/adrs/README.md",
@@ -38,7 +42,6 @@ class GovernanceRecord:
     title: str
     status: str
     description: str
-    supersedes: tuple[str, ...]
     superseded_by: tuple[str, ...]
     source: Path
 
@@ -52,66 +55,11 @@ class SkillRecord:
     source: Path
 
 
-class MetadataError(ValueError):
-    """Raised when instruction metadata is missing or invalid."""
-
-
-def _parse_scalar(value: str) -> Any:
-    stripped = value.strip()
-    if not stripped:
-        return ""
-    if stripped.startswith(('"', "[")):
-        try:
-            return json.loads(stripped)
-        except json.JSONDecodeError as exc:
-            raise MetadataError(f"invalid YAML/JSON scalar {value!r}") from exc
-    return stripped
-
-
-def _parse_frontmatter(path: Path) -> dict[str, Any]:
-    text = path.read_text(encoding="utf-8-sig")
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        raise MetadataError(f"{path.as_posix()}: missing YAML frontmatter")
-
-    try:
-        end = lines.index("---", 1)
-    except ValueError as exc:
-        raise MetadataError(f"{path.as_posix()}: unterminated YAML frontmatter") from exc
-
-    metadata: dict[str, Any] = {}
-    index = 1
-    while index < end:
-        line = lines[index]
-        if not line.strip() or line.lstrip().startswith("#"):
-            index += 1
-            continue
-        if line[:1].isspace() or ":" not in line:
-            raise MetadataError(f"{path.as_posix()}: malformed frontmatter line {line!r}")
-        key, raw_value = line.split(":", 1)
-        key = key.strip()
-        if not key or key in metadata:
-            raise MetadataError(f"{path.as_posix()}: duplicate or empty frontmatter key {key!r}")
-        raw_value = raw_value.strip()
-        if raw_value in {">", ">-", "|", "|-"}:
-            folded: list[str] = []
-            index += 1
-            while index < end and (not lines[index] or lines[index][:1].isspace()):
-                folded.append(lines[index].strip())
-                index += 1
-            separator = "\n" if raw_value.startswith("|") else " "
-            metadata[key] = re.sub(r"\s+", " ", separator.join(folded).strip())
-            continue
-        metadata[key] = _parse_scalar(raw_value)
-        index += 1
-    return metadata
-
-
-def _require_string(path: Path, metadata: dict[str, Any], key: str) -> str:
-    value = metadata.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise MetadataError(f"{path.as_posix()}: missing or invalid {key}")
-    return value.strip()
+MetadataError = tooling.ValidationError
+_parse_frontmatter = tooling.parse_frontmatter
+_require_string = tooling.require_string
+_ACTIVE_STATUSES = frozenset({"accepted", "active"})
+_HISTORICAL_STATUSES = frozenset({"superseded", "withdrawn"})
 
 
 def _require_references(path: Path, metadata: dict[str, Any], key: str) -> tuple[str, ...]:
@@ -120,7 +68,10 @@ def _require_references(path: Path, metadata: dict[str, Any], key: str) -> tuple
         not isinstance(item, str) or not item.strip() for item in value
     ):
         raise MetadataError(f"{path.as_posix()}: {key} must be a JSON-style string list")
-    return tuple(item.strip() for item in value)
+    references = tuple(item.strip() for item in value)
+    if len(set(references)) != len(references):
+        raise MetadataError(f"{path.as_posix()}: {key} lists a reference twice")
+    return references
 
 
 def _read_governance_record(path: Path, *, kind: str) -> GovernanceRecord:
@@ -129,7 +80,11 @@ def _read_governance_record(path: Path, *, kind: str) -> GovernanceRecord:
     title = _require_string(path, metadata, "title")
     status = _require_string(path, metadata, "status").lower()
     description = _require_string(path, metadata, "description")
-    supersedes = _require_references(path, metadata, "supersedes")
+    if "supersedes" in metadata:
+        raise MetadataError(
+            f"{path.as_posix()}: supersedes is derived; declare superseded_by on the "
+            "superseded record instead"
+        )
     superseded_by = _require_references(path, metadata, "superseded_by")
 
     pattern = _ADR_ID_PATTERN if kind == "ADR" else _STANDARD_ID_PATTERN
@@ -152,21 +107,13 @@ def _read_governance_record(path: Path, *, kind: str) -> GovernanceRecord:
         title=title,
         status=status,
         description=description,
-        supersedes=supersedes,
         superseded_by=superseded_by,
         source=path,
     )
 
 
-def _read_skill_record(path: Path, root: Path) -> SkillRecord:
-    metadata = _parse_frontmatter(path)
-    name = _require_string(path, metadata, "name")
-    description = _require_string(path, metadata, "description")
-    expected = path.parent.relative_to(root / "skills").as_posix()
-    if name != expected:
-        raise MetadataError(
-            f"{path.as_posix()}: skill name {name!r} does not match directory {expected!r}"
-        )
+def _read_skill_record(path: Path) -> SkillRecord:
+    name, description = tooling.validate_skill_metadata(path, path.parent.name)
     return SkillRecord(name=name, description=description, source=path)
 
 
@@ -204,34 +151,61 @@ def _discover_records(root: Path) -> tuple[list[GovernanceRecord], list[Governan
 
 def _discover_skills(root: Path) -> list[SkillRecord]:
     skills_root = root / "skills"
-    skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
-    missing = [directory.name for directory in skill_dirs if not (directory / "SKILL.md").is_file()]
+    tooling.ensure_no_link_ancestors(
+        root, tooling.validate_relative_path("skills", context="skills"), context="skills"
+    )
+    skill_dirs = sorted(
+        path for path in skills_root.iterdir() if path.is_dir() or tooling.is_link_like(path)
+    )
     if not skill_dirs:
         raise MetadataError("no canonical skill directories found")
+    seen: dict[str, str] = {}
+    for directory in skill_dirs:
+        if tooling.is_link_like(directory):
+            raise MetadataError(
+                f"skills/{directory.name}: symbolic links and junctions are not allowed"
+            )
+        tooling.validate_skill_name(directory.name, context=f"skills/{directory.name}")
+        if directory.name.casefold() in seen:
+            raise MetadataError(
+                f"skills/{directory.name}: collides case-insensitively with "
+                f"skills/{seen[directory.name.casefold()]}"
+            )
+        seen[directory.name.casefold()] = directory.name
+    missing = [directory.name for directory in skill_dirs if not (directory / "SKILL.md").is_file()]
     if missing:
         raise MetadataError("canonical skill directories missing SKILL.md: " + ", ".join(missing))
-    skill_paths = [directory / "SKILL.md" for directory in skill_dirs]
-    records = [_read_skill_record(path, root) for path in skill_paths]
-    by_name: dict[str, SkillRecord] = {}
-    for record in records:
-        if record.name in by_name:
-            raise MetadataError(f"duplicate skill name {record.name}")
-        by_name[record.name] = record
-    return records
+    return [_read_skill_record(directory / "SKILL.md") for directory in skill_dirs]
 
 
 def _validate_supersession_references(records: list[GovernanceRecord], *, root: Path) -> None:
-    known_ids = {record.identifier for record in records}
+    """Validate ``superseded_by`` targets and status consistency.
+
+    Supersession is stored once, on the superseded record; the reverse
+    direction is derived. A record is ``superseded`` exactly when it has a
+    ``superseded_by`` entry. A successor is either an accepted or active record
+    or, for historical successors, an existing repository path.
+    """
+    by_id = {record.identifier: record for record in records}
     for record in records:
-        for reference in (*record.supersedes, *record.superseded_by):
-            if reference in known_ids:
+        label = record.source.relative_to(root).as_posix()
+        for reference in record.superseded_by:
+            if reference == record.identifier:
+                raise MetadataError(f"{label}: record cannot supersede itself")
+            successor = by_id.get(reference)
+            if successor is not None:
+                if successor.status not in _ACTIVE_STATUSES:
+                    raise MetadataError(
+                        f"{label}: successor {reference} must be accepted or active, "
+                        f"not {successor.status!r}"
+                    )
                 continue
-            candidate = root / reference
-            if candidate.exists():
-                continue
+            tooling.validate_relative_path(reference, context=label)
+            if not (root / reference).exists():
+                raise MetadataError(f"{label}: invalid supersession reference {reference!r}")
+        if (record.status == "superseded") != bool(record.superseded_by):
             raise MetadataError(
-                f"{record.source.relative_to(root).as_posix()}: invalid supersession "
-                f"reference {reference!r}"
+                f"{label}: status 'superseded' requires, and is required by, superseded_by"
             )
 
 

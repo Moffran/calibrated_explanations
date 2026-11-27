@@ -3,7 +3,6 @@ id: "ADR-006"
 title: "Plugin Registry Trust Model"
 status: "accepted"
 description: "Governing architectural decision for plugin trust levels, the `trusted` flag contract, and plugin registry security policy. Remains active as long as the plugin registry governs plugin loading; superseded when the trust model is revised."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

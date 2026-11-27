@@ -3,7 +3,6 @@ id: "ADR-027"
 title: "Internal FAST-Based Feature Filtering"
 status: "accepted"
 description: "Governing architectural decision for the FAST-based internal feature-filtering design and per-batch per-instance filtering strategy. Remains active until the feature filtering implementation is complete and stable; subsequent revisions require a successor ADR."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-01-03):** Last edited 2026-01-03 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

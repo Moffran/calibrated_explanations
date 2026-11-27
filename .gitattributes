@@ -1,0 +1,6 @@
+# Canonical skills and their generated discovery packages use LF on every
+# platform, so scripts/quality/sync_skill_packages.py produces byte-identical
+# output on Windows and Linux. Git still detects and preserves binary files.
+skills/** text=auto eol=lf
+.claude/skills/** text=auto eol=lf
+.agents/skills/** text=auto eol=lf

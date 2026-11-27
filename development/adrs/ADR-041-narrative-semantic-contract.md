@@ -3,7 +3,6 @@ id: "ADR-041"
 title: "Minimal Narrative Semantic Contract"
 status: "accepted"
 description: "Governing the minimal semantic contract for offline explanation narration without a separate narrative fact model."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-11-25):** Last edited 2026-11-25 (revised: no separate `NarrativeSpec` contract; canonical selection via ADR-042 D17; #227) · Archive after: Retain indefinitely as architectural record · Implementation window: v1.1.0 (#227-#230, #232).

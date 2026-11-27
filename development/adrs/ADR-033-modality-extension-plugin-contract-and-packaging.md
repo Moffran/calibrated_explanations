@@ -3,7 +3,6 @@ id: "ADR-033"
 title: "Modality Extension Plugin Contract and Packaging Strategy"
 status: "accepted"
 description: "Governing architectural decision for `data_modalities` declarations, the modality extension plugin contract, and optional modality extra packaging. The `data_modalities` enforcement gate (v0.11.4) is an implementation milestone within this ADR's lifecycle."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-02-23):** Accepted ADR.

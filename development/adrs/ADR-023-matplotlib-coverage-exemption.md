@@ -3,7 +3,6 @@ id: "ADR-023"
 title: "Matplotlib Adapter Coverage Exemption"
 status: "accepted"
 description: "Governing architectural decision for the matplotlib test-coverage exemption policy and `# pragma: no cover` boundaries for rendering code. Remains active as long as the coverage gate includes matplotlib exemptions; superseded when the exemption policy is revised."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

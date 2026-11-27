@@ -3,7 +3,6 @@ id: "ADR-025"
 title: "Legacy Plot Rendering Semantics"
 status: "superseded"
 description: "Historical legacy plot-rendering semantics retained for migration reference."
-supersedes: []
 superseded_by: ["docs/maintenance/legacy-plotting-reference.md"]
 ---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

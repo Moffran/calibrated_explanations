@@ -4,22 +4,25 @@
 > instructions. Platform files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and
 > `.github/copilot-instructions.md`) add only platform-specific guidance.
 
-## Information ownership
+## Information ownership and authority
 
-- This file owns globally mandatory operating rules and navigation.
-- Accepted/proposed ADRs in [`development/adrs/README.md`](development/adrs/README.md)
-  own architectural decisions.
-- Engineering standards in
-  [`development/standards/README.md`](development/standards/README.md) own
-  engineering and quality requirements.
-- Skills in [`skills/README.md`](skills/README.md) own
-  task-specific workflows.
-- Documentation owns verified API guidance and runnable examples.
-- Generated indexes are discovery surfaces, never independent authority.
-- Scripts and verification gates enforce deterministic checks.
+| Source | Role | Authority |
+|---|---|---|
+| Accepted ADRs and active engineering standards ([`development/adrs/README.md`](development/adrs/README.md), [`development/standards/README.md`](development/standards/README.md)) | Architectural decisions and engineering requirements | Binding technical constraints |
+| Proposed ADRs and standards | Candidate decisions | Non-binding until accepted |
+| Superseded or withdrawn ADRs and standards | History | Non-binding |
+| GitHub issues and milestones | Issues propose work; issues in a milestone are approved scope | Work scope |
+| The active release plan | Execution coordination of approved scope | Coordination only |
+| This file | Repository-wide operating rules and navigation | Mandatory, within binding constraints |
+| Skills ([`skills/README.md`](skills/README.md)) | Task workflows | Procedural guidance |
+| Documentation | Verified API guidance and runnable examples | Descriptive |
+| Generated indexes | Navigation | None |
+| Scripts and verification gates | Deterministic enforcement of the above | Enforcement |
 
-If sources conflict, the governing ADR or engineering standard wins over a
-release plan, a skill, and this operational summary.
+A release plan, issue, skill or this summary never overrides a binding ADR or
+standard, silently or explicitly. Work that needs a different decision first
+amends or supersedes the ADR or standard through its own process. If binding
+sources appear to conflict, stop and raise it with the maintainers.
 
 ---
 
@@ -160,9 +163,15 @@ mode. CI validates generated content but does not repair it.
 Every CE skill, with its references, scripts and assets, has exactly one source
 under `skills/<name>/`. The platform discovery directories `.claude/skills/`
 and `.agents/skills/` are complete generated copies (`[tool.skill-packages]`
-in `pyproject.toml`); never edit them. `make instruction-index-sync` refreshes
-indexes and packages together; `make skills-sync` / `make skills-check`
-handle the packages alone. Skills owned outside this repository are installed
+in `pyproject.toml`); never edit them. A package directory is generated when
+its `SKILL.md` carries the generated notice; the generator rewrites or removes
+only those directories and never touches anything else. `make
+instruction-index-sync` refreshes indexes and packages together; `make
+skills-sync` / `make skills-check` handle the packages alone. Skill files use
+portable names (no symbolic links); document bundled scripts with their
+interpreter (`python ...`, `pwsh ...`), because executable bits are not
+preserved. Supersession is recorded once, as `superseded_by` on the older ADR
+or standard. Skills owned outside this repository are installed
 at user level, not committed here. Run `make check-agent-instructions` when
 touching instruction surfaces.
 
@@ -170,7 +179,8 @@ touching instruction surfaces.
 
 ## 6. Planning authority and release workflow
 
-The planning hierarchy is:
+Read planning sources in this order (authority is defined under
+*Information ownership and authority*):
 
 1. `development/README.md`
 2. GitHub issues (proposed work) and milestones (approved scope)

@@ -3,7 +3,6 @@ id: "ADR-039"
 title: "Conditional (Mondrian) Calibration and Explanation Semantics"
 status: "accepted"
 description: "Governing conditional calibration and Mondrian-category semantics across calibration, prediction, explanation and persistence paths."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-07-07):** Last edited 2026-07-07 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.5 (pre-RC hardening milestone inserted 2026-07-07; see `development/current-work/v0.11.5_plan.md`).

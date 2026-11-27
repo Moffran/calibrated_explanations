@@ -3,7 +3,6 @@ id: "ADR-011"
 title: "Deprecation & Migration Policy"
 status: "accepted"
 description: "Governing architectural decision for the two-minor deprecation window, the `deprecate()` helper contract, and the active-deprecations ledger. Remains active for post-v1.0 maintenance; the v1.0 finalization exception applies only to the historical pre-GA transition."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-04-14):** Last edited 2026-04-14 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.9.0–v1.0.0 finalization window (with post-v1 maintenance).

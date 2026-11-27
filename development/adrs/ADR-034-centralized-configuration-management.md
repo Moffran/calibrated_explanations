@@ -3,7 +3,6 @@ id: "ADR-034"
 title: "Centralized Configuration Management"
 status: "accepted"
 description: "Governing architectural decision for `ConfigManager` and the centralized configuration surface. Gaps 1–2 are formally deferred post-v1.0 per §Open Items; remains active as long as `ConfigManager` governs CE configuration."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-06-04):** Last edited 2026-06-04 to add §8 provisional plugin config hardening: raw snapshotting, source attribution, redaction, trusted binding after plugin trust/metadata resolution, and provisional export diagnostics. The plugin config surface is a hardened implementation milestone, not a compatibility-frozen contract.

@@ -3,7 +3,6 @@ id: "ADR-037"
 title: "Visualization Extension and Rendering Governance"
 status: "accepted"
 description: "Governing architectural decision for visualization extension contracts, renderer dispatch, and the matplotlib adapter boundary. Remains active as long as these contracts govern CE visualization plugins; superseded when the rendering governance is revised."
-supersedes: ["ADR-007", "ADR-014", "ADR-016"]
 superseded_by: []
 ---
 > **Status note (2026-05-15):** Last edited 2026-05-15 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.1+. v0.11.3 Task 6 promotes PlotSpec to the default user-facing plotting path while keeping runtime plot-kind extension disabled.

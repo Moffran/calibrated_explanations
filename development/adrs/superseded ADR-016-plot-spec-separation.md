@@ -3,7 +3,6 @@ id: "ADR-016"
 title: "PlotSpec separation and legacy parity"
 status: "superseded"
 description: "Historical PlotSpec separation decision superseded by the canonical PlotSpec contract."
-supersedes: []
 superseded_by: ["ADR-036", "ADR-037"]
 ---
 > **Supersession note (2026-03-20):** This ADR is retained as a historical record. Canonical PlotSpec contract and validation authority moved to ADR-036. Visualization extension and renderer governance boundaries moved to ADR-037.

@@ -3,7 +3,6 @@ id: "ADR-031"
 title: "Calibrator Serialization & Explainer State Persistence"
 status: "accepted"
 description: "Governing architectural decision for the calibrator save/load serialization contract and the state-persistence trust boundary. Remains active as long as this contract governs calibrator state persistence; superseded when the persistence strategy is revised."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-07-22):** Last edited 2026-07-22 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x (initial), security hardening in this revision.

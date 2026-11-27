@@ -3,7 +3,6 @@ id: "STD-002"
 title: "Code Documentation Standardization"
 status: "active"
 description: "Engineering standard for NumPy-style docstring requirements, the docstring coverage gate (≥94%), and public API documentation policy. Remains active as long as these rules govern CE source documentation; revised when the documentation standard is updated."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2025-12-22):** Last edited 2025-12-24 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).

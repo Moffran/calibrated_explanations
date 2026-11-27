@@ -3,7 +3,6 @@ id: "ADR-030"
 title: "Test Quality Priorities and Enforcement"
 status: "accepted"
 description: "Governing architectural decision for the 90% coverage gate, test quality method (Options A/B/C cycle), and anti-pattern enforcement tooling. The test-quality-method documents are this ADR's governance tooling surface; remains active as long as these gates govern CE test strategy."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-05-12):** Last edited 2026-05-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Begin immediately for new/modified tests. Ratified v0.11.3 - zero-tolerance CI enforcement confirmed via `detect_test_anti_patterns.py` blocking gates in `ci-pr.yml` and `ci-main.yml`; focused local ratification lane added via `python scripts/local_checks.py --adr030-ratification`; marker hygiene taxonomy documented; mutation testing declared optional. Ratified: 2026-05-12.

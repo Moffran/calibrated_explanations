@@ -3,7 +3,6 @@ id: "ADR-032"
 title: "Guarded Explanation Semantics and Single-Median-Probe Guarding"
 status: "accepted"
 description: "Governing architectural decision for `GuardedOptions` semantics and guarded explanation behavior (explain-only when predicted class matches the guard condition). Remains active as long as guarded semantics govern the CE guarded explain paths."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-06-09):** Last edited 2026-06-09 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.

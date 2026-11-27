@@ -3,7 +3,6 @@ id: "ADR-029"
 title: "Reject Integration Strategy"
 status: "accepted"
 description: "Governing architectural decision for the `RejectPolicy`/`RejectOrchestrator`/`RejectResult` reject framework contract. Post-v1.0 items (strategy lifecycle hooks, strict migration) are tracked in §Open Items; remains active until those items are resolved or formally deferred."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-06-02):** Last edited 2026-06-02 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

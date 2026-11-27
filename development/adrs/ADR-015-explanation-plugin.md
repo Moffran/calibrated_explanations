@@ -3,7 +3,6 @@ id: "ADR-015"
 title: "Explanation Plugin Architecture"
 status: "accepted"
 description: "Governing architectural decision for the `ExplainerHandle`/`PredictBridge` explanation plugin contract. The `ExplainerHandle.learner` deprecation (v0.11.3) and removal (v1.0.0) are implementation milestones within this ADR's lifecycle."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

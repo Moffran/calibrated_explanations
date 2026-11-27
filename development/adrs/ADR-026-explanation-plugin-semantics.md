@@ -3,7 +3,6 @@ id: "ADR-026"
 title: "Explanation Plugin Semantics and Legacy Contracts"
 status: "accepted"
 description: "Governing architectural decision for the semantic contract of explanation plugin outputs (rule structure, feature weights, prediction fields, `conjunctive_rules`). Remains active as long as the plugin output contract governs explanation assembly; superseded when the semantic contract is revised."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

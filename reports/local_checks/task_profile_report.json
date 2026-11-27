@@ -1,22 +1,20 @@
 {
   "commands_run": [
-    "python -m ruff check src/calibrated_explanations/ce_agent_utils.py tests/unit/test_ce_agent_utils.py tests/unit/test_ce_agent_utils_deprecation.py tests/docs/get_started/test_no_ce_agent_utils_recommendation.py tests/focused/test_plotting_format_save_path_focused.py tests/unit/api/test_deprecation_ledger_sync.py tests/scripts/test_local_checks_changed_targets.py scripts/quality/check_import_graph.py scripts/quality/sync_instruction_indexes.py scripts/quality/check_agent_instruction_consistency.py scripts/quality/sync_skill_packages.py scripts/quality/check_forbidden_doc_patterns.py scripts/quality/validate_ci_policy.py scripts/quality/build_governance_status_artifact.py scripts/local_checks.py tests/scripts/test_sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py",
-    "python -m ruff format --check src/calibrated_explanations/ce_agent_utils.py tests/unit/test_ce_agent_utils.py tests/unit/test_ce_agent_utils_deprecation.py tests/docs/get_started/test_no_ce_agent_utils_recommendation.py tests/focused/test_plotting_format_save_path_focused.py tests/unit/api/test_deprecation_ledger_sync.py tests/scripts/test_local_checks_changed_targets.py scripts/quality/check_import_graph.py scripts/quality/sync_instruction_indexes.py scripts/quality/check_agent_instruction_consistency.py scripts/quality/sync_skill_packages.py scripts/quality/check_forbidden_doc_patterns.py scripts/quality/validate_ci_policy.py scripts/quality/build_governance_status_artifact.py scripts/local_checks.py tests/scripts/test_sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py",
+    "python -m ruff check scripts/quality/instruction_tooling.py scripts/quality/sync_skill_packages.py scripts/quality/sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py tests/scripts/test_sync_instruction_indexes.py",
+    "python -m ruff format --check scripts/quality/instruction_tooling.py scripts/quality/sync_skill_packages.py scripts/quality/sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py tests/scripts/test_sync_instruction_indexes.py",
     "python -m mypy src/calibrated_explanations/core/exceptions.py src/calibrated_explanations/core/validation.py src/calibrated_explanations/api/params.py --config-file pyproject.toml",
     "python scripts/quality/check_import_graph.py",
     "python scripts/quality/check_adr002_compliance.py",
     "python scripts/quality/sync_instruction_indexes.py --check",
     "python scripts/quality/sync_skill_packages.py --check",
     "python -m pytest -q tests/unit -m not viz and not slow --maxfail=1 -o addopts= --no-cov",
-    "python -m pytest -q tests/scripts/test_sync_instruction_indexes.py tests/scripts/test_sync_skill_packages.py tests/scripts/test_check_agent_instruction_consistency.py tests/scripts/test_validate_ci_policy.py -o addopts= --no-cov",
+    "python -m pytest -q tests/scripts/test_sync_skill_packages.py tests/scripts/test_sync_instruction_indexes.py tests/scripts/test_check_agent_instruction_consistency.py -o addopts= --no-cov",
     "python scripts/quality/sync_instruction_indexes.py --check",
     "python scripts/quality/sync_skill_packages.py --check",
-    "python scripts/quality/check_agent_instruction_consistency.py",
-    "python -m pytest -q tests/unit/test_ce_agent_utils_deprecation.py tests/unit/test_ce_agent_utils.py tests/docs/get_started/test_no_ce_agent_utils_recommendation.py tests/unit/api/test_deprecation_ledger_sync.py tests/scripts/test_local_checks_changed_targets.py -o addopts= --no-cov",
-    "python scripts/local_checks.py --deprecation-ledger"
+    "python scripts/quality/check_agent_instruction_consistency.py"
   ],
   "exit_status": 0,
-  "generated_at": "2026-11-26T10:54:45.141365+00:00",
+  "generated_at": "2026-11-27T15:34:02.669968+00:00",
   "requested_paths": [],
   "schema_version": 1,
   "selected_profile": "task",
@@ -54,5 +52,5 @@
       "reason": "Reserved for release validation."
     }
   ],
-  "task_id": 17
+  "task_id": 18
 }

@@ -22,7 +22,6 @@ id: "ADR-001"
 title: "Example ADR"
 status: "accepted"
 description: "Governs example architecture."
-supersedes: []
 superseded_by: []
 ---
 
@@ -40,7 +39,6 @@ id: "STD-001"
 title: "Example Standard"
 status: "active"
 description: "Governs example engineering."
-supersedes: []
 superseded_by: []
 ---
 
@@ -168,7 +166,6 @@ id: "ADR-001"
 title: "Duplicate"
 status: "proposed"
 description: "Duplicates the stable identifier."
-supersedes: []
 superseded_by: []
 ---
 """,
@@ -191,7 +188,6 @@ superseded_by: []
 id: "ADR-002"
 title: "Missing description"
 status: "accepted"
-supersedes: []
 superseded_by: []
 ---
 """,
@@ -235,7 +231,6 @@ id: "ADR-000"
 title: "Old ADR"
 status: "superseded"
 description: "Historical architecture."
-supersedes: []
 superseded_by: ["ADR-001"]
 ---
 
@@ -267,7 +262,6 @@ id: "STD-002"
 title: "Invalid relationship"
 status: "superseded"
 description: "References a missing successor."
-supersedes: []
 superseded_by: ["STD-999"]
 ---
 """,
@@ -291,3 +285,80 @@ def test_should_reject_skill_directory_without_canonical_source(tmp_path: Path) 
 
     # Assert
     assert exit_code == 1
+
+
+def _governance(identifier: str, status: str, superseded_by: str, extra: str = "") -> str:
+    return f"""---
+id: "{identifier}"
+title: "{identifier} record"
+status: "{status}"
+description: "Relationship fixture."
+superseded_by: {superseded_by}
+{extra}---
+"""
+
+
+@pytest.mark.parametrize(
+    ("files", "expected_message"),
+    [
+        (
+            {"STD-002-old.md": ("STD-002", "superseded", "[]")},
+            "status 'superseded' requires",
+        ),
+        (
+            {"STD-002-old.md": ("STD-002", "active", '["STD-001"]')},
+            "status 'superseded' requires",
+        ),
+        (
+            {
+                "STD-002-old.md": ("STD-002", "superseded", '["STD-003"]'),
+                "STD-003-new.md": ("STD-003", "proposed", "[]"),
+            },
+            "must be accepted or active",
+        ),
+        (
+            {"STD-002-self.md": ("STD-002", "superseded", '["STD-002"]')},
+            "cannot supersede itself",
+        ),
+        (
+            {"STD-002-path.md": ("STD-002", "superseded", '["../outside.md"]')},
+            "'..' path component",
+        ),
+        (
+            {"STD-002-both.md": ("STD-002", "active", "[]", 'supersedes: ["STD-001"]' + chr(10))},
+            "supersedes is derived",
+        ),
+    ],
+)
+def test_should_reject_inconsistent_supersession(
+    tmp_path: Path, files: dict[str, tuple[str, ...]], expected_message: str, capsys
+) -> None:
+    """Supersession is declared once, on the superseded record, and agrees with status."""
+    # Arrange
+    _write_source_tree(tmp_path)
+    for name, fields in files.items():
+        _write(tmp_path / "development/standards" / name, _governance(*fields))
+
+    # Act
+    exit_code = main(["--root", str(tmp_path), "--check"])
+
+    # Assert
+    assert exit_code == 1
+    assert expected_message in capsys.readouterr().out.lower()
+
+
+def test_should_reject_non_portable_skill_directory_name(tmp_path: Path, capsys) -> None:
+    """Canonical skill directories follow the portable Agent Skills naming rule."""
+    # Arrange
+    _write_source_tree(tmp_path)
+    _write(
+        tmp_path / "skills/CE_Bad/SKILL.md",
+        "---\nname: CE_Bad\ndescription: Invalid name.\n---\n",
+    )
+
+    # Act
+    exit_code = main(["--root", str(tmp_path), "--check"])
+
+    # Assert
+    assert exit_code == 1
+    assert "invalid skill name" in capsys.readouterr().out.lower()

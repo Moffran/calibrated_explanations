@@ -36,11 +36,22 @@
   `.agents/skills/` (Codex, GitHub Copilot, Gemini CLI) are now complete
   generated packages, reconciled by `scripts/quality/sync_skill_packages.py`
   (`make skills-sync` / `make skills-check`; configured in
-  `[tool.skill-packages]`) with an ownership manifest that leaves unmanaged
-  directories untouched. The reference-only `.codex/skills/` and
+  `[tool.skill-packages]`), which leaves unmanaged directories untouched. The
+  reference-only `.codex/skills/` and
   `.github/skills/` shim trees, the manual `ce-doc-navigator` inventory and
   externally owned skill copies (including two that described private
   workspaces) were removed. No runtime behavior changes.
+- **Safer, simpler instruction and skill tooling (#266, v1.1.0):**
+  - `make skills-sync` checks all targets before writing anything and refuses
+    unsafe paths, symbolic links and junctions. A generated skill folder is
+    recognized by the notice in its `SKILL.md`; the tool replaces or removes
+    only those folders and leaves everything else alone.
+  - Binary files are copied exactly; text files always use LF line endings
+    (pinned in `.gitattributes`).
+  - ADRs and standards record supersession only as `superseded_by` on the
+    older record; the `supersedes` field was removed.
+  - `CONTRIBUTOR_INSTRUCTIONS.md` states which sources are binding: accepted
+    ADRs and active standards. Plans, issues and skills cannot override them.
 - **`multi_labels_enabled` and `interval_summary` are explicit keyword-only
   parameters (ADR-038 graduation gate, #206, v1.1.0):**
   `CalibratedExplainer.explain_factual`/`explore_alternatives` and the

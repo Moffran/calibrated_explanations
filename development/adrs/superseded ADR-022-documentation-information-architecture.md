@@ -3,7 +3,6 @@ id: "ADR-022"
 title: "Documentation Information Architecture"
 status: "superseded"
 description: "Historical documentation information architecture superseded by the engineering standard for audience-focused documentation."
-supersedes: []
 superseded_by: ["STD-004"]
 ---
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).

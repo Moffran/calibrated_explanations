@@ -3,8 +3,7 @@ id: "ADR-014"
 title: "Plot Plugin Strategy"
 status: "superseded"
 description: "Historical plot-plugin strategy superseded by the current plugin and visualization governance decisions."
-supersedes: []
-superseded_by: ["ADR-036", "ADR-037"]
+superseded_by: ["ADR-037"]
 ---
 > **Supersession note (2026-03-20):** This ADR is retained as a historical record. Visualization extension and rendering governance authority moved to ADR-037; canonical PlotSpec semantics and validation moved to ADR-036.
 

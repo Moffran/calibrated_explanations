@@ -3,7 +3,6 @@ id: "STD-004"
 title: "Documentation Audience Standard"
 status: "active"
 description: "Engineering standard for audience-first documentation structure, practitioner/researcher content parity, and the PR documentation review gate. Remains active as long as these conventions govern CE documentation; revised when the audience standard is updated."
-supersedes: ["ADR-022"]
 superseded_by: []
 ---
 # Standard-004: Documentation Audience Standard

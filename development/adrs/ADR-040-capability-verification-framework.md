@@ -3,7 +3,6 @@ id: "ADR-040"
 title: "Capability Verification Framework and Requirements-as-Code Governance"
 status: "accepted"
 description: "Governing the capability-claim, requirement, TIF, test and evidence chain used for externally visible verification."
-supersedes: []
 superseded_by: []
 ---
 > **Status note (2026-07-07):** Last edited 2026-07-07 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.5 ratification and v1.0.0 release governance.

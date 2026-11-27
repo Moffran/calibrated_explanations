@@ -25,7 +25,8 @@ Use this skill to add new skills or upgrade weak existing skills.
 3. Add support files as needed:
 - `assets/` for templates/checklists/snippets
 - `references/` for embedded standards/ADR extracts
-- `scripts/` for deterministic scaffolding helpers
+- `scripts/` for deterministic scaffolding helpers, documented with interpreter
+  invocation such as `python skills/<name>/scripts/x.py`
 
 4. Tighten trigger wording in `description` to avoid overlap.
 5. If a legacy skill has phrase-heavy descriptions, move those trigger phrases
