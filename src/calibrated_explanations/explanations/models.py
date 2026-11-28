@@ -19,6 +19,17 @@ _log = logging.getLogger(__name__)
 
 VALID_EXPLANATION_TYPES = {"alternative", "factual", "fast"}
 
+_RULE_WEIGHT_KEYS: tuple[tuple[str, str], ...] = (
+    ("predict", "weight"),
+    ("low", "weight_low"),
+    ("high", "weight_high"),
+)
+_RULE_PREDICT_KEYS: tuple[tuple[str, str], ...] = (
+    ("predict", "predict"),
+    ("low", "predict_low"),
+    ("high", "predict_high"),
+)
+
 
 @dataclass
 class FeatureRule:
@@ -79,8 +90,59 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
     rules_out: list[FeatureRule] = []
     rules_block = payload.get("rules") or {}
     # Heuristic assembly if vectors are parallel arrays; keep minimal now.
-    if isinstance(rules_block, dict) and "rule" in rules_block:
+    if isinstance(rules_block, Mapping) and "rule" in rules_block:
         n = len(rules_block["rule"])  # type: ignore[index]
+        rule_weights_src = {
+            dest_key: rules_block[src_key]
+            for dest_key, src_key in _RULE_WEIGHT_KEYS
+            if src_key in rules_block
+        }
+        rule_predicts_src = {
+            dest_key: rules_block[src_key]
+            for dest_key, src_key in _RULE_PREDICT_KEYS
+            if src_key in rules_block
+        }
+        weights_src = rule_weights_src or (payload.get("feature_weights") or {})
+        predicts_src = rule_predicts_src or (payload.get("feature_predict") or {})
+
+        def _safe_pick(arr, idx):
+            try:
+                return arr[idx]
+            except (
+                IndexError,
+                KeyError,
+                TypeError,
+                AttributeError,
+            ):  # ADR002_ALLOW: tolerance for ragged arrays.
+                if len(arr) > 0:
+                    _log.debug(
+                        "_safe_pick: index %d out of range for array of length %d; "
+                        "endpoint duplication detected — ragged feature/weight arrays "
+                        "in legacy payload (ADR-008 gap 5)",
+                        idx,
+                        len(arr),
+                    )
+                    return arr[-1]
+                _log.debug(
+                    "_safe_pick: index %d requested but array is empty; returning None "
+                    "(empty feature/weight array in legacy payload)",
+                    idx,
+                )
+                return None
+
+        # safe picks from rules_block for optional fields
+        def _rb_pick(key, idx):
+            arr = rules_block.get(key, [])
+            try:
+                return arr[idx]
+            except (
+                IndexError,
+                KeyError,
+                TypeError,
+                AttributeError,
+            ):  # ADR002_ALLOW: partial payloads tolerated.  # pragma: no cover
+                return arr[-1] if len(arr) > 0 else None
+
         for i in range(n):
             # safe feature index -- may be scalar or a list (conjunctive rules)
             features_list = rules_block.get("feature", [])
@@ -90,51 +152,8 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
             else:
                 feat = int(raw_feat)
 
-            # Build weight/prediction dicts with safe indexing: if vectors are shorter
-            # than the rules array, fall back to the last available value or None.
-            weights_src = payload.get("feature_weights") or {}
-            predicts_src = payload.get("feature_predict") or {}
-
-            def _safe_pick(arr, idx):
-                try:
-                    return arr[idx]
-                except (
-                    IndexError,
-                    KeyError,
-                    TypeError,
-                    AttributeError,
-                ):  # ADR002_ALLOW: tolerance for ragged arrays.
-                    if len(arr) > 0:
-                        _log.debug(
-                            "_safe_pick: index %d out of range for array of length %d; "
-                            "endpoint duplication detected — ragged feature/weight arrays "
-                            "in legacy payload (ADR-008 gap 5)",
-                            idx,
-                            len(arr),
-                        )
-                        return arr[-1]
-                    _log.debug(
-                        "_safe_pick: index %d requested but array is empty; returning None "
-                        "(empty feature/weight array in legacy payload)",
-                        idx,
-                    )
-                    return None
-
             weight_map = {k: _safe_pick(v, i) for k, v in weights_src.items()}
             predict_map = {k: _safe_pick(v, i) for k, v in predicts_src.items()}
-
-            # safe picks from rules_block for optional fields
-            def _rb_pick(key, idx):
-                arr = rules_block.get(key, [])
-                try:
-                    return arr[idx]
-                except (
-                    IndexError,
-                    KeyError,
-                    TypeError,
-                    AttributeError,
-                ):  # ADR002_ALLOW: partial payloads tolerated.  # pragma: no cover
-                    return arr[-1] if len(arr) > 0 else None
 
             is_conj = bool(_rb_pick("is_conjunctive", i) or isinstance(feat, list))
             feature_value = _rb_pick("feature_value", i)

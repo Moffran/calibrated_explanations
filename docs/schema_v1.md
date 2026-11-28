@@ -59,14 +59,18 @@ cycle.
 
 ## Rule fields (per entry in `rules`)
 
-- `feature` (integer): feature index.
+Each serialized rule's `rule_weight` (`{predict, low, high}`) and `rule_prediction` (`{predict, low, high}`) are taken from the matching entry in the explanation's rule table (`conjunctive_rules` when conjunctive rules are present, otherwise `rules` / `get_rules()`), reading `weight`/`weight_low`/`weight_high` and `predict`/`predict_low`/`predict_high` respectively. Legacy dict payloads that omit per-rule keys fall back to `feature_weights` / `feature_predict`.
+
+- `feature` (integer or array of integers for conjunctive rules): feature index or indices.
 - `rule` (string): human-readable rule string representing the condition (factual for factual explanations, alternative for alternative explanations).
 - `rule_weight` (object):
-  - **Factual explanations** – calibrated feature weight summary with explanation envelopes, always exposing `{predict, low, high}` to match the CE paper definition. The rule represents a factual condition covering the feature’s instance value.
-  - **Alternative explanations** – optional metadata capturing the delta from the factual baseline for ranking/metadata; consumers should rely on the `rule_prediction` field for decision making.
+  - **Factual explanations** – calibrated feature weight summary (`weight`, `weight_low`, `weight_high`) from the rule table, always exposing `{predict, low, high}` to match the CE paper definition. The rule represents a factual condition covering the feature’s instance value.
+  - **Alternative explanations** – delta from the factual baseline (`weight`, `weight_low`, `weight_high`) from the rule table for ranking/metadata; consumers should rely on the `rule_prediction` field for decision making.
+  - **FAST explanations** – calibrated feature weight summary from the FAST rule table.
 - `rule_prediction` (object):
-  - **Factual explanations** – optional metadata used in legacy exports. The calibrated prediction for the instance lives at the top level.
-  - **Alternative explanations** – calibrated prediction estimate plus uncertainty interval for the alternative condition. This is the primary quantity mandated by the CE papers. The rule represents an alternative condition covering alternative instance values for the feature.
+  - **Factual explanations** – taken from the rule table's `predict`/`predict_low`/`predict_high`. For single-feature factual rules this holds the instance's factual calibrated prediction (matching top-level `prediction`); for conjunctive factual rules it holds the calibrated prediction under the conjunctive perturbation.
+  - **Alternative explanations** – calibrated prediction estimate plus uncertainty interval (`predict`, `predict_low`, `predict_high`) from the rule table for the alternative condition. This is the primary quantity mandated by the CE papers. The rule represents an alternative condition covering alternative instance values for the feature.
+  - **FAST explanations** – per-feature perturbed prediction (`predict`, `predict_low`, `predict_high`) from the FAST rule table.
 - `instance_prediction` (object|null): instance-specific prediction (optional).
 - `feature_value` (any): the instance feature value (optional).
 - `is_conjunctive` (boolean): whether this rule is part of a conjunction.

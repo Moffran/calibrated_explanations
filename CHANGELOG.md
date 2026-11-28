@@ -22,6 +22,17 @@
 
 ### Changed
 
+- **Behaviour change: serialize per-rule weights and predictions from the rule
+  table (#262, v1.1.0):** `to_json()`, `to_json_stream()` and multiclass
+  `to_json()` now read each rule's `rule_weight` and `rule_prediction` from the
+  matching entry in the explanation's rule table (`conjunctive_rules` when
+  present, otherwise `rules` / `get_rules()`) rather than indexing the
+  feature-aligned `feature_weights` and `feature_predict` arrays by rule
+  position. Payloads written by v1.0.x carry misaligned `rule_weight` and
+  `rule_prediction` values for factual rules (when features are ignored or have
+  zero weight), alternative rules, and conjunctive rules; v1.1.0 payloads match
+  the live rule table. Schema fields, rule order, rule count and
+  `metadata.narrative_context` are unchanged.
 - **Self-maintaining instruction indexes (#263, v1.1.0):** ADRs, engineering
   standards and canonical skills now carry minimal machine-readable metadata and
   generate their discovery indexes through
